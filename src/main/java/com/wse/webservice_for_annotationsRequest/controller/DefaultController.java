@@ -5,17 +5,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.wse.webservice_for_annotationsRequest.repositories.sparqlRepository;
-
+import com.wse.webservice_for_annotationsRequest.repositories.annotationSparqlRepository;
+import com.wse.webservice_for_annotationsRequest.services.explanationService;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 public class DefaultController {
 
     @Autowired
-    private sparqlRepository sparqlRepository;
+    private explanationService explanationService;
 
     /** pass graphID as parameter not as json inside a body
      *
@@ -23,11 +21,18 @@ public class DefaultController {
      * @return - body with List of annotations, OK-Http status
      * @throws IOException
      */
-     @CrossOrigin
+    @CrossOrigin
     @GetMapping("/getannotations")
     public ResponseEntity<ResultObject[]> getannotations(@RequestParam String graphID) throws IOException {
 
-        return new ResponseEntity<>(sparqlRepository.executeSparqlQuery(graphID), HttpStatus.OK);
+        return new ResponseEntity<>(annotationSparqlRepository.executeSparqlQuery(graphID), HttpStatus.OK);
+    }
+
+    @CrossOrigin
+    @GetMapping("/getannotations")
+    public ResponseEntity<ResultObject[]> getannotations(@RequestParam String graphID) throws IOException {
+
+        return new ResponseEntity<>(explanationService.explainComponent(graphID), HttpStatus.OK);
     }
 
 }

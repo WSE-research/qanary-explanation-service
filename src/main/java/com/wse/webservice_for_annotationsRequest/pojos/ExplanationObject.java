@@ -3,10 +3,7 @@ package com.wse.webservice_for_annotationsRequest.pojos;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wse.webservice_for_annotationsRequest.pojos.ResultObjectDTOs.*;
 
-/**
- * Represents an entry from the sparql-response === an annotation
- */
-public class ResultObject implements Comparable{
+public class ExplanationObject {
 
     @JsonProperty("annotationId")
     private AnnotationId annotationId;
@@ -19,7 +16,7 @@ public class ResultObject implements Comparable{
     private ErstelltAm erstelltAm;
 
     // default constructor
-    public ResultObject() {
+    public ExplanationObject() {
 
     }
 
@@ -85,11 +82,5 @@ public class ResultObject implements Comparable{
 
     public Start getStart() {
         return start;
-    }
-
-    @Override
-    public int compareTo(Object o) {
-        ResultObject resultObject = (ResultObject) o;
-        return getErstelltAm().getValue().compareTo(resultObject.erstelltAm.getValue());
     }
 }

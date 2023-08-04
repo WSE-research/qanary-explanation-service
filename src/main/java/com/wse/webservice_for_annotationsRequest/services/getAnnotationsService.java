@@ -15,7 +15,7 @@ import java.io.IOException;
 @Service
 public class getAnnotationsService {
 
-    private static final String FILE_SPARQL_QUERY = "/sparql_query.rq";
+    private static final String FILE_SPARQL_QUERY = "/annotations_sparql_query.rq";
     private ObjectMapper objectMapper;
     public getAnnotationsService() {
         objectMapper = new ObjectMapper();

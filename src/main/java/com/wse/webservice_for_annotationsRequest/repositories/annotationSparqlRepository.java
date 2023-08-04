@@ -16,14 +16,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Repository
-public class sparqlRepository implements sparqlRepositoryIF {
+public class annotationSparqlRepository implements sparqlRepositoryIF {
 
-    URL sparqlEndpoint = new URL("http://demos.swe.htwk-leipzig.de:40111/sparql");
+    private static final URL sparqlEndpoint = new URL("http://demos.swe.htwk-leipzig.de:40111/sparql");
     @Autowired
     private getAnnotationsService getannotationsservice;
     private ObjectMapper objectMapper;
 
-    public sparqlRepository() throws MalformedURLException {
+    public annotationSparqlRepository() throws MalformedURLException {
     }
 
     @Override
