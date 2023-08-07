@@ -25,24 +25,16 @@ public class explanationService {
     private ObjectMapper objectMapper;
     @Autowired
     private explanationSparqlRepository explanationSparqlRepository;
+    
     public explanationService() {
         objectMapper = new ObjectMapper();
     }
 
     /**
-     * - filter items and return textual message
-     * @param annotations :: ResultObject
+     *
+     * @param graphID graphID to work with
+     * @return textual explanation // TODO: change lates, depending on needs
      * @throws IOException
-     */
-    public String filterResults(ResultObject[] annotations) throws IOException {
-
-        return null;
-    }
-
-    /**
-     * - get specific component-entries (how many different component may occur in that List depends on how many annotations fulfill the SPAQRL Query =>
-     * set up the sparql-Query? !!!
-     * @param graphID
      */
     public String explainComponent(String graphID) throws IOException {
 
@@ -63,6 +55,12 @@ public class explanationService {
 
     }
 
+    /**
+     *
+     * @param explanationObjects list of ExplanationObjects to iterate through
+     * @param question given raw question
+     * @return modified list with entities set
+     */
     public ExplanationObject[] createEntitiesFromQuestion(ExplanationObject[] explanationObjects, String question) {
         ExplanationObject[] tmp = explanationObjects;
         for (ExplanationObject obj: tmp
@@ -72,16 +70,32 @@ public class explanationService {
         return tmp;
     }
 
+    /**
+     *
+     * @param obj Specific object for which the entity is to be found
+     * @param question the raw question-string
+     * @return the entity inside the given question
+     */
     public String getEntity(ExplanationObject obj, String question) {
         String entity = question.substring(obj.getStart().getValue(), obj.getEnd().getValue());
         return entity;
     }
 
-    //Probably edit, that isn't really smart working with a random object (??)
+    /**
+     *
+     * @param firstObject takes the first object of the list to get the Question URI (any item in the list would work)
+     * @return question as raw string
+     */
     public String getQuestion(ExplanationObject firstObject) {
         return explanationSparqlRepository.fetchQuestion(firstObject.getSource().getValue().toString());
     }
 
+    /**
+     *
+     * @param graphID given graphID
+     * @return query with params set (graphURI)
+     * @throws IOException
+     */
     public String buildSparqlQuery(String graphID) throws IOException {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
@@ -101,17 +115,17 @@ public class explanationService {
     }
 
     public String convertToTextualExplanation(ExplanationObject[] explanationObjects) {
-        String response = "Für die Komponente DBedia-Show wurden folgende Annotationen mit folgenden Konfidenzen herausgefiltert: ";
+        // TODO: As of implementation for several different components, the list could be sorted by component-name
+        String response = "Für die Komponente DBpediaSpotlightNED wurden folgende Annotationen mit folgenden Konfidenzen und DBpedia Quellen herausgefiltert: ";
         DecimalFormat df = new DecimalFormat("#.####");
 
         for (ExplanationObject obj: explanationObjects
              ) {
             response += ("\n " +
-                    "Entität: " + obj.getEntity() +
-                    " | Konfidenz: " + df.format(obj.getScore().getValue()*100) + "%" +
-                    " | DBPedia URI: " + obj.getBody().getValue()) + " %";
+                    "Entität: '" + obj.getEntity() +
+                    "' | Konfidenz: " + df.format(obj.getScore().getValue()*100) + " %" +
+                    " | DBPedia URI: " + obj.getBody().getValue());
         }
-        System.out.println(response);
         return response;
     }
 
