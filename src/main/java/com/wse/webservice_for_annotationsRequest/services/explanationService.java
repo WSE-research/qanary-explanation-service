@@ -25,7 +25,7 @@ public class explanationService {
     private ObjectMapper objectMapper;
     @Autowired
     private explanationSparqlRepository explanationSparqlRepository;
-    
+
     public explanationService() {
         objectMapper = new ObjectMapper();
     }
@@ -115,7 +115,8 @@ public class explanationService {
     }
 
     public String convertToTextualExplanation(ExplanationObject[] explanationObjects) {
-        // TODO: As of implementation for several different components, the list could be sorted by component-name
+        // As of implementation for several different components, the list could be sorted by component-name
+        // Filter for component could happen in the sparql query
         String response = "Für die Komponente DBpediaSpotlightNED wurden folgende Annotationen mit folgenden Konfidenzen und DBpedia Quellen herausgefiltert: ";
         DecimalFormat df = new DecimalFormat("#.####");
 

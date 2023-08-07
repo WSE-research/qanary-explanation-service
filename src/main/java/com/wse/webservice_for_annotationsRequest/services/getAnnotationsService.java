@@ -8,14 +8,18 @@ import com.wse.webservice_for_annotationsRequest.pojos.ResultObject;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.wse.webservice_for_annotationsRequest.repositories.annotationSparqlRepository;
 
 import java.io.IOException;
 
 @Service
 public class getAnnotationsService {
 
-    private static final String FILE_SPARQL_QUERY = "/explanation_sparql_query.rq";
+    @Autowired annotationSparqlRepository annotationSparqlRepository;
+    private static final String FILE_SPARQL_QUERY = "/annotations_sparql_query.rq";
     private ObjectMapper objectMapper;
     public getAnnotationsService() {
         objectMapper = new ObjectMapper();
@@ -25,9 +29,7 @@ public class getAnnotationsService {
 
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
-
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
-        System.out.println("Query: " + query);
 
         return query;
     }
@@ -37,13 +39,13 @@ public class getAnnotationsService {
      * @param response JSON-Node of SPARQL-QUERY response
      * @return List of ResultObjects which will be rediredted to the controller which returns it to the user
      */
-    public ResultObject[] somewhat(JsonNode response) throws IOException {
-        ResultObject[] list = mapResponseToObjectArray(response);
+    public ResultObject[] getAnnotations(String graphID) throws IOException {
 
-        for (ResultObject items: list
-             ) {
-            System.out.println(items.getErstelltAm().getValue());
-        }
+        String query = createQuery(graphID);
+        JsonNode resultObjectsJsonNode = annotationSparqlRepository.executeSparqlQuery(query);
+
+        ResultObject[] list = mapResponseToObjectArray(resultObjectsJsonNode);
+
         return list;
     }
 

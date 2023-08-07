@@ -10,11 +10,9 @@ public class ResultObject implements Comparable{
 
     @JsonProperty("annotationId")
     private AnnotationId annotationId;
-    private Source source;
-    private Start start;
-    private End end;
-    private Body body;
     private Type type;
+    private Body body;
+    private Target target;
     private ErstelltVon erstelltVon;
     private ErstelltAm erstelltAm;
 
@@ -22,8 +20,6 @@ public class ResultObject implements Comparable{
     public ResultObject() {
 
     }
-
-
 
     public void setAnnotationID(AnnotationId annotationId) {
         this.annotationId = annotationId;
@@ -39,6 +35,10 @@ public class ResultObject implements Comparable{
 
     public void setErstelltVon(ErstelltVon erstelltVon) {
         this.erstelltVon = erstelltVon;
+    }
+
+    public void setTarget(Target target) {
+        this.target = target;
     }
 
     public void setType(Type type) {
@@ -61,32 +61,12 @@ public class ResultObject implements Comparable{
         return erstelltVon;
     }
 
+    public Target getTarget() {
+        return target;
+    }
+
     public Type getType() {
         return type;
-    }
-
-    public void setEnd(End end) {
-        this.end = end;
-    }
-
-    public void setSource(Source source) {
-        this.source = source;
-    }
-
-    public void setStart(Start start) {
-        this.start = start;
-    }
-
-    public End getEnd() {
-        return end;
-    }
-
-    public Source getSource() {
-        return source;
-    }
-
-    public Start getStart() {
-        return start;
     }
 
     @Override

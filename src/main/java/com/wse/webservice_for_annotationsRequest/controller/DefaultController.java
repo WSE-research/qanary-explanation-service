@@ -8,33 +8,26 @@ import org.springframework.web.bind.annotation.*;
 import com.wse.webservice_for_annotationsRequest.repositories.annotationSparqlRepository;
 import com.wse.webservice_for_annotationsRequest.services.explanationService;
 import java.io.IOException;
+import com.wse.webservice_for_annotationsRequest.services.getAnnotationsService;
 
 @RestController
 public class DefaultController {
 
     @Autowired
-    private explanationService explanationService;
+    private getAnnotationsService getAnnotationsService;
 
-    /** pass graphID as parameter not as json inside a body
+    /**
      *
-     * @param graphID - pass as parameter (e.g. ` curl http://localhost:8080/getannotations?graphID=urn:graph:04f7b7fe-046b-4569-aa7b-5259be59db54 `)
-     * @return - body with List of annotations, OK-Http status
+     * @param graphID graphId to work with
+     * @return the list of results (ResultObjects)
      * @throws IOException
      */
-    /*
     @CrossOrigin
     @GetMapping("/getannotations")
     public ResponseEntity<ResultObject[]> getannotations(@RequestParam String graphID) throws IOException {
 
-        return new ResponseEntity<>(annotationSparqlRepository.executeSparqlQuery(graphID), HttpStatus.OK);
+        return new ResponseEntity<>(getAnnotationsService.getAnnotations(graphID), HttpStatus.OK);
     }
 
-    @CrossOrigin
-    @GetMapping("/getannotations")
-    public ResponseEntity<ResultObject[]> getannotations(@RequestParam String graphID) throws IOException {
-
-        return new ResponseEntity<>(explanationService.explainComponent(graphID), HttpStatus.OK);
-    }
-    */
 
 }

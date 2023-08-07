@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.webservice_for_annotationsRequest.ParameterStringBuilder;
 import com.wse.webservice_for_annotationsRequest.pojos.ResultObject;
 import jakarta.json.Json;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import com.wse.webservice_for_annotationsRequest.services.getAnnotationsService;
@@ -17,24 +18,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Repository
-public class annotationSparqlRepository implements sparqlRepositoryIF {
+public class annotationSparqlRepository extends AbstractRespository {
 
-    private URL sparqlEndpoint = new URL("http://demos.swe.htwk-leipzig.de:40111/sparql");
-    @Autowired
-    private getAnnotationsService getannotationsservice;
-    private ObjectMapper objectMapper;
 
     public annotationSparqlRepository() throws MalformedURLException {
-    }
-
-    @Override
-    public JsonNode executeSparqlQuery(String graphID) {
-        return null;
-    }
-
-    @Override
-    public String fetchQuestion(String questionURI) {
-        return null;
+        sparqlEndpoint = new URL("http://demos.swe.htwk-leipzig.de:40111/sparql");
+        objectMapper = new ObjectMapper();
     }
 
     /*
