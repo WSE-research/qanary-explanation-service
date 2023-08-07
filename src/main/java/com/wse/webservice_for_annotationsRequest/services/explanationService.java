@@ -13,6 +13,7 @@ import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.wse.webservice_for_annotationsRequest.repositories.explanationSparqlRepository;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -36,7 +37,7 @@ public class explanationService {
      * @return textual explanation // TODO: change lates, depending on needs
      * @throws IOException
      */
-    public String explainComponent(String graphID) throws IOException {
+    public ExplanationObject[] explainComponent(String graphID) throws IOException {
 
         String query = buildSparqlQuery(graphID);
         JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
@@ -46,12 +47,13 @@ public class explanationService {
 
         if(explanationObjects.length > 0) {
             question = getQuestion(explanationObjects[0]); // question uri is saved in every single Object, just take the first one
-            createEntitiesFromQuestion(explanationObjects, question);
-            return convertToTextualExplanation(explanationObjects);
-
+            //createEntitiesFromQuestion(explanationObjects, question);
+            //return convertToTextualExplanation(explanationObjects);
+            return createEntitiesFromQuestion(explanationObjects,question);
         }
         else
-            return "Es gibt leider keine Annotationen!";
+            //return "Es gibt leider keine Annotationen!";
+            return null;
 
     }
 
@@ -114,6 +116,11 @@ public class explanationService {
         return objectMapper.treeToValue(resultsArraynode, ExplanationObject[].class);
     }
 
+    /**
+     * not needed now
+     * @param explanationObjects
+     * @return
+     */
     public String convertToTextualExplanation(ExplanationObject[] explanationObjects) {
         // As of implementation for several different components, the list could be sorted by component-name
         // Filter for component could happen in the sparql query

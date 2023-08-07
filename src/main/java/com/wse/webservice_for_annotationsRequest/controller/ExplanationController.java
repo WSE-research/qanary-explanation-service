@@ -4,6 +4,7 @@ import com.wse.webservice_for_annotationsRequest.pojos.ExplanationObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,8 +22,9 @@ public class ExplanationController {
      * @param graphID graphId to work with
      * @throws IOException
      */
+    @CrossOrigin
     @GetMapping("/explanation")
-    public ResponseEntity<String> explainComponent(@RequestParam String graphID) throws IOException {
+    public ResponseEntity<ExplanationObject[]> explainComponent(@RequestParam String graphID) throws IOException {
         return new ResponseEntity<>(explanationService.explainComponent(graphID), HttpStatus.OK);
     }
 }

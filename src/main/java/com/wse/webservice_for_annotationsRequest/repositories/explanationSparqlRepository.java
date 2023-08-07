@@ -23,7 +23,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.springframework.core.env.Environment;
 @Repository
 public class explanationSparqlRepository extends AbstractRespository{
 

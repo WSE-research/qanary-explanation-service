@@ -3,6 +3,7 @@ package com.wse.webservice_for_annotationsRequest.pojos;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wse.webservice_for_annotationsRequest.pojos.ResultObjectDTOs.*;
+import org.json.JSONPropertyIgnore;
 
 public class ExplanationObject {
 
@@ -16,7 +17,7 @@ public class ExplanationObject {
     private ErstelltVon erstelltVon;
     private ErstelltAm erstelltAm;
     private Score score;
-    @JsonIgnore
+
     private String entity;
 
     // default constructor
