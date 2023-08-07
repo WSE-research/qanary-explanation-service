@@ -12,7 +12,7 @@ export default function Explanation() {
             <button onClick={() => {
                 const graphID = document.getElementById("graphid").value;
                 if(graphID) {
-                    fetch("http://localhost:4000/explanation?graphID=" + graphID)
+                    fetch("/explanation?graphID=" + graphID)
                       //  .then(response=> response.text().then(textValue => setExplanation(textValue)))
                         .then(response => response.json())
                         .then(data => setExplanation(data));
