@@ -21,6 +21,7 @@ public class DefaultController {
      * @return - body with List of annotations, OK-Http status
      * @throws IOException
      */
+    /*
     @CrossOrigin
     @GetMapping("/getannotations")
     public ResponseEntity<ResultObject[]> getannotations(@RequestParam String graphID) throws IOException {
@@ -34,5 +35,6 @@ public class DefaultController {
 
         return new ResponseEntity<>(explanationService.explainComponent(graphID), HttpStatus.OK);
     }
+    */
 
 }

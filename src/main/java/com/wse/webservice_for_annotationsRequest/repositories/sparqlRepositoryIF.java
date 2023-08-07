@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.List;
 
-public interface sparqlRepositoryIF<T> {
+public interface sparqlRepositoryIF {
 
-    public T[] executeSparqlQuery(String graphID) throws IOException;
+    public JsonNode executeSparqlQuery(String graphID) throws IOException;
+
+    public String fetchQuestion(String questionURI);
 
 }

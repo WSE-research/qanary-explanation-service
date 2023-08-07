@@ -8,13 +8,17 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.wse.webservice_for_annotationsRequest.pojos.ExplanationObject;
 import com.wse.webservice_for_annotationsRequest.pojos.ResultObject;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
+import org.apache.jena.base.Sys;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.wse.webservice_for_annotationsRequest.repositories.explanationSparqlRepository;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 
+@Service
 public class explanationService {
 
     private static final String FILE_SPARQL_QUERY = "/explanation_sparql_query.rq";
@@ -32,7 +36,7 @@ public class explanationService {
      */
     public String filterResults(ResultObject[] annotations) throws IOException {
 
-
+        return null;
     }
 
     /**
@@ -45,18 +49,37 @@ public class explanationService {
         String query = buildSparqlQuery(graphID);
         JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
 
-        String question = getQuestion(explanationObjectsJsonNode);
         ExplanationObject[] explanationObjects = convertToExplanationObjects(explanationObjectsJsonNode);
+        String question;
 
-        if(explanationObjects.length > 0)
+        if(explanationObjects.length > 0) {
+            question = getQuestion(explanationObjects[0]); // question uri is saved in every single Object, just take the first one
+            createEntitiesFromQuestion(explanationObjects, question);
             return convertToTextualExplanation(explanationObjects);
+
+        }
         else
             return "Es gibt leider keine Annotationen!";
 
     }
 
-    public String getQuestion(JsonNode response) {
-        return "";
+    public ExplanationObject[] createEntitiesFromQuestion(ExplanationObject[] explanationObjects, String question) {
+        ExplanationObject[] tmp = explanationObjects;
+        for (ExplanationObject obj: tmp
+             ) {
+            obj.setEntity(getEntity(obj,question));
+        }
+        return tmp;
+    }
+
+    public String getEntity(ExplanationObject obj, String question) {
+        String entity = question.substring(obj.getStart().getValue(), obj.getEnd().getValue());
+        return entity;
+    }
+
+    //Probably edit, that isn't really smart working with a random object (??)
+    public String getQuestion(ExplanationObject firstObject) {
+        return explanationSparqlRepository.fetchQuestion(firstObject.getSource().getValue().toString());
     }
 
     public String buildSparqlQuery(String graphID) throws IOException {
@@ -78,7 +101,18 @@ public class explanationService {
     }
 
     public String convertToTextualExplanation(ExplanationObject[] explanationObjects) {
-        return "";
+        String response = "Für die Komponente DBedia-Show wurden folgende Annotationen mit folgenden Konfidenzen herausgefiltert: ";
+        DecimalFormat df = new DecimalFormat("#.####");
+
+        for (ExplanationObject obj: explanationObjects
+             ) {
+            response += ("\n " +
+                    "Entität: " + obj.getEntity() +
+                    " | Konfidenz: " + df.format(obj.getScore().getValue()*100) + "%" +
+                    " | DBPedia URI: " + obj.getBody().getValue()) + " %";
+        }
+        System.out.println(response);
+        return response;
     }
 
 }

@@ -23,6 +23,8 @@ public class ResultObject implements Comparable{
 
     }
 
+
+
     public void setAnnotationID(AnnotationId annotationId) {
         this.annotationId = annotationId;
     }

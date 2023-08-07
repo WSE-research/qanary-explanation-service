@@ -1,6 +1,25 @@
 package com.wse.webservice_for_annotationsRequest.pojos.ResultObjectDTOs;
 
-public class Start extends ResultObjectDTOsAbstract{
+public class Start {
+
+    private int value;
+    private String type;
+
+    public int getValue() {
+        return value;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
+    }
 
     private String datatype;
 

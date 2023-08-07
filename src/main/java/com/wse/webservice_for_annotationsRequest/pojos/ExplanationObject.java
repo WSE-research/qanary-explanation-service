@@ -1,5 +1,6 @@
 package com.wse.webservice_for_annotationsRequest.pojos;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wse.webservice_for_annotationsRequest.pojos.ResultObjectDTOs.*;
 
@@ -14,10 +15,27 @@ public class ExplanationObject {
     private Type type;
     private ErstelltVon erstelltVon;
     private ErstelltAm erstelltAm;
+    private Score score;
+    @JsonIgnore
+    private String entity;
 
     // default constructor
     public ExplanationObject() {
 
+    }
+    public Score getScore() {
+        return score;
+    }
+
+    public void setScore(Score score) {
+        this.score = score;
+    }
+    public String getEntity() {
+        return entity;
+    }
+
+    public void setEntity(String entity) {
+        this.entity = entity;
     }
 
     public void setAnnotationID(AnnotationId annotationId) {
@@ -82,5 +100,21 @@ public class ExplanationObject {
 
     public Start getStart() {
         return start;
+    }
+
+    @Override
+    public String toString() {
+        return "ExplanationObject{" +
+                "annotationId=" + annotationId +
+                ", source=" + source +
+                ", start=" + start +
+                ", end=" + end +
+                ", body=" + body +
+                ", type=" + type +
+                ", erstelltVon=" + erstelltVon +
+                ", erstelltAm=" + erstelltAm +
+                ", score=" + score.getValue() +
+                ", entity=" + entity +
+                '}';
     }
 }

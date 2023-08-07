@@ -1,34 +1,34 @@
 package com.wse.webservice_for_annotationsRequest.pojos.ResultObjectDTOs;
 
-public class End {
+public class Score {
 
-    private String datatype;
-    private int value;
+    private double value;
     private String type;
+    private String datatype;
 
-    public int getValue() {
-        return value;
-    }
+    public Score() {}
 
     public String getType() {
         return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public void setValue(int value) {
-        this.value = value;
     }
 
     public String getDatatype() {
         return datatype;
     }
 
+    public double getValue() {
+        return value;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public void setValue(double value) {
+        this.value = value;
+    }
+
     public void setDatatype(String datatype) {
         this.datatype = datatype;
     }
-
-    public End() {}
 }
