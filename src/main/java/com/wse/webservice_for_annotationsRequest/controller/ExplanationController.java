@@ -24,6 +24,10 @@ public class ExplanationController {
     @CrossOrigin
     @GetMapping("/explanation")
     public ResponseEntity<ExplanationObject[]> explainComponent(@RequestParam String graphID) throws IOException {
-        return new ResponseEntity<>(explanationService.explainComponent(graphID), HttpStatus.OK);
+        ExplanationObject[] explanationObjects = explanationService.explainComponent(graphID);
+        if(explanationObjects != null)
+            return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
+        else
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
 }

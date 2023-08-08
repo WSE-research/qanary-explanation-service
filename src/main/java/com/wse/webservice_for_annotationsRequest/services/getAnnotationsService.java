@@ -54,9 +54,4 @@ public class getAnnotationsService {
         return objectMapper.treeToValue(resultsArraynode, ResultObject[].class);
     }
 
-
-
-
-
-
 }

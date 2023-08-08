@@ -57,7 +57,6 @@ public class explanationService {
      * @return modified list with entities set
      */
     public ExplanationObject[] createEntitiesFromQuestion(ExplanationObject[] explanationObjects, String question) {
-        //ExplanationObject[] tmp = explanationObjects;
         for (ExplanationObject obj: explanationObjects
              ) {
             obj.setEntity(getEntity(obj,question));
@@ -113,17 +112,14 @@ public class explanationService {
     public String convertToTextualExplanation(ExplanationObject[] explanationObjects) {
         // As of implementation for several different components, the list could be sorted by component-name
         // Filter for component could happen in the sparql query
-        String response = "There are following information regarding the entity, its confidence and the dbpedia URI for the given graphID on the DBpedia-Spotlight-NED component:  ";
+        StringBuilder response = new StringBuilder("There are following information regarding the entity, its confidence and the dbpedia URI for the given graphID on the DBpedia-Spotlight-NED component:  ");
         DecimalFormat df = new DecimalFormat("#.####");
 
         for (ExplanationObject obj: explanationObjects
              ) {
-            response += ("\n " +
-                    "Entity: '" + obj.getEntity() +
-                    "' | Confidence: " + df.format(obj.getScore().getValue()*100) + " %" +
-                    " | DBPedia URI: " + obj.getBody().getValue());
+            response.append("\n " + "Entity: '").append(obj.getEntity()).append("' | Confidence: ").append(df.format(obj.getScore().getValue() * 100)).append(" %").append(" | DBPedia URI: ").append(obj.getBody().getValue());
         }
-        return response;
+        return response.toString();
     }
 
 }
