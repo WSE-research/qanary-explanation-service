@@ -11,42 +11,38 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.wse.webservice_for_annotationsRequest.repositories.annotationSparqlRepository;
+import com.wse.webservice_for_annotationsRequest.repositories.AnnotationSparqlRepository;
 
 import java.io.IOException;
 
 @Service
 public class getAnnotationsService {
 
-    @Autowired annotationSparqlRepository annotationSparqlRepository;
-    private static final String FILE_SPARQL_QUERY = "/annotations_sparql_query.rq";
-    private ObjectMapper objectMapper;
+    @Autowired
+    AnnotationSparqlRepository annotationSparqlRepository;
+    private static final String FILE_SPARQL_QUERY = "/queries/annotations_sparql_query.rq";
+    private final ObjectMapper objectMapper;
     public getAnnotationsService() {
         objectMapper = new ObjectMapper();
     }
 
     public String createQuery(String graphID) throws IOException {
-
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
 
-        return query;
+        return QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
     }
 
     /**
      *
-     * @param response JSON-Node of SPARQL-QUERY response
-     * @return List of ResultObjects which will be rediredted to the controller which returns it to the user
+     * @param graphID graphID to operate with
+     * @return Array of ResultObjects which will be redirected to the controller which returns it to the user
      */
     public ResultObject[] getAnnotations(String graphID) throws IOException {
-
         String query = createQuery(graphID);
         JsonNode resultObjectsJsonNode = annotationSparqlRepository.executeSparqlQuery(query);
 
-        ResultObject[] list = mapResponseToObjectArray(resultObjectsJsonNode);
-
-        return list;
+        return mapResponseToObjectArray(resultObjectsJsonNode);
     }
 
     public ResultObject[] mapResponseToObjectArray(JsonNode sparqlResponse) throws IOException {

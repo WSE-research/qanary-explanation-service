@@ -17,7 +17,7 @@ WHERE {
                   oa:end ?end;
     ]
 ].
-    ?annotationId oa:annotatedBy $erstelltVon .
-    ?annotationId oa:annotatedAt $erstelltAm .
+    ?annotationId oa:annotatedBy $createdBy .
+    ?annotationId oa:annotatedAt $createdAt .
     ?annotationId qa:score ?score .
 }

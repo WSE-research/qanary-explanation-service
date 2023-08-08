@@ -5,13 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.wse.webservice_for_annotationsRequest.repositories.annotationSparqlRepository;
-import com.wse.webservice_for_annotationsRequest.services.explanationService;
+
 import java.io.IOException;
 import com.wse.webservice_for_annotationsRequest.services.getAnnotationsService;
 
 @RestController
-public class DefaultController {
+public class AnnotationController {
 
     @Autowired
     private getAnnotationsService getAnnotationsService;
@@ -20,11 +19,10 @@ public class DefaultController {
      *
      * @param graphID graphId to work with
      * @return the list of results (ResultObjects)
-     * @throws IOException
      */
     @CrossOrigin
     @GetMapping("/getannotations")
-    public ResponseEntity<ResultObject[]> getannotations(@RequestParam String graphID) throws IOException {
+    public ResponseEntity<ResultObject[]> getAnnotations(@RequestParam String graphID) throws IOException {
 
         return new ResponseEntity<>(getAnnotationsService.getAnnotations(graphID), HttpStatus.OK);
     }

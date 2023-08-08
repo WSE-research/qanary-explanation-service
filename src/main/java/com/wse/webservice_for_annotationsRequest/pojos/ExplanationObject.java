@@ -1,9 +1,7 @@
 package com.wse.webservice_for_annotationsRequest.pojos;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wse.webservice_for_annotationsRequest.pojos.ResultObjectDTOs.*;
-import org.json.JSONPropertyIgnore;
 
 public class ExplanationObject {
 
@@ -14,8 +12,8 @@ public class ExplanationObject {
     private End end;
     private Body body;
     private Type type;
-    private ErstelltVon erstelltVon;
-    private ErstelltAm erstelltAm;
+    private CreatedBy createdBy;
+    private CreatedAt createdAt;
     private Score score;
 
     private String entity;
@@ -47,12 +45,12 @@ public class ExplanationObject {
         this.body = body;
     }
 
-    public void setErstelltAm(ErstelltAm erstelltAm) {
-        this.erstelltAm = erstelltAm;
+    public void setCreatedAt(CreatedAt createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public void setErstelltVon(ErstelltVon erstelltVon) {
-        this.erstelltVon = erstelltVon;
+    public void setCreatedBy(CreatedBy createdBy) {
+        this.createdBy = createdBy;
     }
 
     public void setType(Type type) {
@@ -67,12 +65,12 @@ public class ExplanationObject {
         return body;
     }
 
-    public ErstelltAm getErstelltAm() {
-        return erstelltAm;
+    public CreatedAt getCreatedAt() {
+        return createdAt;
     }
 
-    public ErstelltVon getErstelltVon() {
-        return erstelltVon;
+    public CreatedBy getCreatedBy() {
+        return createdBy;
     }
 
     public Type getType() {
@@ -112,8 +110,8 @@ public class ExplanationObject {
                 ", end=" + end +
                 ", body=" + body +
                 ", type=" + type +
-                ", erstelltVon=" + erstelltVon +
-                ", erstelltAm=" + erstelltAm +
+                ", createdBy=" + createdBy +
+                ", createdAt=" + createdAt +
                 ", score=" + score.getValue() +
                 ", entity=" + entity +
                 '}';

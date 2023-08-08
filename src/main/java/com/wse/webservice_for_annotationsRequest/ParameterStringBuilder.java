@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
- * Helper class to convert the paramter-map to a string, so it can be passed to a HTTP-Request
+ * Helper class to convert the parameter-map to a string, so it can be passed to an HTTP-Request
  */
 public class ParameterStringBuilder {
     public static String getParamsString(Map<String, String> params) {

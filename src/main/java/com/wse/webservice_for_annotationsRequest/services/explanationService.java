@@ -6,14 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.wse.webservice_for_annotationsRequest.pojos.ExplanationObject;
-import com.wse.webservice_for_annotationsRequest.pojos.ResultObject;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
-import org.apache.jena.base.Sys;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.wse.webservice_for_annotationsRequest.repositories.explanationSparqlRepository;
-import org.springframework.core.env.Environment;
+import com.wse.webservice_for_annotationsRequest.repositories.ExplanationSparqlRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -22,10 +19,10 @@ import java.text.DecimalFormat;
 @Service
 public class explanationService {
 
-    private static final String FILE_SPARQL_QUERY = "/explanation_sparql_query.rq";
-    private ObjectMapper objectMapper;
+    private static final String FILE_SPARQL_QUERY = "/queries/explanation_sparql_query.rq";
+    private final ObjectMapper objectMapper;
     @Autowired
-    private explanationSparqlRepository explanationSparqlRepository;
+    private ExplanationSparqlRepository explanationSparqlRepository;
 
     public explanationService() {
         objectMapper = new ObjectMapper();
@@ -34,8 +31,7 @@ public class explanationService {
     /**
      *
      * @param graphID graphID to work with
-     * @return textual explanation // TODO: change lates, depending on needs
-     * @throws IOException
+     * @return textual explanation // TODO: change later, depending on needs
      */
     public ExplanationObject[] explainComponent(String graphID) throws IOException {
 
@@ -47,12 +43,9 @@ public class explanationService {
 
         if(explanationObjects.length > 0) {
             question = getQuestion(explanationObjects[0]); // question uri is saved in every single Object, just take the first one
-            //createEntitiesFromQuestion(explanationObjects, question);
-            //return convertToTextualExplanation(explanationObjects);
             return createEntitiesFromQuestion(explanationObjects,question);
         }
         else
-            //return "Es gibt leider keine Annotationen!";
             return null;
 
     }
@@ -64,12 +57,12 @@ public class explanationService {
      * @return modified list with entities set
      */
     public ExplanationObject[] createEntitiesFromQuestion(ExplanationObject[] explanationObjects, String question) {
-        ExplanationObject[] tmp = explanationObjects;
-        for (ExplanationObject obj: tmp
+        //ExplanationObject[] tmp = explanationObjects;
+        for (ExplanationObject obj: explanationObjects
              ) {
             obj.setEntity(getEntity(obj,question));
         }
-        return tmp;
+        return explanationObjects;
     }
 
     /**
@@ -79,8 +72,7 @@ public class explanationService {
      * @return the entity inside the given question
      */
     public String getEntity(ExplanationObject obj, String question) {
-        String entity = question.substring(obj.getStart().getValue(), obj.getEnd().getValue());
-        return entity;
+        return question.substring(obj.getStart().getValue(), obj.getEnd().getValue());
     }
 
     /**
@@ -89,22 +81,19 @@ public class explanationService {
      * @return question as raw string
      */
     public String getQuestion(ExplanationObject firstObject) {
-        return explanationSparqlRepository.fetchQuestion(firstObject.getSource().getValue().toString());
+        return explanationSparqlRepository.fetchQuestion(firstObject.getSource().getValue());
     }
 
     /**
      *
      * @param graphID given graphID
      * @return query with params set (graphURI)
-     * @throws IOException
      */
     public String buildSparqlQuery(String graphID) throws IOException {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
 
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
-
-        return query;
+        return QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
     }
 
     public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) throws JsonProcessingException {
@@ -117,21 +106,21 @@ public class explanationService {
     }
 
     /**
-     * not needed now
-     * @param explanationObjects
-     * @return
+     * not needed now since that happens at client level
+     * @param explanationObjects objects which will be shown
+     * @return textual representation as string
      */
     public String convertToTextualExplanation(ExplanationObject[] explanationObjects) {
         // As of implementation for several different components, the list could be sorted by component-name
         // Filter for component could happen in the sparql query
-        String response = "Für die Komponente DBpediaSpotlightNED wurden folgende Annotationen mit folgenden Konfidenzen und DBpedia Quellen herausgefiltert: ";
+        String response = "There are following information regarding the entity, its confidence and the dbpedia URI for the given graphID on the DBpedia-Spotlight-NED component:  ";
         DecimalFormat df = new DecimalFormat("#.####");
 
         for (ExplanationObject obj: explanationObjects
              ) {
             response += ("\n " +
-                    "Entität: '" + obj.getEntity() +
-                    "' | Konfidenz: " + df.format(obj.getScore().getValue()*100) + " %" +
+                    "Entity: '" + obj.getEntity() +
+                    "' | Confidence: " + df.format(obj.getScore().getValue()*100) + " %" +
                     " | DBPedia URI: " + obj.getBody().getValue());
         }
         return response;

@@ -7,6 +7,6 @@ WHERE {
     ?annotationId rdf:type ?type.
     ?annotationId oa:hasBody ?body.
     ?annotationId oa:hasTarget ?target.
-    ?annotationId oa:annotatedBy $erstelltVon .
-    ?annotationId oa:annotatedAt $erstelltAm .
+    ?annotationId oa:annotatedBy $createdBy .
+    ?annotationId oa:annotatedAt $createdAt .
 }

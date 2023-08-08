@@ -13,8 +13,8 @@ public class ResultObject implements Comparable{
     private Type type;
     private Body body;
     private Target target;
-    private ErstelltVon erstelltVon;
-    private ErstelltAm erstelltAm;
+    private CreatedBy createdBy;
+    private CreatedAt createdAt;
 
     // default constructor
     public ResultObject() {
@@ -29,12 +29,12 @@ public class ResultObject implements Comparable{
         this.body = body;
     }
 
-    public void setErstelltAm(ErstelltAm erstelltAm) {
-        this.erstelltAm = erstelltAm;
+    public void setCreatedAt(CreatedAt createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public void setErstelltVon(ErstelltVon erstelltVon) {
-        this.erstelltVon = erstelltVon;
+    public void setECreatedBy(CreatedBy createdBy) {
+        this.createdBy = createdBy;
     }
 
     public void setTarget(Target target) {
@@ -53,12 +53,12 @@ public class ResultObject implements Comparable{
         return body;
     }
 
-    public ErstelltAm getErstelltAm() {
-        return erstelltAm;
+    public CreatedAt getCreatedAt() {
+        return createdAt;
     }
 
-    public ErstelltVon getErstelltVon() {
-        return erstelltVon;
+    public CreatedBy getCreatedBy() {
+        return createdBy;
     }
 
     public Target getTarget() {
@@ -72,6 +72,6 @@ public class ResultObject implements Comparable{
     @Override
     public int compareTo(Object o) {
         ResultObject resultObject = (ResultObject) o;
-        return getErstelltAm().getValue().compareTo(resultObject.erstelltAm.getValue());
+        return getCreatedAt().getValue().compareTo(resultObject.createdAt.getValue());
     }
 }

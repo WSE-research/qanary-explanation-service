@@ -20,7 +20,6 @@ public class ExplanationController {
     /**
      *
      * @param graphID graphId to work with
-     * @throws IOException
      */
     @CrossOrigin
     @GetMapping("/explanation")

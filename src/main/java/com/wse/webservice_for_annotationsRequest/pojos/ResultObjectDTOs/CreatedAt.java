@@ -1,14 +1,12 @@
 package com.wse.webservice_for_annotationsRequest.pojos.ResultObjectDTOs;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
-public class ErstelltAm {
+public class CreatedAt {
 
     private LocalDateTime value;
     private String type;
     private String datatype;
-
 
     public void setDatatype(String datatype) {
         this.datatype = datatype;
@@ -36,7 +34,7 @@ public class ErstelltAm {
 
     @Override
     public String toString() {
-        return "ErstelltAm{" + getValue() + "---" +
+        return "CreatedAt{" + getValue() + "---" +
                 "datatype='" + datatype + '\'' +
                 '}';
     }
