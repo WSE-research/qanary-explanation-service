@@ -6,7 +6,7 @@ import com.wse.webservice_for_annotationsRequest.pojos.ResultObjectDTOs.*;
 /**
  * Represents an entry from the sparql-response === an annotation
  */
-public class ResultObject implements Comparable{
+public class ResultObject implements Comparable {
 
     @JsonProperty("annotationId")
     private AnnotationId annotationId;
@@ -33,7 +33,7 @@ public class ResultObject implements Comparable{
         this.createdAt = createdAt;
     }
 
-    public void setECreatedBy(CreatedBy createdBy) {
+    public void setCreatedBy(CreatedBy createdBy) {
         this.createdBy = createdBy;
     }
 

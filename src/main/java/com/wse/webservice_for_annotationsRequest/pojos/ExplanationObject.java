@@ -15,13 +15,13 @@ public class ExplanationObject {
     private CreatedBy createdBy;
     private CreatedAt createdAt;
     private Score score;
-
     private String entity;
 
     // default constructor
     public ExplanationObject() {
 
     }
+
     public Score getScore() {
         return score;
     }
@@ -29,6 +29,7 @@ public class ExplanationObject {
     public void setScore(Score score) {
         this.score = score;
     }
+
     public String getEntity() {
         return entity;
     }

@@ -16,13 +16,14 @@ import com.wse.webservice_for_annotationsRequest.repositories.AnnotationSparqlRe
 import java.io.IOException;
 
 @Service
-public class getAnnotationsService {
+public class GetAnnotationsService {
 
     @Autowired
     AnnotationSparqlRepository annotationSparqlRepository;
     private static final String FILE_SPARQL_QUERY = "/queries/annotations_sparql_query.rq";
     private final ObjectMapper objectMapper;
-    public getAnnotationsService() {
+
+    public GetAnnotationsService() {
         objectMapper = new ObjectMapper();
     }
 
@@ -34,7 +35,6 @@ public class getAnnotationsService {
     }
 
     /**
-     *
      * @param graphID graphID to operate with
      * @return Array of ResultObjects which will be redirected to the controller which returns it to the user
      */
@@ -42,7 +42,10 @@ public class getAnnotationsService {
         String query = createQuery(graphID);
         JsonNode resultObjectsJsonNode = annotationSparqlRepository.executeSparqlQuery(query);
 
-        return mapResponseToObjectArray(resultObjectsJsonNode);
+        if (resultObjectsJsonNode != null)
+            return mapResponseToObjectArray(resultObjectsJsonNode);
+        else
+            return null;
     }
 
     public ResultObject[] mapResponseToObjectArray(JsonNode sparqlResponse) throws IOException {

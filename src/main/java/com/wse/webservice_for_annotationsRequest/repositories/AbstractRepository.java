@@ -41,7 +41,7 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         connection.setRequestMethod("GET");
 
         // Set up query as a parameter for the request
-        Map<String,String> parameters = new HashMap<>();
+        Map<String, String> parameters = new HashMap<>();
         parameters.put("query", sparqlQuery);
 
         connection.setDoOutput(true);
@@ -54,6 +54,7 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         InputStream responseStream = connection.getInputStream();
 
         // get the results-field from json and save it as jsonNode
+        
         return objectMapper.readValue(responseStream, JsonNode.class).get("results");
     }
 

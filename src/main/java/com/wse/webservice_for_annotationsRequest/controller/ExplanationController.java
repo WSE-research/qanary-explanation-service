@@ -8,24 +8,24 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.wse.webservice_for_annotationsRequest.services.explanationService;
+import com.wse.webservice_for_annotationsRequest.services.ExplanationService;
+
 import java.io.IOException;
 
 @RestController
 public class ExplanationController {
 
     @Autowired
-    private explanationService explanationService;
+    private ExplanationService explanationService;
 
     /**
-     *
      * @param graphID graphId to work with
      */
     @CrossOrigin
     @GetMapping("/explanation")
     public ResponseEntity<ExplanationObject[]> explainComponent(@RequestParam String graphID) throws IOException {
         ExplanationObject[] explanationObjects = explanationService.explainComponent(graphID);
-        if(explanationObjects != null)
+        if (explanationObjects != null)
             return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
         else
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
