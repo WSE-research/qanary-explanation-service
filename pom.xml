@@ -86,7 +86,6 @@
             <version>3.0.0</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -94,6 +93,11 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>
+                        com.wse.webservice_for_componentExplanation.WebserviceForComponentExplanationApplication
+                    </mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
