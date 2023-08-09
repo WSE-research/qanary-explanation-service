@@ -34,6 +34,14 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         this.sparqlEndpoint = new URL(Objects.requireNonNull(this.environment.getProperty("sparqlEndpoint")));
     }
 
+    protected void setWebClient(WebClient webClient) {
+        this.webClient = webClient;
+    }
+
+    /**
+     * @param sparqlQuery From service returned query which already contains all relevant paramters
+     * @return The Requests-Response-Body as JsonNode
+     */
     @Override
     public JsonNode executeSparqlQuery(String sparqlQuery) throws IOException {
 
@@ -45,17 +53,23 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         parameters.put("query", sparqlQuery);
 
         connection.setDoOutput(true);
+
         DataOutputStream out = new DataOutputStream(connection.getOutputStream());
         out.writeBytes(ParameterStringBuilder.getParamsString(parameters));
         out.flush();
         out.close();
 
+
         // read the response and store it as a JsonNode
-        InputStream responseStream = connection.getInputStream();
+        InputStream responseStream = getInputStream(connection);
 
         // get the results-field from json and save it as jsonNode
-        
+
         return objectMapper.readValue(responseStream, JsonNode.class).get("results");
+    }
+
+    protected InputStream getInputStream(HttpURLConnection connection) throws IOException {
+        return connection.getInputStream();
     }
 
     @Override

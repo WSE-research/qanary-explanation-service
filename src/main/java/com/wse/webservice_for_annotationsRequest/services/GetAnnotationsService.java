@@ -28,10 +28,14 @@ public class GetAnnotationsService {
     }
 
     public String createQuery(String graphID) throws IOException {
-        QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
-        bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
+        try {
+            QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
+            bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
 
-        return QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
+            return QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -48,13 +52,17 @@ public class GetAnnotationsService {
             return null;
     }
 
-    public ResultObject[] mapResponseToObjectArray(JsonNode sparqlResponse) throws IOException {
-        // Handle mapping for LocalDateTime
-        objectMapper.registerModule(new JavaTimeModule());
-        // select the bindings-field inside the Json(Node)
-        ArrayNode resultsArraynode = (ArrayNode) sparqlResponse.get("bindings");
-
-        return objectMapper.treeToValue(resultsArraynode, ResultObject[].class);
+    public ResultObject[] mapResponseToObjectArray(JsonNode sparqlResponse) {
+        try {
+            // Handle mapping for LocalDateTime
+            objectMapper.registerModule(new JavaTimeModule());
+            // select the bindings-field inside the Json(Node)
+            ArrayNode resultsArraynode = (ArrayNode) sparqlResponse.get("bindings");
+            return objectMapper.treeToValue(resultsArraynode, ResultObject[].class);
+        } catch (Exception e) {
+            System.out.println("Error" + e);
+            return null;
+        }
     }
 
 }
