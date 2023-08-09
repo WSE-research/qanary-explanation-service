@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.wse</groupId>
-    <artifactId>webservice_for_annotationsRequest</artifactId>
+    <artifactId>webservice_for_componentExplanation</artifactId>
     <version>0.1.0</version>
-    <name>webservice_for_annotationsRequest</name>
+    <name>webservice_for_componentExplanation</name>
     <description>Project to retrieve any annotations and explanations from an graphID</description>
     <properties>
         <java.version>17</java.version>
