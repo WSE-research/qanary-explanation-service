@@ -1,3 +1,3 @@
-# webservice_for_annotationsRequest
+# webservice_for_componentExplanation
 
-This is a webservice with a REST-API which can be called together with a graphID (currently one on the htwk-sparql endpoint) to retrieve all annotations which have been made on this graphID.
+This is a webservice with a REST-API which can be called together with a graphID to retrieve all annotations which have been made on this graphID. Additionally it has a Web-UI to get some details from the DBpedia-Spotlight component
