@@ -5,9 +5,7 @@
       "image": "wseresearch/component-explanation",
       "tag": "latest",
       "port": "40198:4000",
-      "volumes": [
-        "VOLUME_SETTING"
-      ]
+      "volumes": ""
     }
   ]
 }
