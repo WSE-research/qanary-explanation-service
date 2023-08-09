@@ -1,0 +1,23 @@
+.explanationWrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.explanationWrapper > p {
+    margin: 30px 0px 30px 0px;
+}
+
+table {
+    border-collapse: collapse;
+    width: 80%; /* Passe die Breite nach Bedarf an */
+    max-width: 800px; /* Optional: Begrenze die maximale Breite der Tabelle */
+    margin: 0 auto; /* Zentriert die Tabelle horizontal */
+}
+table th,
+table td {
+    padding: 10px 20px; /* Hier kannst du die Werte anpassen */
+    border: 1px solid #ddd; /* Optional: Fügt Trennlinien hinzu */
+    text-align: left;
+}
