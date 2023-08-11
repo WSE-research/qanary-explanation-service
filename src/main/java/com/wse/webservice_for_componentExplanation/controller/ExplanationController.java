@@ -15,6 +15,9 @@ import java.io.IOException;
 @RestController
 public class ExplanationController {
 
+    private static final String DBpediaSpotlight_SPARQL_QUERY = "/queries/explanation_sparql_query.rq";
+    private static final String QBBirthdateWikidata_SPARQL_QUERY = "/queries/temp.rq";
+
     @Autowired
     private ExplanationService explanationService;
 
@@ -23,11 +26,23 @@ public class ExplanationController {
      */
     @CrossOrigin
     @GetMapping("/explanation")
-    public ResponseEntity<ExplanationObject[]> explainComponent(@RequestParam String graphID) throws IOException {
-        ExplanationObject[] explanationObjects = explanationService.explainComponent(graphID);
+    public ResponseEntity<ExplanationObject[]> explainComponentDBpediaSpotlight(@RequestParam String graphID) throws IOException {
+        ExplanationObject[] explanationObjects = explanationService.explainComponent(graphID, DBpediaSpotlight_SPARQL_QUERY);
         if (explanationObjects != null)
             return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
         else
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
+
+    @CrossOrigin
+    @GetMapping("/explanationforqbbirthdatewikidata")
+    public ResponseEntity<ExplanationObject[]> explainComponentQBBirthDataWikidata(@RequestParam String graphID) throws IOException {
+        ExplanationObject[] explanationObjects = explanationService.explainComponent(graphID, QBBirthdateWikidata_SPARQL_QUERY);
+
+        if(explanationObjects != null)
+            return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
+        else
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+    }
+
 }
