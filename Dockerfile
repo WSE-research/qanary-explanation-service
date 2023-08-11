@@ -12,16 +12,16 @@ RUN tar -xzvf v3.5.2.tar.gz
 WORKDIR /app/Qanary-3.5.2/qanary_commons
 RUN mvn clean install -DskipTests
 WORKDIR /app
-RUN cp Qanary-3.5.2/qanary_commons/target/qa.commons-3.5.2.jar .
+RUN cp Qanary-3.5.2/qanary_commons/target/qa.commons-3.5.4.jar .
 
 #Build Stage
 FROM maven:latest AS build
 WORKDIR /app
 COPY src .
 COPY pom.xml .
-COPY --from=qanary_commons /app/qa.commons-3.5.2.jar .
+COPY --from=qanary_commons /app/qa.commons-3.5.4.jar .
 # Installing the qa_commons dependency
-RUN mvn install:install-file -Dfile=qa.commons-3.5.2.jar -DgroupId=eu.wdaqua.qanary -DartifactId=qa.commons -Dversion=3.5.2 -Dpackaging=jar
+RUN mvn install:install-file -Dfile=qa.commons-3.5.4.jar -DgroupId=eu.wdaqua.qanary -DartifactId=qa.commons -Dversion=3.5.4 -Dpackaging=jar
 # build the app
 RUN mvn clean install
 
