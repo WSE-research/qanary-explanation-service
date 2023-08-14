@@ -2,7 +2,7 @@ package com.wse.webservice_for_componentExplanation.repositories;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.webservice_for_componentExplanation.ParameterStringBuilder;
+import com.wse.webservice_for_componentExplanation.services.ParameterStringBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;

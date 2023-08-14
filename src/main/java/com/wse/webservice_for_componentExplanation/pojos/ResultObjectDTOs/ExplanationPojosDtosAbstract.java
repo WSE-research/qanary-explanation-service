@@ -1,6 +1,6 @@
 package com.wse.webservice_for_componentExplanation.pojos.ResultObjectDTOs;
 
-public abstract class ResultObjectDTOsAbstract {
+public abstract class ExplanationPojosDtosAbstract {
 
     private String type;
     private String value;

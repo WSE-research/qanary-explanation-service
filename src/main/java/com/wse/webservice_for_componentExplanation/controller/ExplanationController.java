@@ -16,7 +16,8 @@ import java.io.IOException;
 public class ExplanationController {
 
     private static final String DBpediaSpotlight_SPARQL_QUERY = "/queries/explanation_sparql_query.rq";
-    private static final String QBBirthdateWikidata_SPARQL_QUERY = "/queries/temp.rq";
+    private static final String QBBirthdateWikidata_SPARQL_QUERY = "/queries/explanation_for_birthdate_wikidata.rq";
+    private static final String GENERAL_EXPLANATION_SPARQL_QUERY = "/queries/general_explanation.rq";
 
     @Autowired
     private ExplanationService explanationService;
@@ -43,6 +44,12 @@ public class ExplanationController {
             return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
         else
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+    }
+
+    @CrossOrigin
+    @GetMapping("/test")
+    public String getRdfTurtle(@RequestParam String graphURI, @RequestParam String componentURI) throws IOException {
+        return this.explanationService.explainSpecificComponent(graphURI, componentURI, GENERAL_EXPLANATION_SPARQL_QUERY);
     }
 
 }
