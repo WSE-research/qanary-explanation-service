@@ -76,40 +76,36 @@ public class ExplanationService {
     }
 
 
-    // TODO: Überarbeiten, da nicht korrekt
+    //
     public String createRdfRepresentation(String contentDe, String contentEn, String componentURI) {
+
         Model model = ModelFactory.createDefaultModel();
 
+        // set Prefixes
         model.setNsPrefix("rdfs", RDFS_NAMESPACE);
         model.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
 
 
-        // Literals for triples
+        // Literals for triples with LanguageKey
         Literal contentDeLiteral = model.createLiteral(contentDe,"de");
         Literal contentEnLiteral = model.createLiteral(contentEn, "en");
 
         // Create property 'hasExplanationForCreatedDataProperty'
         Property hasExplanationForCreatedDataProperty = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedDataProperty");
+        Property rdfsSubPropertyOf = model.createProperty(RDFS_NAMESPACE, "subPropertyOf");
+        Property hasExplanation = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanation");
 
+        // creates Resource, in this case the componentURI
         Resource componentUriResource = model.createResource(componentURI);
 
+        // add triples to the model
+        model.add(hasExplanationForCreatedDataProperty, rdfsSubPropertyOf, hasExplanation);
         model.add(model.createStatement(componentUriResource,hasExplanationForCreatedDataProperty, contentDeLiteral));
         model.add(model.createStatement(componentUriResource,hasExplanationForCreatedDataProperty, contentEnLiteral));
 
-        try {
-            FileOutputStream outputStream = new FileOutputStream("output.ttl"); // Provide the desired file name
-            model.write(outputStream, "Turtle");
-            outputStream.close();
-            System.out.println("RDF written to file successfully.");
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Error writing RDF to file.");
-        }
-
+        // Write Model as Turtle to a String
         StringWriter writer = new StringWriter();
         model.write(writer, "Turtle");
-
-
 
         return writer.toString();
     }
@@ -170,11 +166,13 @@ public class ExplanationService {
         }
     }
 
+
     /**
-     * not needed now since that happens at client level
      *
-     * @param explanationObjects objects which will be shown
-     * @return textual representation as string
+     * @param explanationObjects Objects gathered from previous JsonNode, contains all information
+     * @param lang desired language, hard coded translation and used attributes from the objects
+     * @param componentURI needed for string
+     * @return textual representation for the objects
      */
     public String convertToTextualExplanation(ExplanationObject[] explanationObjects, String lang, String componentURI) {
         DecimalFormat df = new DecimalFormat("#.####");
