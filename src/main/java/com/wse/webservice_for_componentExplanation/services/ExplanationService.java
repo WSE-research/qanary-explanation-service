@@ -66,10 +66,8 @@ public class ExplanationService {
     public String explainSpecificComponent(String graphUri, String componentUri, String rawQuery) throws IOException {
 
         ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, componentUri, rawQuery);
-        System.out.println(explanationObjects[0]);
         String contentDe = convertToTextualExplanation(explanationObjects, "de", componentUri);
         String contentEn = convertToTextualExplanation(explanationObjects, "en", componentUri);
-        System.out.println(contentEn);
         return createRdfRepresentation(contentDe, contentEn, componentUri);
     }
 
@@ -205,8 +203,6 @@ public class ExplanationService {
             }
             default: break;
         }
-
-        System.out.println(textualRepresentation.toString());
 
         return textualRepresentation.toString();
     }
