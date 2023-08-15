@@ -5,11 +5,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
+import org.apache.jena.query.*;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -22,6 +30,7 @@ public class ExplanationServiceTest {
     @Autowired
     private ExplanationService explanationService;
     private static final String graphID = "testID123-.urn://21äö";
+    private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
 
     /**
      * Assertion-Tests on converted Data
@@ -67,14 +76,67 @@ public class ExplanationServiceTest {
         }
     }
 
-    @Test
-    public void convertNullToExplanationObjects() throws JsonProcessingException {
-        JsonNode jsonNode = null;
+    @Nested
+    class ExplanationAsRdfTurtle {
 
-        ExplanationObject[] explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
+        static final String componentURI = "testComponentURI";
+        LanguageContentProvider languageContentProvider;
+        Model model;
+        String sparqlQuery;
+        String queryPrefixes = "PREFIX explanation: <" + EXPLANATION_NAMESPACE + ">";
 
-        assertNull(explanationObjects);
+        @BeforeEach
+        void setup() {
+            languageContentProvider = new LanguageContentProvider("Dieser Content ist auf Deutsch", "And this one is english");
+            model = ModelFactory.createDefaultModel();
+            sparqlQuery = queryPrefixes + " SELECT ?subject ?object WHERE { ?subject explanation:hasExplanationForCreatedData ?object }";
+        }
+
+        /**
+         * - INPUT: Content in languages german and english, componentURI
+         */
+        @Test
+        void createRdfRepresentationTest() {
+            String result = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI);
+
+            assertAll("String contains content elements as well as componentURI",
+                    () -> assertTrue(result.contains(languageContentProvider.getContentDe())),
+                    () -> assertTrue(result.contains(languageContentProvider.getContentEn())),
+                    () -> assertTrue(result.contains(componentURI))
+            );
+
+            model.read(new java.io.StringReader(result), null, "Turtle");
+            Query query = QueryFactory.create(sparqlQuery);
+
+            try(QueryExecution queryExecution = QueryExecutionFactory.create(query, model)) {
+                ResultSet results = queryExecution.execSelect();
+                while(results.hasNext()) {
+                    QuerySolution temp = results.next();
+                    assertTrue(temp.get("object").isLiteral());
+                    assertTrue(temp.get("subject").isResource());
+                    if(results.getRowNumber() % 2 == 0) {
+                        Literal englishContent = temp.get("object").asLiteral();
+                        assertEquals("en", englishContent.getLanguage());
+                        assertEquals(languageContentProvider.getContentEn(), englishContent.getString());
+                    }
+                    else {
+                        Literal germanContent = temp.get("object").asLiteral();
+                        assertEquals("de", germanContent.getLanguage());
+                        assertEquals(languageContentProvider.getContentDe(), germanContent.getString());
+                    }
+                }
+            }
+        }
     }
+
+        @Test
+        public void convertNullToExplanationObjects() throws JsonProcessingException {
+            JsonNode jsonNode = null;
+
+            ExplanationObject[] explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
+
+            assertNull(explanationObjects);
+        }
 
 
 }
