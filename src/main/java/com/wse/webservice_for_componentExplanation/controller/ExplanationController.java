@@ -46,10 +46,17 @@ public class ExplanationController {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     *
+     * @param graphURI given graph URI
+     * @param componentURI given component URI
+     * @return String as RDF-Turtle
+     * @throws IOException
+     */
     @CrossOrigin
-    @GetMapping("/test")
-    public String getRdfTurtle(@RequestParam String graphURI, @RequestParam String componentURI) throws IOException {
-        return this.explanationService.explainSpecificComponent(graphURI, componentURI, GENERAL_EXPLANATION_SPARQL_QUERY);
+    @GetMapping("/explainspecificcomponent")
+    public ResponseEntity<String> getRdfTurtle(@RequestParam String graphURI, @RequestParam String componentURI) throws IOException {
+        return new ResponseEntity<>(this.explanationService.explainSpecificComponent(graphURI, componentURI, GENERAL_EXPLANATION_SPARQL_QUERY), HttpStatus.OK);
     }
 
 }

@@ -36,15 +36,14 @@ public class ExplanationService {
     }
 
     /**
+     * Currently explains the DBpediaSpotlight-component since the query has the specific structure
+     * @param rawQuery specific Query which is being used fetching data from triplestore (in this case dbpedia sprql query used) -> defined in Controller
      * @param graphID graphID to work with
      * @return textual explanation // TODO: change later, depending on needs
      */
-    public ExplanationObject[] explainComponent(String graphID, String rawQuery) throws IOException {
+    public ExplanationObject[] explainComponent(String graphUri, String rawQuery) throws IOException {
 
-        String query = buildSparqlQuery(graphID, null, rawQuery);
-        JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
-
-        ExplanationObject[] explanationObjects = convertToExplanationObjects(explanationObjectsJsonNode);
+        ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, null, rawQuery);
 
         if (explanationObjects != null && explanationObjects.length > 0) {
             if(explanationObjects[0].getSource() != null) {
@@ -65,18 +64,29 @@ public class ExplanationService {
      * @throws IOException IOException
      */
     public String explainSpecificComponent(String graphUri, String componentUri, String rawQuery) throws IOException {
-        String queryToExecute = buildSparqlQuery(graphUri, componentUri, rawQuery);
-        JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(queryToExecute);
-        ExplanationObject[] explanationObjects = convertToExplanationObjects(explanationObjectsJsonNode);
 
+        ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, componentUri, rawQuery);
+        System.out.println(explanationObjects[0]);
         String contentDe = convertToTextualExplanation(explanationObjects, "de", componentUri);
         String contentEn = convertToTextualExplanation(explanationObjects, "en", componentUri);
-
+        System.out.println(contentEn);
         return createRdfRepresentation(contentDe, contentEn, componentUri);
     }
 
+    public ExplanationObject[] computeExplanationObjects(String graphUri, String componentUri, String rawQuery) throws IOException {
+        String queryToExecute = buildSparqlQuery(graphUri, componentUri, rawQuery);
+        JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(queryToExecute);
+        return convertToExplanationObjects(explanationObjectsJsonNode);
+    }
 
-    //
+
+    /**
+     *
+     * @param contentDe Textual representation of the explanation in german
+     * @param contentEn Textual representation of the explanation in english
+     * @param componentURI component URI
+     * @return String formatted as RDF-Turtle
+     */
     public String createRdfRepresentation(String contentDe, String contentEn, String componentURI) {
 
         Model model = ModelFactory.createDefaultModel();
@@ -85,13 +95,12 @@ public class ExplanationService {
         model.setNsPrefix("rdfs", RDFS_NAMESPACE);
         model.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
 
-
         // Literals for triples with LanguageKey
         Literal contentDeLiteral = model.createLiteral(contentDe,"de");
         Literal contentEnLiteral = model.createLiteral(contentEn, "en");
 
         // Create property 'hasExplanationForCreatedDataProperty'
-        Property hasExplanationForCreatedDataProperty = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedDataProperty");
+        Property hasExplanationForCreatedDataProperty = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
         Property rdfsSubPropertyOf = model.createProperty(RDFS_NAMESPACE, "subPropertyOf");
         Property hasExplanation = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanation");
 

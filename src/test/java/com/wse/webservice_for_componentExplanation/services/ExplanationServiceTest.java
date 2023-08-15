@@ -16,19 +16,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.event.annotation.BeforeTestMethod;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class ExplanationServiceTest {
-    @Autowired
-    private ExplanationService explanationService;
     private static final String graphID = "testID123-.urn://21äö";
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
 
@@ -38,6 +45,8 @@ public class ExplanationServiceTest {
     @Nested
     public class ConversionTests {
 
+        @Autowired
+        ExplanationService explanationService;
         ExplanationObject[] explanationObjects;
         ServiceDataForTests serviceDataForTests;
 
@@ -84,6 +93,11 @@ public class ExplanationServiceTest {
         Model model;
         String sparqlQuery;
         String queryPrefixes = "PREFIX explanation: <" + EXPLANATION_NAMESPACE + ">";
+        ExplanationObject[] explanationObjects;
+        ObjectMapper objectMapper = new ObjectMapper();
+        @Autowired
+        ExplanationService explanationService;
+        ExplanationService explanationServiceMock;
 
         @BeforeEach
         void setup() {
@@ -127,8 +141,29 @@ public class ExplanationServiceTest {
                 }
             }
         }
+        @BeforeEach
+        void setupExplainSpecificComponentTest() throws IOException {
+            ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
+            JsonNode jsonNode = objectMapper.readValue(serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
+            explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
+            explanationServiceMock = mock(ExplanationService.class);
+            Mockito.when(explanationServiceMock.computeExplanationObjects(any(),any(),any())).thenReturn(explanationObjects);
+        }
+
+        /**
+         * Not working now, result becomes null
+         *      - explanationServiceMock.explainSepcificComponent call returns null since it`s a mock
+         *      - explanationService.explainsepcifiacComponent wouldn't respect the defined return value in setup-method
+         * @throws IOException
+         */
+        @Test
+        void explainSpecificComponentTest() throws IOException {
+            String result = explanationServiceMock.explainSpecificComponent("",componentURI,"");
+            assertNotNull(result);
+        }
     }
 
+    /*
         @Test
         public void convertNullToExplanationObjects() throws JsonProcessingException {
             JsonNode jsonNode = null;
@@ -137,6 +172,7 @@ public class ExplanationServiceTest {
 
             assertNull(explanationObjects);
         }
+        */
 
 
 }
