@@ -4,17 +4,26 @@ package com.wse.webservice_for_componentExplanation.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wse.webservice_for_componentExplanation.controller.ExplanationController;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
+import com.wse.webservice_for_componentExplanation.repositories.ExplanationSparqlRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static reactor.core.publisher.Mono.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -26,6 +35,8 @@ public class ExplanationServiceTest {
     /**
      * Assertion-Tests on converted Data
      */
+
+    private static final String QUERY = "/queries/explanation_for_query_builder.rq";
     @Nested
     public class ConversionTests {
 
@@ -66,6 +77,30 @@ public class ExplanationServiceTest {
             );
         }
     }
+
+    /*
+    @Nested
+    class ExplanationQueryBuilderTests {
+        ServiceDataForTests serviceDataForTests;
+        @MockBean
+        ExplanationSparqlRepository explanationSparqlRepository;
+
+        @BeforeEach
+        void setup() throws IOException {
+            serviceDataForTests = new ServiceDataForTests();
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
+            Mockito.when(explanationSparqlRepository.executeSparqlQuery(any())).thenReturn(jsonNode);
+        }
+
+        @Test
+        public void explainQueryBuilderTest() throws IOException {
+            String result = explanationService.explainQueryBuilder("1",QUERY);
+
+            System.out.println(result);
+        }
+    }
+    */
 
     @Test
     public void convertNullToExplanationObjects() throws JsonProcessingException {

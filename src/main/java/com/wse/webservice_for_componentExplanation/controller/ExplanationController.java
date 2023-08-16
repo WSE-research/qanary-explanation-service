@@ -16,7 +16,7 @@ import java.io.IOException;
 public class ExplanationController {
 
     private static final String DBpediaSpotlight_SPARQL_QUERY = "/queries/explanation_sparql_query.rq";
-    private static final String QBBirthdateWikidata_SPARQL_QUERY = "/queries/temp.rq";
+    private static final String QBBirthdateWikidata_SPARQL_QUERY = "/queries/explanation_for_query_builder.rq"; // TODO: Rename
 
     @Autowired
     private ExplanationService explanationService;
@@ -27,7 +27,7 @@ public class ExplanationController {
     @CrossOrigin
     @GetMapping("/explanation")
     public ResponseEntity<ExplanationObject[]> explainComponentDBpediaSpotlight(@RequestParam String graphID) throws IOException {
-        ExplanationObject[] explanationObjects = explanationService.explainComponent(graphID, DBpediaSpotlight_SPARQL_QUERY);
+        ExplanationObject[] explanationObjects = explanationService.explainComponentDBpediaSpotlight(graphID, DBpediaSpotlight_SPARQL_QUERY);
         if (explanationObjects != null)
             return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
         else
@@ -35,12 +35,12 @@ public class ExplanationController {
     }
 
     @CrossOrigin
-    @GetMapping("/explanationforqbbirthdatewikidata")
-    public ResponseEntity<ExplanationObject[]> explainComponentQBBirthDataWikidata(@RequestParam String graphID) throws IOException {
-        ExplanationObject[] explanationObjects = explanationService.explainComponent(graphID, QBBirthdateWikidata_SPARQL_QUERY);
+    @GetMapping("/explanationforqbsimplerealnameofsuperhero")
+    public ResponseEntity<String> explainComponentQBBirthDataWikidata(@RequestParam String graphID) throws IOException {
+        String explanation = explanationService.explainQueryBuilder(graphID, QBBirthdateWikidata_SPARQL_QUERY); // TODO: siehe Spezifikation in Issue
 
-        if(explanationObjects != null)
-            return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
+        if(explanation != null)
+            return new ResponseEntity<>(explanation, HttpStatus.OK);
         else
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
