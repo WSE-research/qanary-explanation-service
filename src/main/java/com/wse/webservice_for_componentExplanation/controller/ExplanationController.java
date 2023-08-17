@@ -36,7 +36,7 @@ public class ExplanationController {
 
     @CrossOrigin
     @GetMapping("/explanationforqbsimplerealnameofsuperhero")
-    public ResponseEntity<String> explainComponentQBBirthDataWikidata(@RequestParam String graphID) throws IOException {
+    public ResponseEntity<String> explainQueryBuilder(@RequestParam String graphID) throws IOException {
         String explanation = explanationService.explainQueryBuilder(graphID, QBBirthdateWikidata_SPARQL_QUERY); // TODO: siehe Spezifikation in Issue
 
         if(explanation != null)

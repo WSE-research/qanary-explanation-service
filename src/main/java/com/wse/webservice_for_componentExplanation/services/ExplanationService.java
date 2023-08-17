@@ -52,7 +52,7 @@ public class ExplanationService {
         // Restriction to QueryBuilder
         String qb = "QB";
 
-            // explanationObjects = Arrays.stream(explanationObjects).filter(x -> x.getCreatedBy().getValue().contains(qb)).toArray(ExplanationObject[]::new);
+            explanationObjects = Arrays.stream(explanationObjects).filter(x -> x.getCreatedBy().getValue().contains(qb)).toArray(ExplanationObject[]::new);
 
             if(explanationObjects != null) {
                 StringBuilder explanation = new StringBuilder("The component created the following SPARQL queries: '");

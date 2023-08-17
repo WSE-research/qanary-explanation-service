@@ -1,5 +1,6 @@
 package com.wse.webservice_for_componentExplanation.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.webservice_for_componentExplanation.StringToJsonNode;
@@ -15,11 +16,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 import java.io.IOException;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
@@ -69,6 +74,29 @@ public class ExplanationControllerTest {
         mockMvc.perform(get("/explanation")
                         .param("graphID", "anyGraphID"))
                 .andExpect(status().isOk());
+    }
+
+    public void setupExplainQueryBuilderTest() throws IOException {
+        StringToJsonNode stringToJsonNode = new StringToJsonNode();
+        String jsonString = controllerDataForTests.getGivenExplanations();
+        JsonNode toBeTested = stringToJsonNode.convertStingToJsonNode(jsonString);
+        Mockito.when(explanationSparqlRepository.executeSparqlQuery(any())).thenReturn(toBeTested);
+        Mockito.when(explanationService.buildSparqlQuery(any(),any())).thenReturn("example Sparql-query");
+    }
+    @Test
+    public void explainQueryBuilderTest() throws Exception {
+        setupExplainQueryBuilderTest();
+        String qbResourceInControllerDataForTests = "http://dbpedia.org/resource/String_theory";
+        String expectedResult = "The component created the following SPARQL queries: '" + qbResourceInControllerDataForTests + "'\n";
+        MvcResult result = mockMvc.perform(get("/explanationforqbsimplerealnameofsuperhero")
+                .param("graphID", "example"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String resultBody = result.getResponse().getContentAsString();
+
+        assertEquals(expectedResult, resultBody);
     }
 
 
