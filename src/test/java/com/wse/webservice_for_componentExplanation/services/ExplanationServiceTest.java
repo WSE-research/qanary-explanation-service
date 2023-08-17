@@ -9,41 +9,27 @@ import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.riot.RDFLanguages;
-import org.apache.jena.riot.RDFParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.event.annotation.BeforeTestMethod;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class ExplanationServiceTest {
-    private static final String graphID = "testID123-.urn://21äö";
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
 
     /**
@@ -197,31 +183,6 @@ public class ExplanationServiceTest {
             explanationServiceMock = mock(ExplanationService.class);
             Mockito.when(explanationServiceMock.computeExplanationObjects(any(), any(), any())).thenReturn(explanationObjects);
         }
-
-        /**
-         * Not working now, result becomes null
-         * - explanationServiceMock.explainSepcificComponent call returns null since it`s a mock
-         * - explanationService.explainsepcifiacComponent wouldn't respect the defined return value in setup-method
-         *
-         * @throws IOException
-         */
-        @Test
-        void explainSpecificComponentTest() throws IOException {
-            //   String result = explanationServiceMock.explainSpecificComponent("",componentURI,"");
-            // assertNotNull(result);
-        }
     }
-
-    /*
-        @Test
-        public void convertNullToExplanationObjects() throws JsonProcessingException {
-            JsonNode jsonNode = null;
-
-            ExplanationObject[] explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
-
-            assertNull(explanationObjects);
-        }
-        */
-
 
 }
