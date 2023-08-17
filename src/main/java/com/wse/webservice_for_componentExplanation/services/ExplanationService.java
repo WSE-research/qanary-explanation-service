@@ -15,11 +15,12 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 
 @Service
 public class ExplanationService {
 
-    private static final String FILE_SPARQL_QUERY = "/queries/explanation_sparql_query.rq";
+    // private static final String FILE_SPARQL_QUERY = "/queries/explanation_for_dbpediaSpotlight_sparql_query.rq";
     private final ObjectMapper objectMapper;
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
@@ -32,12 +33,9 @@ public class ExplanationService {
      * @param graphID graphID to work with
      * @return textual explanation // TODO: change later, depending on needs
      */
-    public ExplanationObject[] explainComponent(String graphID) throws IOException {
+    public ExplanationObject[] explainComponentDBpediaSpotlight(String graphID, String rawQuery) throws IOException {
 
-        String query = buildSparqlQuery(graphID);
-        JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
-
-        ExplanationObject[] explanationObjects = convertToExplanationObjects(explanationObjectsJsonNode);
+        ExplanationObject[] explanationObjects = getExplanationObjects(graphID, rawQuery);
         String question;
 
         if (explanationObjects != null && explanationObjects.length > 0) {
@@ -46,6 +44,36 @@ public class ExplanationService {
         } else
             return null;
 
+    }
+
+    public String explainQueryBuilder(String graphID, String rawQuery) throws IOException {
+        ExplanationObject[] explanationObjects = getExplanationObjects(graphID, rawQuery);
+
+        // Restriction to QueryBuilder
+        String qb = "QB";
+
+        // filter Explanationobjects for objects with annotations made by query builder
+        explanationObjects = Arrays.stream(explanationObjects).filter(x -> x.getCreatedBy().getValue().contains(qb)).toArray(ExplanationObject[]::new);
+
+        // create the explanation
+        // adds the sparql-queries if there are any to add, else return null
+        if (explanationObjects.length > 0) {
+            StringBuilder explanation = new StringBuilder("The component created the following SPARQL queries: '");
+            for (ExplanationObject object : explanationObjects
+            ) {
+                explanation.append(object.getBody().getValue()).append("'\n");
+            }
+            return explanation.toString();
+        } else
+            return null;
+    }
+
+    public ExplanationObject[] getExplanationObjects(String graphID, String rawQuery) throws IOException {
+        // Get annotation properties with explanation_for_dbpediaSpotlight_sparql_query.rq query
+        String query = buildSparqlQuery(graphID, rawQuery);
+        JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
+
+        return convertToExplanationObjects(explanationObjectsJsonNode);
     }
 
     /**
@@ -82,21 +110,28 @@ public class ExplanationService {
      * @param graphID given graphID
      * @return query with params set (graphURI)
      */
-    public String buildSparqlQuery(String graphID) throws IOException {
+    public String buildSparqlQuery(String graphID, String rawQuery) throws IOException {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
 
-        return QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
+        return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
     }
 
+    /**
+     * converts a JsonNode into an ArrayNode which contains the objects properties as a Array and converts there into an Array of ExplanationObject objects
+     *
+     * @param explanationObjectsJsonNode JSON Node with explanationObject properties
+     * @return Array of ExplanationObject objects
+     * @throws JsonProcessingException
+     */
     public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) throws JsonProcessingException {
         try {
             // Handle mapping for LocalDateTime
             objectMapper.registerModule(new JavaTimeModule());
             // select the bindings-field inside the Json(Node)
             ArrayNode resultsArraynode = (ArrayNode) explanationObjectsJsonNode.get("bindings");
-
-            return objectMapper.treeToValue(resultsArraynode, ExplanationObject[].class);
+            ExplanationObject[] explanationObjects = objectMapper.treeToValue(resultsArraynode, ExplanationObject[].class);
+            return explanationObjects;
         } catch (Exception e) {
             return null;
         }

@@ -1,20 +1,30 @@
 package com.wse.webservice_for_componentExplanation.pojos;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wse.webservice_for_componentExplanation.pojos.ResultObjectDTOs.*;
 
 public class ExplanationObject {
 
+    // Idea: Set standard properties and additional properties as ignorable, anyway, for specific purposes they can still be accessed
+    // like if an Output sparql query varies within different components
+
     @JsonProperty("annotationId")
     private AnnotationId annotationId;
+    @JsonIgnoreProperties
     private Source source;
+    @JsonIgnoreProperties
     private Start start;
+    @JsonIgnoreProperties
     private End end;
     private Body body;
+    @JsonIgnoreProperties
     private Type type;
     private CreatedBy createdBy;
     private CreatedAt createdAt;
     private Score score;
+    @JsonIgnoreProperties
     private String entity;
 
     // default constructor
