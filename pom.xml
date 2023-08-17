@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.wse</groupId>
     <artifactId>webservice_for_componentExplanation</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <name>webservice_for_componentExplanation</name>
     <description>Project to retrieve any annotations and explanations from an graphID</description>
     <properties>
