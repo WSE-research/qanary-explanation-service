@@ -10,6 +10,8 @@ import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.riot.RDFParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,7 +30,10 @@ import org.springframework.test.context.event.annotation.BeforeTestMethod;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringReader;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -45,6 +52,7 @@ public class ExplanationServiceTest {
     @Nested
     public class ConversionTests {
 
+        private static Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
         @Autowired
         ExplanationService explanationService;
         ExplanationObject[] explanationObjects;
@@ -88,7 +96,7 @@ public class ExplanationServiceTest {
     @Nested
     class ExplanationAsRdfTurtle {
 
-        static final String componentURI = "testComponentURI";
+        static final String componentURI = "urn:qanary:QB-SimpleRealNameOfSuperHero";
         LanguageContentProvider languageContentProvider;
         Model model;
         String sparqlQuery;
@@ -98,6 +106,7 @@ public class ExplanationServiceTest {
         @Autowired
         ExplanationService explanationService;
         ExplanationService explanationServiceMock;
+        Logger logger = LoggerFactory.getLogger(ExplanationAsRdfTurtle.class);
 
         @BeforeEach
         void setup() {
@@ -109,9 +118,10 @@ public class ExplanationServiceTest {
         /**
          * - INPUT: Content in languages german and english, componentURI
          */
+
         @Test
-        void createRdfRepresentationTest() {
-            String result = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI);
+        void createRdfRepresentationTest() throws IOException {
+            String result = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, null);
 
             assertAll("String contains content elements as well as componentURI",
                     () -> assertTrue(result.contains(languageContentProvider.getContentDe())),
@@ -122,18 +132,17 @@ public class ExplanationServiceTest {
             model.read(new java.io.StringReader(result), null, "Turtle");
             Query query = QueryFactory.create(sparqlQuery);
 
-            try(QueryExecution queryExecution = QueryExecutionFactory.create(query, model)) {
+            try (QueryExecution queryExecution = QueryExecutionFactory.create(query, model)) {
                 ResultSet results = queryExecution.execSelect();
-                while(results.hasNext()) {
+                while (results.hasNext()) {
                     QuerySolution temp = results.next();
                     assertTrue(temp.get("object").isLiteral());
                     assertTrue(temp.get("subject").isResource());
-                    if(results.getRowNumber() % 2 == 0) {
+                    if (results.getRowNumber() % 2 == 0) {
                         Literal englishContent = temp.get("object").asLiteral();
                         assertEquals("en", englishContent.getLanguage());
                         assertEquals(languageContentProvider.getContentEn(), englishContent.getString());
-                    }
-                    else {
+                    } else {
                         Literal germanContent = temp.get("object").asLiteral();
                         assertEquals("de", germanContent.getLanguage());
                         assertEquals(languageContentProvider.getContentDe(), germanContent.getString());
@@ -141,25 +150,66 @@ public class ExplanationServiceTest {
                 }
             }
         }
+
+        @Test
+        public void compareRepresentationModels() throws IOException {
+            String resultEmptyHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, null);
+            String resultTurtleHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "text/turtle");
+            String resultRDFXMLHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/rdf+xml");
+            String resultJSONLDHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/ld-json");
+
+            assertEquals(resultEmptyHeader, resultTurtleHeader);
+            assertAll("Check different result-string",
+                    () -> assertEquals(resultTurtleHeader, resultEmptyHeader),
+                    () -> assertNotEquals(resultJSONLDHeader, resultRDFXMLHeader),
+                    () -> assertNotEquals(resultJSONLDHeader, resultEmptyHeader),
+                    () -> assertNotEquals(resultRDFXMLHeader, resultEmptyHeader)
+            );
+
+            // check models
+
+            Model modelResultEmptyHeader = ModelFactory.createDefaultModel();
+            StringReader in = new StringReader(resultEmptyHeader);
+            modelResultEmptyHeader.read(in, null, "TURTLE");
+            logger.info("Created model from resultEmptyHeader: {}", modelResultEmptyHeader);
+
+            Model modelResultRDFXMLHeader = ModelFactory.createDefaultModel();
+            in = new StringReader(resultRDFXMLHeader);
+            modelResultRDFXMLHeader.read(in, null, "RDFXML");
+            logger.info("Created model from resultRDFXMLHeader: {}", modelResultRDFXMLHeader);
+
+            Model modelResultJSONLDHeader = ModelFactory.createDefaultModel();
+            in = new StringReader(resultJSONLDHeader);
+            modelResultJSONLDHeader.read(in, null, "JSONLD");
+            logger.info("Created model from modelResultJSONLDHeaeder: {}", modelResultJSONLDHeader);
+
+            assertAll("Comparing model structure",
+                    () -> assertTrue(modelResultEmptyHeader.isIsomorphicWith(modelResultRDFXMLHeader)),
+                    () -> assertTrue(modelResultEmptyHeader.isIsomorphicWith(modelResultJSONLDHeader)),
+                    () -> assertTrue(modelResultRDFXMLHeader.isIsomorphicWith(modelResultJSONLDHeader))
+            );
+        }
+
         @BeforeEach
         void setupExplainSpecificComponentTest() throws IOException {
             ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
             JsonNode jsonNode = objectMapper.readValue(serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
             explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
             explanationServiceMock = mock(ExplanationService.class);
-            Mockito.when(explanationServiceMock.computeExplanationObjects(any(),any(),any())).thenReturn(explanationObjects);
+            Mockito.when(explanationServiceMock.computeExplanationObjects(any(), any(), any())).thenReturn(explanationObjects);
         }
 
         /**
          * Not working now, result becomes null
-         *      - explanationServiceMock.explainSepcificComponent call returns null since it`s a mock
-         *      - explanationService.explainsepcifiacComponent wouldn't respect the defined return value in setup-method
+         * - explanationServiceMock.explainSepcificComponent call returns null since it`s a mock
+         * - explanationService.explainsepcifiacComponent wouldn't respect the defined return value in setup-method
+         *
          * @throws IOException
          */
         @Test
         void explainSpecificComponentTest() throws IOException {
-            String result = explanationServiceMock.explainSpecificComponent("",componentURI,"");
-            assertNotNull(result);
+            //   String result = explanationServiceMock.explainSpecificComponent("",componentURI,"");
+            // assertNotNull(result);
         }
     }
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.stardog.stark.impl.StringLiteral;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
@@ -12,24 +13,36 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.LiteralImpl;
 import org.apache.jena.rdf.model.impl.PropertyImpl;
 import org.apache.jena.rdf.model.impl.ResourceImpl;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.DynamicModel;
+import org.eclipse.rdf4j.model.impl.DynamicModelFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.ModelBuilder;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.rio.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.wse.webservice_for_componentExplanation.repositories.ExplanationSparqlRepository;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.StringWriter;
+import java.io.*;
+import java.net.URL;
 import java.text.DecimalFormat;
+
+import static org.eclipse.rdf4j.model.util.Values.bnode;
 
 @Service
 public class ExplanationService {
 
     private final ObjectMapper objectMapper;
+    Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
-
-    private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
-    private static final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
 
     public ExplanationService() {
         objectMapper = new ObjectMapper();
@@ -37,8 +50,9 @@ public class ExplanationService {
 
     /**
      * Currently explains the DBpediaSpotlight-component since the query has the specific structure
+     *
      * @param rawQuery specific Query which is being used fetching data from triplestore (in this case dbpedia sprql query used) -> defined in Controller
-     * @param graphID graphID to work with
+     * @param graphID  graphID to work with
      * @return textual explanation // TODO: change later, depending on needs
      */
     public ExplanationObject[] explainComponent(String graphUri, String rawQuery) throws IOException {
@@ -46,10 +60,9 @@ public class ExplanationService {
         ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, null, rawQuery);
 
         if (explanationObjects != null && explanationObjects.length > 0) {
-            if(explanationObjects[0].getSource() != null) {
+            if (explanationObjects[0].getSource() != null) {
                 return createEntitiesFromQuestion(explanationObjects, getQuestion(explanationObjects[0]));
-            }
-            else
+            } else
                 return explanationObjects;
         } else
             return null;
@@ -57,18 +70,22 @@ public class ExplanationService {
 
     /**
      * Computes an textual explanation for a specific component on a specific graphID
-     * @param graphUri specific graphURI
+     *
+     * @param graphUri     specific graphURI
      * @param componentUri specific componentURI
-     * @param rawQuery Used query to fetch needed information
+     * @param rawQuery     Used query to fetch needed information
      * @return representation as RDF Turtle
      * @throws IOException IOException
      */
-    public String explainSpecificComponent(String graphUri, String componentUri, String rawQuery) throws IOException {
-
+    public String explainSpecificComponent(String graphUri, String componentUri, String rawQuery, String header) throws IOException {
+        logger.info("Header: {}", header);
         ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, componentUri, rawQuery);
         String contentDe = convertToTextualExplanation(explanationObjects, "de", componentUri);
         String contentEn = convertToTextualExplanation(explanationObjects, "en", componentUri);
-        return createRdfRepresentation(contentDe, contentEn, componentUri);
+
+        String resultExplanation = createRdfRepresentation(contentDe, contentEn, componentUri, header);
+
+        return resultExplanation;
     }
 
     public ExplanationObject[] computeExplanationObjects(String graphUri, String componentUri, String rawQuery) throws IOException {
@@ -77,15 +94,65 @@ public class ExplanationService {
         return convertToExplanationObjects(explanationObjectsJsonNode);
     }
 
+    /* Approach with rdf4j
+    public String createRDFWithrdf4j(String turtle) throws IOException {
+
+        ModelBuilder builder = new ModelBuilder();
+        ValueFactory factory = SimpleValueFactory.getInstance();
+        //org.eclipse.rdf4j.model.Model model = new DynamicModelFactory().createEmptyModel();
+        org.eclipse.rdf4j.model.Model model;
+
+        // set namespaces
+        builder.setNamespace("rdfs", RDFS_NAMESPACE);
+        builder.setNamespace("explanation",EXPLANATION_NAMESPACE);
+
+        // set IRIs
+        IRI component = factory.createIRI(componentURI);
+        IRI hasExplanationForCreatedData = factory.createIRI("explanation:hasExplanationForCreatedData");
+
+        // set literals
+        org.eclipse.rdf4j.model.Literal contentDeLiteral = factory.createLiteral(contentDe, "de");
+        org.eclipse.rdf4j.model.Literal contentEnLiteral = factory.createLiteral(contentEn, "en");
+
+       // model.add(component,hasExplanationForCreatedData,contentDeLiteral);
+       // model.add(component,hasExplanationForCreatedData,contentEnLiteral);
+
+        builder.subject(component)
+                        .add(hasExplanationForCreatedData,contentDeLiteral)
+                                .add(hasExplanationForCreatedData, contentEnLiteral);
+
+        model = builder.build();
+        FileOutputStream out = new FileOutputStream("rdfFile.ttl");
+        Rio.write(model, out, RDFFormat.TURTLE);
+
+
+        // create Parser to read the turtle file
+        StringReader in = new StringReader(turtle);
+        // String is passed in Turtle format
+        RDFParser rdfParser = Rio.createParser(RDFFormat.TURTLE);
+        RDFWriter rdfWriter = Rio.createWriter(RDFFormat.RDFXML, new FileWriter("rdf.rdf"));
+
+        rdfParser.setRDFHandler(rdfWriter);
+        try{
+            rdfParser.parse(in,"");
+        }catch (RDFHandlerException e) {
+            logger.info("Something didnt work out");
+        }
+        return "";
+
+    }
+    */
 
     /**
-     *
-     * @param contentDe Textual representation of the explanation in german
-     * @param contentEn Textual representation of the explanation in english
+     * @param contentDe    Textual representation of the explanation in german
+     * @param contentEn    Textual representation of the explanation in english
      * @param componentURI component URI
      * @return String formatted as RDF-Turtle
      */
-    public String createRdfRepresentation(String contentDe, String contentEn, String componentURI) {
+    public String createRdfRepresentation(String contentDe, String contentEn, String componentURI, String header) throws IOException {
+
+        final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+        final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
 
         Model model = ModelFactory.createDefaultModel();
 
@@ -94,7 +161,7 @@ public class ExplanationService {
         model.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
 
         // Literals for triples with LanguageKey
-        Literal contentDeLiteral = model.createLiteral(contentDe,"de");
+        Literal contentDeLiteral = model.createLiteral(contentDe, "de");
         Literal contentEnLiteral = model.createLiteral(contentEn, "en");
 
         // Create property 'hasExplanationForCreatedDataProperty'
@@ -107,14 +174,46 @@ public class ExplanationService {
 
         // add triples to the model
         model.add(hasExplanationForCreatedDataProperty, rdfsSubPropertyOf, hasExplanation);
-        model.add(model.createStatement(componentUriResource,hasExplanationForCreatedDataProperty, contentDeLiteral));
-        model.add(model.createStatement(componentUriResource,hasExplanationForCreatedDataProperty, contentEnLiteral));
+        model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentDeLiteral));
+        model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentEnLiteral));
 
-        // Write Model as Turtle to a String
+        return convertToDesiredFormat(header, model);
+    }
+
+    /**
+     * Converts model to desired format (RDFXML, Turtle,
+     *
+     * @param header accept header
+     * @param model  Model whicht contains created triples
+     * @return String in desired output format
+     */
+    public String convertToDesiredFormat(String header, Model model) {
         StringWriter writer = new StringWriter();
-        model.write(writer, "Turtle");
 
-        return writer.toString();
+        // if no header is provided, return as text/turtle
+        if (header == null) {
+            model.write(writer, "TURTLE");
+            return writer.toString();
+        }
+
+        switch (header) {
+            case "application/rdf+xml": {
+                model.write(writer, "RDFXML");
+                return writer.toString();
+            }
+            case "text/turtle": {
+                model.write(writer, "TURTLE");
+                return writer.toString();
+            }
+            case "application/ld-json": {
+                model.write(writer, "JSONLD");
+                return writer.toString();
+            }
+            default: {
+                logger.warn("Not supported Type in Accept Header");
+                return null;
+            }
+        }
     }
 
     /**
@@ -154,7 +253,7 @@ public class ExplanationService {
     public String buildSparqlQuery(String graphID, String componentUri, String rawQuery) throws IOException {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
-        if(componentUri != null)    // Extension for compatibility w/ explanation for specific component
+        if (componentUri != null)    // Extension for compatibility w/ explanation for specific component
             bindingsForSparqlQuery.add("componentURI", ResourceFactory.createResource(componentUri));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
@@ -175,16 +274,15 @@ public class ExplanationService {
 
 
     /**
-     *
      * @param explanationObjects Objects gathered from previous JsonNode, contains all information
-     * @param lang desired language, hard coded translation and used attributes from the objects
-     * @param componentURI needed for string
+     * @param lang               desired language, hard coded translation and used attributes from the objects
+     * @param componentURI       needed for string
      * @return textual representation for the objects
      */
     public String convertToTextualExplanation(ExplanationObject[] explanationObjects, String lang, String componentURI) {
         DecimalFormat df = new DecimalFormat("#.####");
         StringBuilder textualRepresentation = null;
-        switch(lang) {
+        switch (lang) {
             case "de": {
                 textualRepresentation = new StringBuilder("Die Komponente " + componentURI + " hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt: ");
                 for (ExplanationObject obj : explanationObjects
@@ -201,10 +299,11 @@ public class ExplanationService {
                 }
                 break;
             }
-            default: break;
+            default:
+                break;
         }
-
-        return textualRepresentation.toString();
+        return textualRepresentation.toString().replaceAll("\n", " ").replaceAll("\\\\", "a");
     }
+
 
 }
