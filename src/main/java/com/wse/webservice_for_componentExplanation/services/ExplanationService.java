@@ -20,7 +20,7 @@ import java.util.Arrays;
 @Service
 public class ExplanationService {
 
-   // private static final String FILE_SPARQL_QUERY = "/queries/explanation_sparql_query.rq";
+    // private static final String FILE_SPARQL_QUERY = "/queries/explanation_for_dbpediaSpotlight_sparql_query.rq";
     private final ObjectMapper objectMapper;
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
@@ -46,28 +46,30 @@ public class ExplanationService {
 
     }
 
-    public String explainQueryBuilder(String graphID,String rawQuery) throws IOException {
+    public String explainQueryBuilder(String graphID, String rawQuery) throws IOException {
         ExplanationObject[] explanationObjects = getExplanationObjects(graphID, rawQuery);
 
         // Restriction to QueryBuilder
         String qb = "QB";
 
-            explanationObjects = Arrays.stream(explanationObjects).filter(x -> x.getCreatedBy().getValue().contains(qb)).toArray(ExplanationObject[]::new);
+        // filter Explanationobjects for objects with annotations made by query builder
+        explanationObjects = Arrays.stream(explanationObjects).filter(x -> x.getCreatedBy().getValue().contains(qb)).toArray(ExplanationObject[]::new);
 
-            if(explanationObjects != null) {
-                StringBuilder explanation = new StringBuilder("The component created the following SPARQL queries: '");
-                for (ExplanationObject object : explanationObjects
-                ) {
-                    explanation.append(object.getBody().getValue()).append("'\n");
-                }
-                return explanation.toString();
+        // create the explanation
+        // adds the sparql-queries if there are any to add, else return null
+        if (explanationObjects.length > 0) {
+            StringBuilder explanation = new StringBuilder("The component created the following SPARQL queries: '");
+            for (ExplanationObject object : explanationObjects
+            ) {
+                explanation.append(object.getBody().getValue()).append("'\n");
             }
-            else
-                return "Wrong component";
+            return explanation.toString();
+        } else
+            return null;
     }
 
     public ExplanationObject[] getExplanationObjects(String graphID, String rawQuery) throws IOException {
-        // Get annotation properties with explanation_sparql_query.rq query
+        // Get annotation properties with explanation_for_dbpediaSpotlight_sparql_query.rq query
         String query = buildSparqlQuery(graphID, rawQuery);
         JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
 
@@ -115,6 +117,13 @@ public class ExplanationService {
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
     }
 
+    /**
+     * converts a JsonNode into an ArrayNode which contains the objects properties as a Array and converts there into an Array of ExplanationObject objects
+     *
+     * @param explanationObjectsJsonNode JSON Node with explanationObject properties
+     * @return Array of ExplanationObject objects
+     * @throws JsonProcessingException
+     */
     public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) throws JsonProcessingException {
         try {
             // Handle mapping for LocalDateTime
