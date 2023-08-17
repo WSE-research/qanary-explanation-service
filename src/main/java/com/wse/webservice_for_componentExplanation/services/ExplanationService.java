@@ -205,7 +205,7 @@ public class ExplanationService {
                 model.write(writer, "TURTLE");
                 return writer.toString();
             }
-            case "application/ld-json": {
+            case "application/ld+json": {
                 model.write(writer, "JSONLD");
                 return writer.toString();
             }

@@ -156,7 +156,7 @@ public class ExplanationServiceTest {
             String resultEmptyHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, null);
             String resultTurtleHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "text/turtle");
             String resultRDFXMLHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/rdf+xml");
-            String resultJSONLDHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/ld-json");
+            String resultJSONLDHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/ld+json");
 
             assertEquals(resultEmptyHeader, resultTurtleHeader);
             assertAll("Check different result-string",
@@ -166,8 +166,7 @@ public class ExplanationServiceTest {
                     () -> assertNotEquals(resultRDFXMLHeader, resultEmptyHeader)
             );
 
-            // check models
-
+            // create und compare models
             Model modelResultEmptyHeader = ModelFactory.createDefaultModel();
             StringReader in = new StringReader(resultEmptyHeader);
             modelResultEmptyHeader.read(in, null, "TURTLE");
