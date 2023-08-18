@@ -41,7 +41,7 @@ public class GetAnnotationServiceTest {
         void setup() throws IOException {
             serviceDataForTests = new ServiceDataForTests();
             ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
+            JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForResultObjects(), JsonNode.class);
 
             explanationObjects = getAnnotationsService.mapResponseToObjectArray(jsonNode);
         }

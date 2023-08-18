@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
+import com.wse.webservice_for_componentExplanation.repositories.AnnotationSparqlRepository;
 import com.wse.webservice_for_componentExplanation.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
+import java.util.*;
 
 @Service
 public class ExplanationService {
@@ -26,6 +28,8 @@ public class ExplanationService {
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
+    @Autowired
+    private GetAnnotationsService getAnnotationsService;
 
     public ExplanationService() {
         objectMapper = new ObjectMapper();
@@ -273,6 +277,7 @@ public class ExplanationService {
                 ) {
                     textualRepresentation.append(" Zeitpunkt: '").append(obj.getCreatedAt().getValue().toString()).append("' | Konfidenz: ").append(df.format(obj.getScore().getValue() * 100)).append(" %").append(" | Inhalt: ").append(obj.getBody().getValue());
                 }
+                /* NEU */
                 break;
             }
             case "en": {
@@ -301,11 +306,49 @@ public class ExplanationService {
         // returns us ExplanationObject[], with all required properties to craft explanation
 
         // Step 1: get involved components
-        GetAnnotationsService getAnnotationsService = new GetAnnotationsService();
         ExplanationObject[] explanationObjects = getAnnotationsService.getAnnotations(graphId);
 
-        //
+        // Step 2: create models on these
+        // group explanationobject list by componentURI
+        logger.info("List: {}, {}",explanationObjects[0],explanationObjects[1]);
+        List<ExplanationObject> explanationObjectList = Arrays.asList(explanationObjects);
+        logger.info("Map: {}",explanationObjectList.toString());
+        // String represents the componentURI // TODO: Convert in an Resource, IRI, URI?
+        // with the list of objects
+        Map<String, List<ExplanationObject>> groupedMap = new HashMap<>();
+        explanationObjectList.forEach(item -> {
+            if(groupedMap.containsKey(item.getCreatedBy().getValue())) {
+                groupedMap.get(item.getCreatedBy().getValue()).add(item);
+            } else {
+                List<ExplanationObject> explanationObjectsSpecific = new ArrayList<>();
+                groupedMap.put(item.getCreatedBy().getValue(),explanationObjectsSpecific);
+            }
+        });
+
+        List<Model> models = getModelsFromMap(groupedMap);
+
+        // sort out the
+
     }
 
+    /**
+     *  Create models (Models contain triples::Statement)
+     *  One model represents all explanation for one component, furthermore every explanation is one triple (we have de+eng, means 2 triples for one
+     *  semantic equal explanation)
+     * @param groupedMap Contains key-value pairs with the key representing the componentURI for the value which represents ExplanationObjects which
+     *                   rely to the (in the key) specified component
+     * @return List of models::Model
+     */
+    public List<Model> getModelsFromMap(Map<String,List<ExplanationObject>> groupedMap) {
+        List<Model> models = new ArrayList<>();
+        groupedMap.forEach((k,v) -> { // creates models and inside creating the german as well as the english explanation
+            try {
+                models.add(createRdfRepresentation(convertToTextualExplanation(v.toArray(new ExplanationObject[0]),"de",k), convertToTextualExplanation(v.toArray(new ExplanationObject[0]),"en",k),k));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return models;
+    }
 
 }

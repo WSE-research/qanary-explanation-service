@@ -8,6 +8,8 @@ import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,7 @@ public class GetAnnotationsService {
     AnnotationSparqlRepository annotationSparqlRepository;
     private static final String FILE_SPARQL_QUERY = "/queries/annotations_sparql_query.rq";
     private final ObjectMapper objectMapper;
+    private Logger logger = LoggerFactory.getLogger(GetAnnotationsService.class);
 
     public GetAnnotationsService() {
         objectMapper = new ObjectMapper();
@@ -44,8 +47,9 @@ public class GetAnnotationsService {
      */
     public ExplanationObject[] getAnnotations(String graphID) throws IOException {
         String query = createQuery(graphID);
+        logger.info("Created query {}", query);
         JsonNode resultObjectsJsonNode = annotationSparqlRepository.executeSparqlQuery(query);
-
+        logger.info("Jsonnode: {}", resultObjectsJsonNode);
         if (resultObjectsJsonNode != null)
             return mapResponseToObjectArray(resultObjectsJsonNode);
         else

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
+import com.wse.webservice_for_componentExplanation.repositories.AnnotationSparqlRepository;
+import jakarta.json.Json;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
@@ -14,12 +16,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -27,8 +32,10 @@ import java.util.Iterator;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class ExplanationServiceTest {
@@ -185,6 +192,35 @@ public class ExplanationServiceTest {
             explanationServiceMock = mock(ExplanationService.class);
             Mockito.when(explanationServiceMock.computeExplanationObjects(any(), any(), any())).thenReturn(explanationObjects);
         }
+    }
+
+    @Nested
+    class explainQaSystemTests {
+
+        @Autowired
+        MockMvc mockMvc;
+        @Mock
+        AnnotationSparqlRepository annotationSparqlRepository;
+        final String graphID = "exampleGraphID";
+        JsonNode jsonNode;
+        @BeforeEach
+        void setup() throws IOException {
+            jsonNode = null; // TODO:
+            when(annotationSparqlRepository.executeSparqlQuery(anyString())).thenReturn(jsonNode);
+        }
+
+        /**
+         * Make a get-request w/ mockmvc and mock real api calls to return
+         *      * case sparql execution: JsonNode
+         *      *
+
+        @Test
+        void explainQaSystemTest() throws Exception {
+            MvcResult result = mockMvc.perform(get("/explainqasystem")
+                    .param("graphID", graphID))
+                    .andReturn();
+        }
+        */
     }
 
 }

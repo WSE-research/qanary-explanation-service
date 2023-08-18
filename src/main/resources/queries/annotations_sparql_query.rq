@@ -9,5 +9,7 @@ WHERE {
     ?annotationId oa:hasTarget ?target.
     ?annotationId oa:annotatedBy $createdBy .
     ?annotationId oa:annotatedAt $createdAt .
+    OPTIONAL {
     ?annotationId qa:score ?score .
+    }
 }
