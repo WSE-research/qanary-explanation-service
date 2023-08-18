@@ -247,6 +247,12 @@ public class ExplanationService {
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
     }
 
+    /**
+     * Convert JsonNode from the SPARQL-Query execution to a Array of ExplanationObject-objects
+     * @param explanationObjectsJsonNode
+     * @return
+     * @throws JsonProcessingException
+     */
     public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) throws JsonProcessingException {
         try {
             // Handle mapping for LocalDateTime
@@ -277,7 +283,6 @@ public class ExplanationService {
                 ) {
                     textualRepresentation.append(" Zeitpunkt: '").append(obj.getCreatedAt().getValue().toString()).append("' | Konfidenz: ").append(df.format(obj.getScore().getValue() * 100)).append(" %").append(" | Inhalt: ").append(obj.getBody().getValue());
                 }
-                /* NEU */
                 break;
             }
             case "en": {
@@ -309,12 +314,13 @@ public class ExplanationService {
         ExplanationObject[] explanationObjects = getAnnotationsService.getAnnotations(graphId);
 
         // Step 2: create models on these
-        // group explanationobject list by componentURI
-        logger.info("List: {}, {}",explanationObjects[0],explanationObjects[1]);
+
+        // convert Array to List for further processing
         List<ExplanationObject> explanationObjectList = Arrays.asList(explanationObjects);
         logger.info("Map: {}",explanationObjectList.toString());
-        // String represents the componentURI // TODO: Convert in an Resource, IRI, URI?
-        // with the list of objects
+
+        // group explanationObjects by componentURI as Map
+        // Key represents the componentURI, Value the List of ExplanationObject(s) // TODO: Convert in an Resource, IRI, URI?
         Map<String, List<ExplanationObject>> groupedMap = new HashMap<>();
         explanationObjectList.forEach(item -> {
             if(groupedMap.containsKey(item.getCreatedBy().getValue())) {
@@ -325,9 +331,13 @@ public class ExplanationService {
             }
         });
 
+        // process the components and their content to a explanation and create Models of that
         List<Model> models = getModelsFromMap(groupedMap);
 
-        // sort out the
+        // TODO: sort out the unnecessary triples or: dont repeat them (done automatically by Parser?? Like its checking s,p,o isn't it?)
+
+        // TODO: create final Model which can then be returned or post-processed to the desired format (RDFXML,Turtle,JSONLD)
+
 
     }
 
