@@ -66,7 +66,8 @@ public class ExplanationService {
         String contentDe = convertToTextualExplanation(explanationObjects, "de", componentUri);
         String contentEn = convertToTextualExplanation(explanationObjects, "en", componentUri);
 
-        String resultExplanation = createRdfRepresentation(contentDe, contentEn, componentUri, header);
+        //String resultExplanation = createRdfRepresentation(contentDe, contentEn, componentUri, header);
+        String resultExplanation = convertToDesiredFormat(header,createRdfRepresentation(contentDe,contentEn,componentUri));
 
         return resultExplanation;
     }
@@ -132,7 +133,7 @@ public class ExplanationService {
      * @param componentURI component URI
      * @return String formatted as RDF-Turtle
      */
-    public String createRdfRepresentation(String contentDe, String contentEn, String componentURI, String header) throws IOException {
+    public Model createRdfRepresentation(String contentDe, String contentEn, String componentURI) throws IOException {
 
         final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
         final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
@@ -160,7 +161,7 @@ public class ExplanationService {
         model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentDeLiteral));
         model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentEnLiteral));
 
-        return convertToDesiredFormat(header, model);
+        return model;
     }
 
     /**
@@ -286,6 +287,24 @@ public class ExplanationService {
                 break;
         }
         return textualRepresentation.toString().replaceAll("\n", " ").replaceAll("\\\\", "a");
+    }
+
+    /**
+     * Explains a qa-system in the following steps:
+     * 1. find out which components were involved
+     * 2. create a explanation for every involved component
+     * 3. create a rdf model which describes that
+     * @param graphId the only paramter given for a qa-system
+     */
+    public void explainQaSystem(String graphId) throws IOException {
+        // Get involved components with request of any made annotations
+        // returns us ExplanationObject[], with all required properties to craft explanation
+
+        // Step 1: get involved components
+        GetAnnotationsService getAnnotationsService = new GetAnnotationsService();
+        ExplanationObject[] explanationObjects = getAnnotationsService.getAnnotations(graphId);
+
+        //
     }
 
 

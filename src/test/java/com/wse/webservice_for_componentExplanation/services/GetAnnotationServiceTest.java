@@ -2,7 +2,7 @@ package com.wse.webservice_for_componentExplanation.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.webservice_for_componentExplanation.pojos.ResultObject;
+import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -25,7 +25,7 @@ public class GetAnnotationServiceTest {
     private GetAnnotationsService getAnnotationsService;
 
     @Test
-    public void mapResponseToResultObjectsTest() {
+    public void mapResponseToExplanationObjectsTest() {
         JsonNode jsonNode = null;
 
         Assertions.assertNull(getAnnotationsService.mapResponseToObjectArray(jsonNode));
@@ -34,26 +34,26 @@ public class GetAnnotationServiceTest {
     @Nested
     public class ConversionTests {
 
-        ResultObject[] resultObjects;
+        ExplanationObject[] explanationObjects;
         ServiceDataForTests serviceDataForTests;
 
         @BeforeEach
         void setup() throws IOException {
             serviceDataForTests = new ServiceDataForTests();
             ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForResultObjects(), JsonNode.class);
+            JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
 
-            resultObjects = getAnnotationsService.mapResponseToObjectArray(jsonNode);
+            explanationObjects = getAnnotationsService.mapResponseToObjectArray(jsonNode);
         }
 
         @Test
         public void convertJsonNodeToExplanationObjectsTest() {
 
             assertAll("Correct conversion",
-                    () -> assertEquals(4, resultObjects.length),
-                    () -> assertEquals("http://dbpedia.org/resource/String_theory", resultObjects[0].getBody().getValue()),
-                    () -> assertEquals("http://dbpedia.org/resource/Real_number", resultObjects[1].getBody().getValue()),
-                    () -> assertEquals("http://dbpedia.org/resource/Batman", resultObjects[2].getBody().getValue())
+                    () -> assertEquals(4, explanationObjects.length),
+                    () -> assertEquals("http://dbpedia.org/resource/String_theory", explanationObjects[0].getBody().getValue()),
+                    () -> assertEquals("http://dbpedia.org/resource/Real_number", explanationObjects[1].getBody().getValue()),
+                    () -> assertEquals("http://dbpedia.org/resource/Batman", explanationObjects[2].getBody().getValue())
             );
         }
     }

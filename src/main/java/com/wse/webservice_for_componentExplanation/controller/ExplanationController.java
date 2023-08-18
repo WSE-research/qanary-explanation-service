@@ -69,4 +69,14 @@ public class ExplanationController {
             return new ResponseEntity<>(result, HttpStatus.NOT_ACCEPTABLE);
     }
 
+    @CrossOrigin
+    @GetMapping(value = "/explainqasystem", produces = {
+            "application/rdf+xal",
+            "text/turtle",
+            "application/ld+json"
+    })
+    public ResponseEntity<?> getQaSystemExplanation(@RequestParam String graphURI) {
+        return null;
+    }
+
 }

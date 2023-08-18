@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.wse.webservice_for_componentExplanation.pojos.ResultObject;
+import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.ResourceFactory;
@@ -42,7 +42,7 @@ public class GetAnnotationsService {
      * @param graphID graphID to operate with
      * @return Array of ResultObjects which will be redirected to the controller which returns it to the user
      */
-    public ResultObject[] getAnnotations(String graphID) throws IOException {
+    public ExplanationObject[] getAnnotations(String graphID) throws IOException {
         String query = createQuery(graphID);
         JsonNode resultObjectsJsonNode = annotationSparqlRepository.executeSparqlQuery(query);
 
@@ -52,13 +52,13 @@ public class GetAnnotationsService {
             return null;
     }
 
-    public ResultObject[] mapResponseToObjectArray(JsonNode sparqlResponse) {
+    public ExplanationObject[] mapResponseToObjectArray(JsonNode sparqlResponse) {
         try {
             // Handle mapping for LocalDateTime
             objectMapper.registerModule(new JavaTimeModule());
             // select the bindings-field inside the Json(Node)
             ArrayNode resultsArraynode = (ArrayNode) sparqlResponse.get("bindings");
-            return objectMapper.treeToValue(resultsArraynode, ResultObject[].class);
+            return objectMapper.treeToValue(resultsArraynode, ExplanationObject[].class);
         } catch (Exception e) {
             System.out.println("Error" + e);
             return null;

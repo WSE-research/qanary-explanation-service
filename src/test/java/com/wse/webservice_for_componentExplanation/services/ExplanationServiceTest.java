@@ -9,6 +9,7 @@ import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Statement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Iterator;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -107,7 +109,7 @@ public class ExplanationServiceTest {
 
         @Test
         void createRdfRepresentationTest() throws IOException {
-            String result = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, null);
+            String result = explanationService.convertToDesiredFormat(null,explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertAll("String contains content elements as well as componentURI",
                     () -> assertTrue(result.contains(languageContentProvider.getContentDe())),
@@ -139,10 +141,10 @@ public class ExplanationServiceTest {
 
         @Test
         public void compareRepresentationModels() throws IOException {
-            String resultEmptyHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, null);
-            String resultTurtleHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "text/turtle");
-            String resultRDFXMLHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/rdf+xml");
-            String resultJSONLDHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/ld+json");
+            String resultEmptyHeader = explanationService.convertToDesiredFormat(null,explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultTurtleHeader = explanationService.convertToDesiredFormat("text/turtle",explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultRDFXMLHeader = explanationService.convertToDesiredFormat("application/rdf+xml",explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultJSONLDHeader = explanationService.convertToDesiredFormat("application/ld+json",explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertEquals(resultEmptyHeader, resultTurtleHeader);
             assertAll("Check different result-string",

@@ -1,6 +1,7 @@
 package com.wse.webservice_for_componentExplanation.controller;
 
-import com.wse.webservice_for_componentExplanation.pojos.ResultObject;
+import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
+import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,14 +19,14 @@ public class AnnotationController {
 
     /**
      * @param graphID graphId to work with
-     * @return the list of results (ResultObjects)
+     * @return the list of results (ExplanationObjects)
      */
     @CrossOrigin
     @GetMapping("/getannotations")
-    public ResponseEntity<ResultObject[]> getAnnotations(@RequestParam String graphID) throws IOException {
-        ResultObject[] resultObjects = getAnnotationsService.getAnnotations(graphID);
-        if (resultObjects != null)
-            return new ResponseEntity<>(resultObjects, HttpStatus.OK);
+    public ResponseEntity<ExplanationObject[]> getAnnotations(@RequestParam String graphID) throws IOException {
+        ExplanationObject[] explanationObjects = getAnnotationsService.getAnnotations(graphID);
+        if (explanationObjects != null)
+            return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
         else
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
