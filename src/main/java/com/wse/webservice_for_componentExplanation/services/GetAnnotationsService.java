@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.wse.webservice_for_componentExplanation.pojos.ComponentPojo;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.wse.webservice_for_componentExplanation.repositories.AnnotationSparqlRepository;
 
 import java.io.IOException;
+import java.util.List;
 
 @Service
 public class GetAnnotationsService {
@@ -23,6 +25,7 @@ public class GetAnnotationsService {
     @Autowired
     AnnotationSparqlRepository annotationSparqlRepository;
     private static final String FILE_SPARQL_QUERY = "/queries/annotations_sparql_query.rq";
+    private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
     private final ObjectMapper objectMapper;
     private Logger logger = LoggerFactory.getLogger(GetAnnotationsService.class);
 
@@ -30,12 +33,12 @@ public class GetAnnotationsService {
         objectMapper = new ObjectMapper();
     }
 
-    public String createQuery(String graphID) throws IOException {
+    public String createQuery(String usedQuery, String graphID) throws IOException {
         try {
             QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
             bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
 
-            return QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
+            return QanaryTripleStoreConnector.readFileFromResourcesWithMap(usedQuery, bindingsForSparqlQuery);
         } catch (Exception e) {
             return null;
         }
@@ -46,7 +49,7 @@ public class GetAnnotationsService {
      * @return Array of ResultObjects which will be redirected to the controller which returns it to the user
      */
     public ExplanationObject[] getAnnotations(String graphID) throws IOException {
-        String query = createQuery(graphID);
+        String query = createQuery(FILE_SPARQL_QUERY, graphID);
         logger.info("Created query {}", query);
         JsonNode resultObjectsJsonNode = annotationSparqlRepository.executeSparqlQuery(query);
         logger.info("Jsonnode: {}", resultObjectsJsonNode);
@@ -54,6 +57,17 @@ public class GetAnnotationsService {
             return mapResponseToObjectArray(resultObjectsJsonNode);
         else
             return null;
+    }
+
+    public ComponentPojo[] getUsedComponents(String graphID) throws IOException {
+        String query = createQuery(COMPONENTS_SPARQL_QUERY,graphID);
+        logger.info("Query: {}", query);
+        JsonNode jsonNode = annotationSparqlRepository.executeSparqlQuery(query);
+        logger.info("JsonNode: {}", jsonNode);
+        ArrayNode resultsArrayNode = (ArrayNode) jsonNode.get("bindings");
+        ComponentPojo[] results = objectMapper.treeToValue(resultsArrayNode, ComponentPojo[].class);
+        logger.info("Results: {}", results);
+        return results;
     }
 
     public ExplanationObject[] mapResponseToObjectArray(JsonNode sparqlResponse) {

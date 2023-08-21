@@ -1,5 +1,6 @@
 package com.wse.webservice_for_componentExplanation.controller;
 
+import com.wse.webservice_for_componentExplanation.pojos.ComponentPojo;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,13 @@ public class AnnotationController {
             return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
         else
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+    }
+
+    @CrossOrigin
+    @GetMapping("/components")
+    public ResponseEntity<ComponentPojo[]> getComponents(@RequestParam String graphID) throws IOException {
+        ComponentPojo[] result = getAnnotationsService.getUsedComponents(graphID);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
 

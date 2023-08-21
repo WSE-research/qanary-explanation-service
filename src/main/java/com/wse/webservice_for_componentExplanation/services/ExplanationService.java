@@ -5,17 +5,22 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.wse.webservice_for_componentExplanation.pojos.ComponentPojo;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import com.wse.webservice_for_componentExplanation.repositories.AnnotationSparqlRepository;
 import com.wse.webservice_for_componentExplanation.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.impl.ModelCom;
+import org.apache.jena.rdf.model.impl.SeqImpl;
+import org.apache.jena.vocabulary.RDF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
@@ -76,60 +81,20 @@ public class ExplanationService {
         return resultExplanation;
     }
 
+    //Overloaded explainSpecificComponent-method for further use
+    public Model explainSpecificComponent(String graphUri, String componentUri, String rawQuery) throws IOException {
+        ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, componentUri, rawQuery);
+        String contentDe = convertToTextualExplanation(explanationObjects, "de", componentUri);
+        String contentEn = convertToTextualExplanation(explanationObjects, "en", componentUri);
+
+        return createRdfRepresentation(contentDe,contentEn,componentUri);
+    }
+
     public ExplanationObject[] computeExplanationObjects(String graphUri, String componentUri, String rawQuery) throws IOException {
         String queryToExecute = buildSparqlQuery(graphUri, componentUri, rawQuery);
         JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(queryToExecute);
         return convertToExplanationObjects(explanationObjectsJsonNode);
     }
-
-    /* Approach with rdf4j
-    public String createRDFWithrdf4j(String turtle) throws IOException {
-
-        ModelBuilder builder = new ModelBuilder();
-        ValueFactory factory = SimpleValueFactory.getInstance();
-        //org.eclipse.rdf4j.model.Model model = new DynamicModelFactory().createEmptyModel();
-        org.eclipse.rdf4j.model.Model model;
-
-        // set namespaces
-        builder.setNamespace("rdfs", RDFS_NAMESPACE);
-        builder.setNamespace("explanation",EXPLANATION_NAMESPACE);
-
-        // set IRIs
-        IRI component = factory.createIRI(componentURI);
-        IRI hasExplanationForCreatedData = factory.createIRI("explanation:hasExplanationForCreatedData");
-
-        // set literals
-        org.eclipse.rdf4j.model.Literal contentDeLiteral = factory.createLiteral(contentDe, "de");
-        org.eclipse.rdf4j.model.Literal contentEnLiteral = factory.createLiteral(contentEn, "en");
-
-       // model.add(component,hasExplanationForCreatedData,contentDeLiteral);
-       // model.add(component,hasExplanationForCreatedData,contentEnLiteral);
-
-        builder.subject(component)
-                        .add(hasExplanationForCreatedData,contentDeLiteral)
-                                .add(hasExplanationForCreatedData, contentEnLiteral);
-
-        model = builder.build();
-        FileOutputStream out = new FileOutputStream("rdfFile.ttl");
-        Rio.write(model, out, RDFFormat.TURTLE);
-
-
-        // create Parser to read the turtle file
-        StringReader in = new StringReader(turtle);
-        // String is passed in Turtle format
-        RDFParser rdfParser = Rio.createParser(RDFFormat.TURTLE);
-        RDFWriter rdfWriter = Rio.createWriter(RDFFormat.RDFXML, new FileWriter("rdf.rdf"));
-
-        rdfParser.setRDFHandler(rdfWriter);
-        try{
-            rdfParser.parse(in,"");
-        }catch (RDFHandlerException e) {
-            logger.info("Something didnt work out");
-        }
-        return "";
-
-    }
-    */
 
     /**
      * @param contentDe    Textual representation of the explanation in german
@@ -306,10 +271,11 @@ public class ExplanationService {
      * 3. create a rdf model which describes that
      * @param graphId the only paramter given for a qa-system
      */
-    public void explainQaSystem(String graphId) throws IOException {
+    public void explainQaSystem(String graphId, String specificComponentQuery) throws IOException {
         // Get involved components with request of any made annotations
         // returns us ExplanationObject[], with all required properties to craft explanation
 
+        /*
         // Step 1: get involved components
         ExplanationObject[] explanationObjects = getAnnotationsService.getAnnotations(graphId);
 
@@ -333,12 +299,109 @@ public class ExplanationService {
 
         // process the components and their content to a explanation and create Models of that
         List<Model> models = getModelsFromMap(groupedMap);
+        */
 
         // TODO: sort out the unnecessary triples or: dont repeat them (done automatically by Parser?? Like its checking s,p,o isn't it?)
 
         // TODO: create final Model which can then be returned or post-processed to the desired format (RDFXML,Turtle,JSONLD)
 
+        // TODO: Different approach:
+        // - fetching components,
+        // - execute coded methods for component+graph request to get their output throughout the process
+        // - create content / explanation for specific component
+        // - depending on the 2nd: create model for system or reformat the given rdf/xml/turtle -> overload existing function
 
+        ComponentPojo[] components = getAnnotationsService.getUsedComponents(graphId);
+        Map<String,Model> models1 = new HashMap<>();
+        for (ComponentPojo component: components
+             ) {
+            models1.put(component.getComponent().getValue(),
+                    explainSpecificComponent(graphId,component.getComponent().getValue(),specificComponentQuery));
+        }
+        logger.info("Models: {}", models1);
+
+        // create new model
+
+        Model systemExplanationModel = ModelFactory.createDefaultModel();
+        systemExplanationModel = createSystemModel(models1, components);
+
+
+
+    }
+
+    public Model createSystemModel(Map<String, Model> models, ComponentPojo[] components) throws IOException {
+
+        Model systemExplanationModel = ModelFactory.createDefaultModel();
+
+        /*
+        // Create sequences
+        ArrayList<Seq> sequences = new ArrayList<>();
+        for (ComponentPojo component: components
+             ) {
+            Seq sequence = systemExplanationModel.createSeq(component.getComponent().getValue());
+            Model componentModel = models.get(component.getComponent().getValue());
+            Iterator<Statement> statementsItr = componentModel.listStatements();
+            // add items from the spec. model to it
+            // get correct model
+            // add all triples here
+            while(statementsItr.hasNext()) {
+                Statement statement = statementsItr.next();
+           //     logger.info("Statement: {}", statement);
+                sequence.add(statement);
+            }
+         //   logger.info("Sequence: {}", sequence);
+            sequences.add(sequence);
+        }
+        */
+
+        // PREFIXES TODO: Refactor to the top
+        final String URN_NAMESPACE = "urn";
+        final String QANARY_NAMESPACE = "qanary";
+        final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+        final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
+
+        // Set namespaces
+        systemExplanationModel.setNsPrefix("rdfs", RDFS_NAMESPACE);
+        systemExplanationModel.setNsPrefix("rdf", RDFS_NAMESPACE);
+        systemExplanationModel.setNsPrefix("urn", URN_NAMESPACE);
+        systemExplanationModel.setNsPrefix("qanary", QANARY_NAMESPACE);
+        systemExplanationModel.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
+
+        // Set properties
+        Property wasProcessedInGraph = systemExplanationModel.createProperty(URN_NAMESPACE+QANARY_NAMESPACE, "wasProcessedInGraph");
+        Property wasProcessedBy = systemExplanationModel.createProperty(URN_NAMESPACE+QANARY_NAMESPACE,"wasProcessedBy");
+
+        // Set resources
+        Resource questionResource = systemExplanationModel.createResource("TODO_QuestionURI");
+        Resource graphResource = systemExplanationModel.createResource("TODO_GraphURI");
+
+        // add Statement
+        systemExplanationModel.add(systemExplanationModel.createStatement(questionResource,wasProcessedInGraph,graphResource));
+        systemExplanationModel.add(questionResource, RDF.type, RDF.Seq);
+
+        for (int i = 0; i <= components.length; i++) {
+            Model model = models.get(components[i].getComponent().getValue());
+            Iterator<Statement> itr = model.listStatements();
+
+            while(itr.hasNext()) {
+                questionResource.addProperty(
+                        RDF.li(i),
+                        systemExplanationModel.createReifiedStatement(components[i].getComponent().getValue(), itr.next())
+                        );
+            }
+        }
+
+        // Add items to the sequence
+       // questionResource.addProperty(RDF.li(1),/*hier das RDF NODE*/reifiedStatement);
+
+
+
+
+
+        FileWriter fileWriter = new FileWriter("output.rdf");
+        systemExplanationModel.write(fileWriter,"Turtle");
+
+        return systemExplanationModel;
     }
 
     /**
