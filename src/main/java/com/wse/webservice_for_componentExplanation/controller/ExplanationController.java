@@ -1,21 +1,24 @@
 package com.wse.webservice_for_componentExplanation.controller;
 
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
+import com.wse.webservice_for_componentExplanation.services.ExplanationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import com.wse.webservice_for_componentExplanation.services.ExplanationService;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
 public class ExplanationController {
 
     private static final String DBpediaSpotlight_SPARQL_QUERY = "/queries/explanation_for_dbpediaSpotlight_sparql_query.rq";
+    private static final String QBBirthdateWikidata_SPARQL_QUERY = "/queries/explanation_for_birthdate_wikidata.rq";
+    private static final String GENERAL_EXPLANATION_SPARQL_QUERY = "/queries/general_explanation.rq";
+    private Logger logger = LoggerFactory.getLogger(ExplanationController.class);
     private static final String QueryBuilder_SPARQL_QUERY = "/queries/explanation_for_query_builder.rq";
 
     @Autowired
@@ -50,6 +53,29 @@ public class ExplanationController {
             return new ResponseEntity<>(explanation, HttpStatus.OK);
         else
             return new ResponseEntity<>("There are no created sparql queries", HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * @param graphURI     given graph URI
+     * @param componentURI given component URI
+     * @return String as RDF-Turtle
+     * @throws IOException
+     */
+    @CrossOrigin
+    @GetMapping(value = "/explainspecificcomponent", produces = {
+            "application/rdf+xml",
+            "text/turtle",
+            "application/ld+json"})
+    public ResponseEntity<?> getRdfTurtle(@RequestParam String graphURI,
+                                          @RequestParam String componentURI,
+                                          @RequestHeader Map<String, String> headers,
+                                          @RequestHeader(value = "accept", required = false) String acceptHeader) throws IOException {
+        String result = this.explanationService.explainSpecificComponent(graphURI, componentURI, GENERAL_EXPLANATION_SPARQL_QUERY, acceptHeader);
+
+        if (result != null)
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        else
+            return new ResponseEntity<>(result, HttpStatus.NOT_ACCEPTABLE);
     }
 
 }

@@ -1,4 +1,4 @@
-package com.wse.webservice_for_componentExplanation;
+package com.wse.webservice_for_componentExplanation.services;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;

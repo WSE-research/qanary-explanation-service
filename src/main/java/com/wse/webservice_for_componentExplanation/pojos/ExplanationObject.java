@@ -11,6 +11,7 @@ public class ExplanationObject {
     // like if an Output sparql query varies within different components
 
     @JsonProperty("annotationId")
+    @JsonIgnoreProperties
     private AnnotationId annotationId;
     @JsonIgnoreProperties
     private Source source;
