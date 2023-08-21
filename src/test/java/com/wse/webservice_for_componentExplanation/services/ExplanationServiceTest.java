@@ -4,11 +4,13 @@ package com.wse.webservice_for_componentExplanation.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wse.webservice_for_componentExplanation.controller.ExplanationController;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import com.wse.webservice_for_componentExplanation.repositories.ExplanationSparqlRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,16 +18,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
 import java.io.StringReader;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static reactor.core.publisher.Mono.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -35,6 +43,8 @@ public class ExplanationServiceTest {
     /**
      * Assertion-Tests on converted Data
      */
+
+    private static final String QUERY = "/queries/explanation_for_query_builder.rq";
     @Nested
     public class ConversionTests {
 
@@ -79,8 +89,10 @@ public class ExplanationServiceTest {
         }
     }
 
+
     @Nested
     class ExplanationAsRdfTurtle {
+
 
         static final String componentURI = "urn:qanary:QB-SimpleRealNameOfSuperHero";
         LanguageContentProvider languageContentProvider;
