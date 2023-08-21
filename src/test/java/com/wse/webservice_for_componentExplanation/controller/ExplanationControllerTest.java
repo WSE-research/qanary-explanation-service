@@ -95,7 +95,7 @@ public class ExplanationControllerTest {
                 jsonString = controllerDataForTests.getGivenExplanationsWithoutQbValues();
             JsonNode toBeTested = stringToJsonNode.convertStingToJsonNode(jsonString);
             Mockito.when(explanationSparqlRepository.executeSparqlQuery(any())).thenReturn(toBeTested);
-            Mockito.when(explanationService.buildSparqlQuery(any(), any())).thenReturn("example Sparql-query");
+            Mockito.when(explanationService.buildSparqlQuery(any(), any(), any())).thenReturn("example Sparql-query");
         }
 
         @Test

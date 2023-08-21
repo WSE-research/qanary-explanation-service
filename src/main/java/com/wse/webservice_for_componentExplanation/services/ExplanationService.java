@@ -79,54 +79,15 @@ public class ExplanationService {
         return convertToExplanationObjects(explanationObjectsJsonNode);
     }
 
-    /* Approach with rdf4j
-    public String createRDFWithrdf4j(String turtle) throws IOException {
-
-        ModelBuilder builder = new ModelBuilder();
-        ValueFactory factory = SimpleValueFactory.getInstance();
-        //org.eclipse.rdf4j.model.Model model = new DynamicModelFactory().createEmptyModel();
-        org.eclipse.rdf4j.model.Model model;
-
-        // set namespaces
-        builder.setNamespace("rdfs", RDFS_NAMESPACE);
-        builder.setNamespace("explanation",EXPLANATION_NAMESPACE);
-
-        // set IRIs
-        IRI component = factory.createIRI(componentURI);
-        IRI hasExplanationForCreatedData = factory.createIRI("explanation:hasExplanationForCreatedData");
-
-        // set literals
-        org.eclipse.rdf4j.model.Literal contentDeLiteral = factory.createLiteral(contentDe, "de");
-        org.eclipse.rdf4j.model.Literal contentEnLiteral = factory.createLiteral(contentEn, "en");
-
-       // model.add(component,hasExplanationForCreatedData,contentDeLiteral);
-       // model.add(component,hasExplanationForCreatedData,contentEnLiteral);
-
-        builder.subject(component)
-                        .add(hasExplanationForCreatedData,contentDeLiteral)
-                                .add(hasExplanationForCreatedData, contentEnLiteral);
-
-        model = builder.build();
-        FileOutputStream out = new FileOutputStream("rdfFile.ttl");
-        Rio.write(model, out, RDFFormat.TURTLE);
-
-
-        // create Parser to read the turtle file
-        StringReader in = new StringReader(turtle);
-        // String is passed in Turtle format
-        RDFParser rdfParser = Rio.createParser(RDFFormat.TURTLE);
-        RDFWriter rdfWriter = Rio.createWriter(RDFFormat.RDFXML, new FileWriter("rdf.rdf"));
-
-        rdfParser.setRDFHandler(rdfWriter);
-        try{
-            rdfParser.parse(in,"");
-        }catch (RDFHandlerException e) {
-            logger.info("Something didnt work out");
-        }
-        return "";
-
+    public ExplanationObject[] explainComponentDBpediaSpotlight(String graphID, String rawQuery) throws IOException {
+        ExplanationObject[] explanationObjects = getExplanationObjects(graphID, rawQuery);
+        String question;
+        if (explanationObjects != null && explanationObjects.length > 0) {
+            question = getQuestion(explanationObjects[0]); // question uri is saved in every single Object, just take the first one
+            return createEntitiesFromQuestion(explanationObjects, question);
+        } else
+            return null;
     }
-    */
 
     /**
      * @param contentDe    Textual representation of the explanation in german
@@ -225,7 +186,7 @@ public class ExplanationService {
 
     public ExplanationObject[] getExplanationObjects(String graphID, String rawQuery) throws IOException {
         // Get annotation properties with explanation_for_dbpediaSpotlight_sparql_query.rq query
-        String query = buildSparqlQuery(graphID, rawQuery);
+        String query = buildSparqlQuery(graphID, null, rawQuery);
         JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
 
         return convertToExplanationObjects(explanationObjectsJsonNode);
