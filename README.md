@@ -68,6 +68,24 @@ WHERE {
 }
 ```
 - returns a list of objects with all annotations and the properties from the SPARQL query above
+---
+`/explainspecificcomponent` requires graphID::String, componentURI::String 
+```
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+SELECT *
+FROM ?graphURI
+
+WHERE {
+    ?annotationId oa:annotatedBy ?componentURI .
+    ?annotationId oa:hasBody ?body .
+    ?annotationId oa:annotatedAt $createdAt .
+    ?annotationId qa:score ?score .
+}
+```
+- depending on the Accept-Header it returns a explanation as RDF/XML, Turtle or JSON-LD
+- working for the majority of components since the properties hasBody, annotatedAt and score are mostly provided
 
 ### Using the webservice
 
