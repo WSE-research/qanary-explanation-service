@@ -28,6 +28,8 @@ import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import static com.complexible.stardog.plan.filter.functions.LeviathanFunctions.e;
+
 @Service
 public class ExplanationService {
 
@@ -37,6 +39,7 @@ public class ExplanationService {
     private ExplanationSparqlRepository explanationSparqlRepository;
     @Autowired
     private GetAnnotationsService getAnnotationsService;
+    private static final String QUESTION_QUERY = "/queries/question_query.rq";
 
     public ExplanationService() {
         objectMapper = new ObjectMapper();
@@ -273,39 +276,7 @@ public class ExplanationService {
      * 3. create a rdf model which describes that
      * @param graphId the only paramter given for a qa-system
      */
-    public void explainQaSystem(String graphId, String specificComponentQuery) throws IOException {
-        // Get involved components with request of any made annotations
-        // returns us ExplanationObject[], with all required properties to craft explanation
-
-        /*
-        // Step 1: get involved components
-        ExplanationObject[] explanationObjects = getAnnotationsService.getAnnotations(graphId);
-
-        // Step 2: create models on these
-
-        // convert Array to List for further processing
-        List<ExplanationObject> explanationObjectList = Arrays.asList(explanationObjects);
-        logger.info("Map: {}",explanationObjectList.toString());
-
-        // group explanationObjects by componentURI as Map
-        // Key represents the componentURI, Value the List of ExplanationObject(s) // TODO: Convert in an Resource, IRI, URI?
-        Map<String, List<ExplanationObject>> groupedMap = new HashMap<>();
-        explanationObjectList.forEach(item -> {
-            if(groupedMap.containsKey(item.getCreatedBy().getValue())) {
-                groupedMap.get(item.getCreatedBy().getValue()).add(item);
-            } else {
-                List<ExplanationObject> explanationObjectsSpecific = new ArrayList<>();
-                groupedMap.put(item.getCreatedBy().getValue(),explanationObjectsSpecific);
-            }
-        });
-
-        // process the components and their content to a explanation and create Models of that
-        List<Model> models = getModelsFromMap(groupedMap);
-        */
-
-        // TODO: sort out the unnecessary triples or: dont repeat them (done automatically by Parser?? Like its checking s,p,o isn't it?)
-
-        // TODO: create final Model which can then be returned or post-processed to the desired format (RDFXML,Turtle,JSONLD)
+    public void explainQaSystem(String graphId, String specificComponentQuery) throws Exception {
 
         // TODO: Different approach:
         // - fetching components,
@@ -322,43 +293,61 @@ public class ExplanationService {
         }
         logger.info("Models: {}", models1);
 
-        // create new model
+        String questionURI = fetchQuestionUri(graphId);
 
         Model systemExplanationModel = ModelFactory.createDefaultModel();
-        systemExplanationModel = createSystemModel(models1, components);
-
-
+        systemExplanationModel = createSystemModel(models1, components, questionURI, graphId);
 
     }
 
-    public Model createSystemModel(Map<String, Model> models, ComponentPojo[] components) throws IOException {
+    public String fetchQuestionUri(String graphId) throws Exception {
+        String query = buildSparqlQuery(graphId, null, QUESTION_QUERY);
+        logger.info("Question Query = {}", query);
+
+        JsonNode jsonNode = explanationSparqlRepository.executeSparqlQuery(query);
+        logger.info("JsonNode: {}", jsonNode);
+
+        if(jsonNode == null)
+            throw new Exception();
+        else {
+            String question = String.valueOf(jsonNode.get("bindings").get(0).get("source").get("value"));
+            logger.info("QuestionURI = {}", question);
+            return question;
+        }
+
+    }
+
+    public Model createSystemModel(Map<String, Model> models, ComponentPojo[] components, String question, String graphId) throws IOException {
 
         Model systemExplanationModel = ModelFactory.createDefaultModel();
 
         // PREFIXES TODO: Refactor to the top
-        final String URN_NAMESPACE = "urn";
-        final String QANARY_NAMESPACE = "qanary";
-        final String EXPLANATION_NAMESPACE = "explanations";
-        final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
+        final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+        final String wasProcessedInGraphString = "urn:qanary:wasProcessedInGraph";
+        final String wasProcessedByString = "urn:qanary:wasProcessedBy";
 
-        // Set namespaces
+
+
+        // Set namespaces // TODO: Not working correctly until now
         systemExplanationModel.setNsPrefix("rdfs", RDFS.getURI());
         systemExplanationModel.setNsPrefix("rdf", RDF.getURI());
-        systemExplanationModel.setNsPrefix("urn", URN_NAMESPACE);
-        systemExplanationModel.setNsPrefix("qanary", QANARY_NAMESPACE);
         systemExplanationModel.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
 
         // Set properties
-        Property wasProcessedInGraph = systemExplanationModel.createProperty(URN_NAMESPACE+QANARY_NAMESPACE, "wasProcessedInGraph");
-        Property wasProcessedBy = systemExplanationModel.createProperty(URN_NAMESPACE+QANARY_NAMESPACE,"wasProcessedBy");
+        Property wasProcessedInGraph = systemExplanationModel.createProperty(wasProcessedInGraphString, "");
+        Property wasProcessedBy = systemExplanationModel.createProperty(wasProcessedByString, "");
 
         // Set resources
-        Resource questionResource = systemExplanationModel.createResource("TODO_QuestionURI");
-        Resource graphResource = systemExplanationModel.createResource("TODO_GraphURI");
+        Resource questionResource = systemExplanationModel.createResource(question);
+        Resource graphResource = systemExplanationModel.createResource(graphId);
+        Resource sequence = systemExplanationModel.createResource();
 
         // questionResource is the reference resource
         Property rdfType = systemExplanationModel.createProperty(RDF.getURI() + "type");
-        questionResource.addProperty(rdfType, RDF.Seq);
+      //  questionResource.addProperty(rdfType, RDF.Seq);
+        questionResource.addProperty(wasProcessedInGraph, graphResource);
+        questionResource.addProperty(wasProcessedBy, sequence);
+        sequence.addProperty(RDF.type, RDF.Seq);
 
         for(int i = 0; i < components.length; i++) {
             int j = i;
@@ -368,7 +357,7 @@ public class ExplanationService {
             Resource innerSequence = systemExplanationModel.createResource();
             innerSequence.addProperty(rdfType, RDF.Seq);    // doesn't need to be a Sequence, order is not relevant here (?)
             // adding the inner Sequence as a property to the outer sequence / the resource questionResource
-            questionResource.addProperty(RDF.li(i+1),innerSequence);
+            sequence.addProperty(RDF.li(i+1),innerSequence);
             // iterate over the statements in the model which contains any triples for the current component
             while(itr.hasNext()) {
                 ReifiedStatement reifiedStatement = systemExplanationModel.createReifiedStatement(itr.next());
@@ -377,11 +366,12 @@ public class ExplanationService {
             }
         }
 
-        FileWriter fileWriter = new FileWriter("output.rdf");
-        systemExplanationModel.write(fileWriter,"Turtle");
+        FileWriter fileWriter = new FileWriter("output.ttl");
+        systemExplanationModel.write(fileWriter,"TURTLE");
 
         return systemExplanationModel;
     }
+
 
     /**
      *  Create models (Models contain triples::Statement)

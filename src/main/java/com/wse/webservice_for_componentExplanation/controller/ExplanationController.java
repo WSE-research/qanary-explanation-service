@@ -75,7 +75,7 @@ public class ExplanationController {
             "text/turtle",
             "application/ld+json"
     })
-    public ResponseEntity<?> getQaSystemExplanation(@RequestParam String graphURI) throws IOException {
+    public ResponseEntity<?> getQaSystemExplanation(@RequestParam String graphURI) throws Exception {
         explanationService.explainQaSystem(graphURI, GENERAL_EXPLANATION_SPARQL_QUERY);
         return null;
     }
