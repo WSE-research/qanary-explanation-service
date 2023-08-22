@@ -14,7 +14,9 @@ import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.ModelCom;
 import org.apache.jena.rdf.model.impl.SeqImpl;
+import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -333,27 +335,6 @@ public class ExplanationService {
 
         Model systemExplanationModel = ModelFactory.createDefaultModel();
 
-        /*
-        // Create sequences
-        ArrayList<Seq> sequences = new ArrayList<>();
-        for (ComponentPojo component: components
-             ) {
-            Seq sequence = systemExplanationModel.createSeq(component.getComponent().getValue());
-            Model componentModel = models.get(component.getComponent().getValue());
-            Iterator<Statement> statementsItr = componentModel.listStatements();
-            // add items from the spec. model to it
-            // get correct model
-            // add all triples here
-            while(statementsItr.hasNext()) {
-                Statement statement = statementsItr.next();
-           //     logger.info("Statement: {}", statement);
-                sequence.add(statement);
-            }
-         //   logger.info("Sequence: {}", sequence);
-            sequences.add(sequence);
-        }
-        */
-
         // PREFIXES TODO: Refactor to the top
         final String URN_NAMESPACE = "urn";
         final String QANARY_NAMESPACE = "qanary";
@@ -361,8 +342,8 @@ public class ExplanationService {
         final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
 
         // Set namespaces
-        systemExplanationModel.setNsPrefix("rdfs", RDFS_NAMESPACE);
-        systemExplanationModel.setNsPrefix("rdf", RDFS_NAMESPACE);
+        systemExplanationModel.setNsPrefix("rdfs", RDFS.getURI());
+        systemExplanationModel.setNsPrefix("rdf", RDF.getURI());
         systemExplanationModel.setNsPrefix("urn", URN_NAMESPACE);
         systemExplanationModel.setNsPrefix("qanary", QANARY_NAMESPACE);
         systemExplanationModel.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
@@ -375,27 +356,39 @@ public class ExplanationService {
         Resource questionResource = systemExplanationModel.createResource("TODO_QuestionURI");
         Resource graphResource = systemExplanationModel.createResource("TODO_GraphURI");
 
-        // add Statement
-        systemExplanationModel.add(systemExplanationModel.createStatement(questionResource,wasProcessedInGraph,graphResource));
-        systemExplanationModel.add(questionResource, RDF.type, RDF.Seq);
+        // questionResource is the reference resource
+        Property rdfType = systemExplanationModel.createProperty(RDF.getURI() + "type");
+        questionResource.addProperty(rdfType, RDF.Seq);
 
-        for (int i = 0; i <= components.length; i++) {
-            Model model = models.get(components[i].getComponent().getValue());
+        /*
+        // Add elements
+        Resource eins = systemExplanationModel.createResource();
+        Resource zwei = systemExplanationModel.createResource();
+
+        Statement stmt1 = systemExplanationModel.createStatement(eins, RDF.type, FOAF.Person);
+        Statement stmt2 = systemExplanationModel.createStatement(zwei, RDF.type, FOAF.Organization);
+
+        ReifiedStatement rstmt1 = systemExplanationModel.createReifiedStatement(stmt1);
+        ReifiedStatement rstmt2 = systemExplanationModel.createReifiedStatement(stmt2);
+
+        questionResource.addProperty(RDF.li(1),rstmt1);
+        questionResource.addProperty(RDF.li(2),rstmt2);
+        */
+
+
+        /*
+        RDF Sequence with "number of Models" reified statements  => 2 components === 2 reified statements
+        Each reified statement contains
+         */
+
+        for(int i = 0; i < components.length; i++) {
+            Model model = models.get(components[i].getComponent().getValue()); // get the model for the component at position "i" in component list // remember: models is Map with componentUri as key
             Iterator<Statement> itr = model.listStatements();
-
             while(itr.hasNext()) {
-                questionResource.addProperty(
-                        RDF.li(i),
-                        systemExplanationModel.createReifiedStatement(components[i].getComponent().getValue(), itr.next())
-                        );
+                ReifiedStatement reifiedStatement = systemExplanationModel.createReifiedStatement(itr.next());
+                questionResource.addProperty(RDF.li(i+1), reifiedStatement);
             }
         }
-
-        // Add items to the sequence
-       // questionResource.addProperty(RDF.li(1),/*hier das RDF NODE*/reifiedStatement);
-
-
-
 
 
         FileWriter fileWriter = new FileWriter("output.rdf");
