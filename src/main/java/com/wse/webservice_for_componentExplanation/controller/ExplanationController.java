@@ -60,24 +60,27 @@ public class ExplanationController {
     public ResponseEntity<?> getRdfTurtle(@RequestParam String graphURI,
                                           @RequestParam String componentURI,
                                           @RequestHeader Map<String, String> headers,
-                                          @RequestHeader(value = "accept", required = false) String acceptHeader) throws IOException {
+                                          @RequestHeader(value = "accept", required = false) String acceptHeader) throws Exception {
         String result = this.explanationService.explainSpecificComponent(graphURI, componentURI, GENERAL_EXPLANATION_SPARQL_QUERY, acceptHeader);
 
         if (result != null)
             return new ResponseEntity<>(result, HttpStatus.OK);
         else
-            return new ResponseEntity<>(result, HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity<>(null, HttpStatus.NOT_ACCEPTABLE);
     }
 
     @CrossOrigin
     @GetMapping(value = "/explainqasystem", produces = {
-            "application/rdf+xal",
+            "application/rdf+xml",
             "text/turtle",
             "application/ld+json"
     })
-    public ResponseEntity<?> getQaSystemExplanation(@RequestParam String graphURI) throws Exception {
-        explanationService.explainQaSystem(graphURI, GENERAL_EXPLANATION_SPARQL_QUERY);
-        return null;
+    public ResponseEntity<?> getQaSystemExplanation(@RequestParam String graphURI, @RequestHeader(value = "accept", required = false) String acceptHeader) throws Exception {
+        String result = explanationService.explainQaSystem(graphURI, GENERAL_EXPLANATION_SPARQL_QUERY, acceptHeader);
+        if (result != null)
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        else
+            return new ResponseEntity<>(null, HttpStatus.NOT_ACCEPTABLE);
     }
 
 }

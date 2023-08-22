@@ -41,6 +41,11 @@ public class ExplanationService {
     private GetAnnotationsService getAnnotationsService;
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
 
+    private static final Map<String,String> headerFormatMap = new HashMap<>() {{
+        put("application/rdf+xml","RDFXML");
+        put("application/ld+json","JSONLD");
+    }};
+
     public ExplanationService() {
         objectMapper = new ObjectMapper();
     }
@@ -148,30 +153,8 @@ public class ExplanationService {
     public String convertToDesiredFormat(String header, Model model) {
         StringWriter writer = new StringWriter();
 
-        // if no header is provided, return as text/turtle
-        if (header == null) {
-            model.write(writer, "TURTLE");
-            return writer.toString();
-        }
-
-        switch (header) {
-            case "application/rdf+xml": {
-                model.write(writer, "RDFXML");
-                return writer.toString();
-            }
-            case "text/turtle": {
-                model.write(writer, "TURTLE");
-                return writer.toString();
-            }
-            case "application/ld+json": {
-                model.write(writer, "JSONLD");
-                return writer.toString();
-            }
-            default: {
-                logger.warn("Not supported Type in Accept Header");
-                return null;
-            }
-        }
+        model.write(writer, headerFormatMap.getOrDefault(header, "TURTLE"));
+        return writer.toString();
     }
 
     /**
@@ -276,7 +259,7 @@ public class ExplanationService {
      * 3. create a rdf model which describes that
      * @param graphId the only paramter given for a qa-system
      */
-    public void explainQaSystem(String graphId, String specificComponentQuery) throws Exception {
+    public String explainQaSystem(String graphId, String specificComponentQuery, String header) throws Exception {
 
         // TODO: Different approach:
         // - fetching components,
@@ -291,26 +274,24 @@ public class ExplanationService {
             models1.put(component.getComponent().getValue(),
                     explainSpecificComponent(graphId,component.getComponent().getValue(),specificComponentQuery));
         }
-        logger.info("Models: {}", models1);
 
         String questionURI = fetchQuestionUri(graphId);
 
         Model systemExplanationModel = ModelFactory.createDefaultModel();
         systemExplanationModel = createSystemModel(models1, components, questionURI, graphId);
 
+        return convertToDesiredFormat(header, systemExplanationModel);
     }
 
     public String fetchQuestionUri(String graphId) throws Exception {
         String query = buildSparqlQuery(graphId, null, QUESTION_QUERY);
-        logger.info("Question Query = {}", query);
 
         JsonNode jsonNode = explanationSparqlRepository.executeSparqlQuery(query);
-        logger.info("JsonNode: {}", jsonNode);
 
         if(jsonNode == null)
             throw new Exception();
         else {
-            String question = String.valueOf(jsonNode.get("bindings").get(0).get("source").get("value"));
+            String question = (jsonNode.get("bindings").get(0).get("source").get("value").asText());
             logger.info("QuestionURI = {}", question);
             return question;
         }
@@ -325,7 +306,7 @@ public class ExplanationService {
         final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
         final String wasProcessedInGraphString = "urn:qanary:wasProcessedInGraph";
         final String wasProcessedByString = "urn:qanary:wasProcessedBy";
-
+        final String questionUri = (String) question;
 
 
         // Set namespaces // TODO: Not working correctly until now
@@ -334,11 +315,11 @@ public class ExplanationService {
         systemExplanationModel.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
 
         // Set properties
-        Property wasProcessedInGraph = systemExplanationModel.createProperty(wasProcessedInGraphString, "");
-        Property wasProcessedBy = systemExplanationModel.createProperty(wasProcessedByString, "");
+        Property wasProcessedInGraph = systemExplanationModel.createProperty(wasProcessedInGraphString);
+        Property wasProcessedBy = systemExplanationModel.createProperty(wasProcessedByString);
 
         // Set resources
-        Resource questionResource = systemExplanationModel.createResource(question);
+        Resource questionResource = systemExplanationModel.createResource(questionUri);
         Resource graphResource = systemExplanationModel.createResource(graphId);
         Resource sequence = systemExplanationModel.createResource();
 
@@ -366,8 +347,9 @@ public class ExplanationService {
             }
         }
 
-        FileWriter fileWriter = new FileWriter("output.ttl");
-        systemExplanationModel.write(fileWriter,"TURTLE");
+        StringWriter stringWriter = new StringWriter();
+        systemExplanationModel.write(stringWriter,"TURTLE");
+        logger.info("Created Turtle: {}", stringWriter);
 
         return systemExplanationModel;
     }
