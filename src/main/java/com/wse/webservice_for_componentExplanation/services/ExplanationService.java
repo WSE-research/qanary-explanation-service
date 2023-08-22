@@ -32,6 +32,9 @@ public class ExplanationService {
         objectMapper = new ObjectMapper();
     }
 
+    final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+    final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
+
     /**
      * Currently explains the DBpediaSpotlight-component since the query has the specific structure
      *
@@ -93,12 +96,9 @@ public class ExplanationService {
      * @param contentDe    Textual representation of the explanation in german
      * @param contentEn    Textual representation of the explanation in english
      * @param componentURI component URI
-     * @return String formatted as RDF-Turtle
+     * @return String formatted in either RDFXML, JSONLD or Turtle, depending on Accept-Header
      */
     public String createRdfRepresentation(String contentDe, String contentEn, String componentURI, String header) throws IOException {
-
-        final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
-        final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
 
         Model model = ModelFactory.createDefaultModel();
 
@@ -127,10 +127,9 @@ public class ExplanationService {
     }
 
     /**
-     * Converts model to desired format (RDFXML, Turtle,
-     *
-     * @param header accept header
-     * @param model  Model whicht contains created triples
+     * Converts model to desired format (RDFXML, Turtle, JSONLD) depending on header
+     * @param header Accept-header
+     * @param model  Model which contains Statements
      * @return String in desired output format
      */
     public String convertToDesiredFormat(String header, Model model) {
