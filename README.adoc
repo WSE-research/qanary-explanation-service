@@ -173,5 +173,183 @@ WHERE {
 ----
 --
 
+=== Example 
+. Firstly we start a QA process with the Question "What is the real name of Superman?" and the components
+** NED-DBpediaSpotlight and
+** QB-SimpleRealNameOfSuperhero
+. As a result we should get q graphID
+** for me thats `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
+. Now we can use this graphID or a different one (maybe one where we donÄt know the acting components) for some requests against the webservice 
+** to get all annotations we could execute the following curl in a terminal
+*** `curl http://localhost:4000/getannotations?graphID=urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
+** as a result we should get a array of objects containing the properties from the SPARQL-query
 
-
+.Ergebnis
+[%collapsible]
+====
+[source]
+----
+[
+    {
+        "source": null,
+        "start": null,
+        "end": null,
+        "body": {
+            "type": "uri",
+            "value": "http://dbpedia.org/resource/String_theory"
+        },
+        "type": {
+            "type": "uri",
+            "value": "http://www.wdaqua.eu/qa#AnnotationOfInstance"
+        },
+        "createdBy": {
+            "type": "uri",
+            "value": "urn:qanary:NED-DBpediaSpotlight"
+        },
+        "createdAt": {
+            "value": "2023-08-22T12:17:24.848",
+            "type": "typed-literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+        },
+        "score": {
+            "value": 0.9347568085631697,
+            "type": "typed-literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        },
+        "entity": null,
+        "target": {
+            "type": "bnode",
+            "value": "b0"
+        },
+        "annotationID": {
+            "type": "uri",
+            "value": "tag:stardog:api:0.42490125431422954"
+        },
+        "annotationId": {
+            "type": "uri",
+            "value": "tag:stardog:api:0.42490125431422954"
+        }
+    },
+    {
+        "source": null,
+        "start": null,
+        "end": null,
+        "body": {
+            "type": "uri",
+            "value": "http://dbpedia.org/resource/Real_number"
+        },
+        "type": {
+            "type": "uri",
+            "value": "http://www.wdaqua.eu/qa#AnnotationOfInstance"
+        },
+        "createdBy": {
+            "type": "uri",
+            "value": "urn:qanary:NED-DBpediaSpotlight"
+        },
+        "createdAt": {
+            "value": "2023-08-22T12:17:25.052",
+            "type": "typed-literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+        },
+        "score": {
+            "value": 0.977747974809564,
+            "type": "typed-literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        },
+        "entity": null,
+        "target": {
+            "type": "bnode",
+            "value": "b1"
+        },
+        "annotationID": {
+            "type": "uri",
+            "value": "tag:stardog:api:0.39515999164525084"
+        },
+        "annotationId": {
+            "type": "uri",
+            "value": "tag:stardog:api:0.39515999164525084"
+        }
+    },
+    {
+        "source": null,
+        "start": null,
+        "end": null,
+        "body": {
+            "type": "uri",
+            "value": "http://dbpedia.org/resource/Superman"
+        },
+        "type": {
+            "type": "uri",
+            "value": "http://www.wdaqua.eu/qa#AnnotationOfInstance"
+        },
+        "createdBy": {
+            "type": "uri",
+            "value": "urn:qanary:NED-DBpediaSpotlight"
+        },
+        "createdAt": {
+            "value": "2023-08-22T12:17:25.265",
+            "type": "typed-literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+        },
+        "score": {
+            "value": 0.999238163684283,
+            "type": "typed-literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
+        },
+        "entity": null,
+        "target": {
+            "type": "bnode",
+            "value": "b2"
+        },
+        "annotationID": {
+            "type": "uri",
+            "value": "tag:stardog:api:0.23587012456677092"
+        },
+        "annotationId": {
+            "type": "uri",
+            "value": "tag:stardog:api:0.23587012456677092"
+        }
+    },
+    {
+        "source": null,
+        "start": null,
+        "end": null,
+        "body": {
+            "type": "literal",
+            "value": "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX  dct:  <http://purl.org/dc/terms/>\nPREFIX  dbr:  <http://dbpedia.org/resource/>\nPREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX  foaf: <http://xmlns.com/foaf/0.1/>\n\nSELECT  *\nWHERE\n  { ?resource  foaf:name  ?answer ;\n              rdfs:label  ?label\n    FILTER ( lang(?label) = \"en\" )\n    ?resource  dct:subject  dbr:Category:Superheroes_with_alter_egos\n    FILTER ( ! strstarts(lcase(?label), lcase(?answer)) )\n    VALUES ?resource { dbr:Superman }\n  }\nORDER BY ?resource\n"
+        },
+        "type": {
+            "type": "uri",
+            "value": "http://www.wdaqua.eu/qa#AnnotationOfAnswerSPARQL"
+        },
+        "createdBy": {
+            "type": "uri",
+            "value": "urn:qanary:QB-SimpleRealNameOfSuperHero"
+        },
+        "createdAt": {
+            "value": "2023-08-22T12:17:26.104",
+            "type": "typed-literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
+        },
+        "score": {
+            "value": 1.0,
+            "type": "typed-literal",
+            "datatype": "http://www.w3.org/2001/XMLSchema#float"
+        },
+        "entity": null,
+        "target": {
+            "type": "uri",
+            "value": "http://demos.swe.htwk-leipzig.de:40111/question/stored-question__text_57bede26-f976-4946-97c2-993acddfdd08"
+        },
+        "annotationID": {
+            "type": "uri",
+            "value": "tag:stardog:api:0.4428726379989152"
+        },
+        "annotationId": {
+            "type": "uri",
+            "value": "tag:stardog:api:0.4428726379989152"
+        }
+    }
+]
+----
+====
