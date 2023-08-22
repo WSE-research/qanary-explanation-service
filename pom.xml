@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.wse</groupId>
-    <artifactId>webservice_for_componentExplanation</artifactId>
+    <artifactId>qanary-explanation-service</artifactId>
     <version>0.3.0</version>
-    <name>webservice_for_componentExplanation</name>
+    <name>Qanary explanation service</name>
     <description>Project to retrieve any annotations and explanations from an graphID</description>
     <properties>
         <java.version>17</java.version>
@@ -95,7 +95,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>
-                        com.wse.webservice_for_componentExplanation.WebserviceForComponentExplanationApplication
+                        com.wse.qanaryexplanationservice.QanaryExplanationServiceApplication
                     </mainClass>
                 </configuration>
             </plugin>
