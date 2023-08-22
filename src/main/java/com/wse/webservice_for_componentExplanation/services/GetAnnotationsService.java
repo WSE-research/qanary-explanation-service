@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.wse.webservice_for_componentExplanation.pojos.ComponentPojo;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
+import com.wse.webservice_for_componentExplanation.repositories.AnnotationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.ResourceFactory;
@@ -14,10 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.wse.webservice_for_componentExplanation.repositories.AnnotationSparqlRepository;
-
 import java.io.IOException;
-import java.util.List;
 
 @Service
 public class GetAnnotationsService {
@@ -27,13 +25,13 @@ public class GetAnnotationsService {
     private static final String FILE_SPARQL_QUERY = "/queries/annotations_sparql_query.rq";
     private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
     private final ObjectMapper objectMapper;
-    private Logger logger = LoggerFactory.getLogger(GetAnnotationsService.class);
+    private final Logger logger = LoggerFactory.getLogger(GetAnnotationsService.class);
 
     public GetAnnotationsService() {
         objectMapper = new ObjectMapper();
     }
 
-    public String createQuery(String usedQuery, String graphID) throws IOException {
+    public String createQuery(String usedQuery, String graphID) {
         try {
             QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
             bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
@@ -60,14 +58,12 @@ public class GetAnnotationsService {
     }
 
     public ComponentPojo[] getUsedComponents(String graphID) throws IOException {
-        String query = createQuery(COMPONENTS_SPARQL_QUERY,graphID);
+        String query = createQuery(COMPONENTS_SPARQL_QUERY, graphID);
         logger.info("Query: {}", query);
         JsonNode jsonNode = annotationSparqlRepository.executeSparqlQuery(query);
         logger.info("JsonNode: {}", jsonNode);
         ArrayNode resultsArrayNode = (ArrayNode) jsonNode.get("bindings");
-        ComponentPojo[] results = objectMapper.treeToValue(resultsArrayNode, ComponentPojo[].class);
-        logger.info("Results: {}", results);
-        return results;
+        return objectMapper.treeToValue(resultsArrayNode, ComponentPojo[].class);
     }
 
     public ExplanationObject[] mapResponseToObjectArray(JsonNode sparqlResponse) {

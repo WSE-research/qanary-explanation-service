@@ -39,7 +39,7 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
     }
 
     /**
-     * @param sparqlQuery From service returned query which already contains all relevant paramters
+     * @param sparqlQuery From service returned query which already contains all relevant parameters
      * @return The Requests-Response-Body as JsonNode
      */
     @Override

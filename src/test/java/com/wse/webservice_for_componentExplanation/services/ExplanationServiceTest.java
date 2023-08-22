@@ -6,12 +6,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.webservice_for_componentExplanation.pojos.ExplanationObject;
 import com.wse.webservice_for_componentExplanation.repositories.AnnotationSparqlRepository;
-import jakarta.json.Json;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Statement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,18 +22,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Iterator;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class ExplanationServiceTest {
@@ -47,7 +43,7 @@ public class ExplanationServiceTest {
     @Nested
     public class ConversionTests {
 
-        private static Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
+        private final static Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
         @Autowired
         ExplanationService explanationService;
         ExplanationObject[] explanationObjects;
@@ -115,8 +111,8 @@ public class ExplanationServiceTest {
          */
 
         @Test
-        void createRdfRepresentationTest() throws IOException {
-            String result = explanationService.convertToDesiredFormat(null,explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+        void createRdfRepresentationTest() throws Exception {
+            String result = explanationService.convertToDesiredFormat(null, explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertAll("String contains content elements as well as componentURI",
                     () -> assertTrue(result.contains(languageContentProvider.getContentDe())),
@@ -147,11 +143,11 @@ public class ExplanationServiceTest {
         }
 
         @Test
-        public void compareRepresentationModels() throws IOException {
-            String resultEmptyHeader = explanationService.convertToDesiredFormat(null,explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultTurtleHeader = explanationService.convertToDesiredFormat("text/turtle",explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultRDFXMLHeader = explanationService.convertToDesiredFormat("application/rdf+xml",explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultJSONLDHeader = explanationService.convertToDesiredFormat("application/ld+json",explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+        public void compareRepresentationModels() throws Exception {
+            String resultEmptyHeader = explanationService.convertToDesiredFormat(null, explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultTurtleHeader = explanationService.convertToDesiredFormat("text/turtle", explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultRDFXMLHeader = explanationService.convertToDesiredFormat("application/rdf+xml", explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultJSONLDHeader = explanationService.convertToDesiredFormat("application/ld+json", explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertEquals(resultEmptyHeader, resultTurtleHeader);
             assertAll("Check different result-string",
@@ -203,24 +199,12 @@ public class ExplanationServiceTest {
         AnnotationSparqlRepository annotationSparqlRepository;
         final String graphID = "exampleGraphID";
         JsonNode jsonNode;
+
         @BeforeEach
         void setup() throws IOException {
             jsonNode = null; // TODO:
             when(annotationSparqlRepository.executeSparqlQuery(anyString())).thenReturn(jsonNode);
         }
-
-        /**
-         * Make a get-request w/ mockmvc and mock real api calls to return
-         *      * case sparql execution: JsonNode
-         *      *
-
-        @Test
-        void explainQaSystemTest() throws Exception {
-            MvcResult result = mockMvc.perform(get("/explainqasystem")
-                    .param("graphID", graphID))
-                    .andReturn();
-        }
-        */
     }
 
 }

@@ -7,18 +7,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Map;
 
+@ControllerAdvice
 @RestController
 public class ExplanationController {
 
     private static final String DBpediaSpotlight_SPARQL_QUERY = "/queries/explanation_sparql_query.rq";
     private static final String QBBirthdateWikidata_SPARQL_QUERY = "/queries/explanation_for_birthdate_wikidata.rq";
     private static final String GENERAL_EXPLANATION_SPARQL_QUERY = "/queries/general_explanation.rq";
-    private Logger logger = LoggerFactory.getLogger(ExplanationController.class);
+    private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
     @Autowired
     private ExplanationService explanationService;
 
@@ -50,7 +52,7 @@ public class ExplanationController {
      * @param graphURI     given graph URI
      * @param componentURI given component URI
      * @return String as RDF-Turtle
-     * @throws IOException
+     * @throws IOException IOException
      */
     @CrossOrigin
     @GetMapping(value = "/explainspecificcomponent", produces = {
@@ -81,6 +83,15 @@ public class ExplanationController {
             return new ResponseEntity<>(result, HttpStatus.OK);
         else
             return new ResponseEntity<>(null, HttpStatus.NOT_ACCEPTABLE);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<String> handleHttpMediaTypeNotAcceptableException() {
+        return new ResponseEntity<>("Accecpted header: " +
+                "application/rdf+xml, " +
+                "text/turtle, " +
+                "application/ld+json",
+                HttpStatus.NOT_ACCEPTABLE);
     }
 
 }
