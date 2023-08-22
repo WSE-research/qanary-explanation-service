@@ -1,0 +1,177 @@
+= Webservice for explanation
+:toc:
+
+== Description
+
+QA component mostly create outputs (e.g. query builder create SPARQL queries) and store them as new annotation to the origin graphID in the triplestore. To understand components it's helpful to understand the output they generate, while acknowledge that this is only a first step in explaining the component or even QA systems.
+
+This webservice provides some functionalities to compute explanations for some components in triplestore-graphs.
+
+== Build and Installation
+
+=== Building
+
+==== Directly
+
+Create the .jar-file like so:
+[]
+----
+mvn clean install
+----
+
+==== With Docker
+
+Build an image with the existing Dockerfile like so
+[]
+----
+docker build . -t <yourDesiredImageName>
+----
+
+=== Installation
+
+* when using the .jar-file: 
++
+--
+** execute it like so `java -jar ./PATH/TO/PACKAGED_JAR.jar`
+--
+* when using the created Docker-file:
++
+--
+** `docker run -p 1234:4000 <yourDesiredImageName>`
+*** the "p"-tag is optional and maps the applications-port (4000) to another one, in this case "1234"
+--
+
+== Usage
+* when accessing one of the following endpoints make sure to pass the required values as parameter
+** when you`re working with curl do it like so: `curl http://localhost:4000/explanation?graphID=<whateverGraphidYouHave>`
+*** for more than one parameter: `curl "http://localhost:4000/explanation?graphID=<whateverGraphidYouHave>&<anotherParameter>=<ValueOfTheOtherParameter>"`, with attention to the ' " " '
+
+=== Settings
+Change the following as you need them:
+
+.*applications.properties*
+[]
+----
+server.port = 4000
+sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
+----
+
+=== Functionalities
+Currently there are several endpoints with different tasks, as of the latest version these are:
+
+* `/explanation` 
++
+--
+*required Parameter:*  graphID::String
+
+*returns:* a list of objects of all annotations which have the following structure  https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-NED-DBpediaSpotlight[qanary-component-NED-DBpediaSpotlight]
+
+*SPARQL query:*
+[]
+----
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+SELECT *
+FROM ?graphURI
+
+WHERE {
+  	?annotationId a qa:AnnotationOfInstance.
+    ?annotationId rdf:type ?type.
+    ?annotationId oa:hasBody ?body.
+    ?annotationId oa:hasTarget [
+	a oa:SpecificResource;
+                  oa:hasSource ?source;
+                  oa:hasSelector [
+    	a oa:TextPositionSelector;
+                  oa:start ?start;
+                  oa:end ?end;
+    ]
+].
+    ?annotationId oa:annotatedBy $createdBy .
+    ?annotationId oa:annotatedAt $createdAt .
+    ?annotationId qa:score ?score .
+}
+----
+--
+* `/explanationforquerybuilder`
++
+--
+*required Parameter:*  graphID::String
+
+*returns:* a textual explanation with the created SPARQL-queries which has been created by every involved QB-component
+
+*SPARQL query:*
+[]
+----
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+SELECT *
+FROM ?graphURI
+
+WHERE {
+    ?annotationId a qa:AnnotationOfAnswerSPARQL .
+    ?annotationId oa:hasBody ?body .
+    ?annotationId oa:annotatedBy $createdBy .
+    ?annotationId oa:annotatedAt $createdAt .
+    ?annotationId qa:score ?score .
+}
+----
+--
+* `/getannotations`
++
+--
+*required Parameter:*  graphID::String
+
+*returns:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL-Query)
+
+*SPARQL query:*
+[]
+----
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+SELECT *
+FROM ?graphURI
+WHERE {
+    ?annotationId rdf:type ?type.
+    ?annotationId oa:hasBody ?body.
+    ?annotationId oa:hasTarget ?target.
+    ?annotationId oa:annotatedBy $createdBy .
+    ?annotationId oa:annotatedAt $createdAt .
+}
+----
+--
+* `/explainspecificcomponent`
++
+--
+*required Parameter:*  graphID::String, componentURI::String
+
+*returns:* depending on the Accept-Header:
+
+** *none*: Turtle
+** *application/rdf+xml*: RDF/XML
+** *application/ld+json*: JSONLD
+** *other*: no response
+
+*SPARQL query:*
+[]
+----
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+SELECT *
+FROM ?graphURI
+
+WHERE {
+    ?annotationId oa:annotatedBy ?componentURI .
+    ?annotationId oa:hasBody ?body .
+    ?annotationId oa:annotatedAt $createdAt .
+    ?annotationId qa:score ?score .
+}
+----
+--
+
+
+
