@@ -338,7 +338,7 @@ public class ExplanationService {
         // PREFIXES TODO: Refactor to the top
         final String URN_NAMESPACE = "urn";
         final String QANARY_NAMESPACE = "qanary";
-        final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+        final String EXPLANATION_NAMESPACE = "explanations";
         final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
 
         // Set namespaces
@@ -360,36 +360,22 @@ public class ExplanationService {
         Property rdfType = systemExplanationModel.createProperty(RDF.getURI() + "type");
         questionResource.addProperty(rdfType, RDF.Seq);
 
-        /*
-        // Add elements
-        Resource eins = systemExplanationModel.createResource();
-        Resource zwei = systemExplanationModel.createResource();
-
-        Statement stmt1 = systemExplanationModel.createStatement(eins, RDF.type, FOAF.Person);
-        Statement stmt2 = systemExplanationModel.createStatement(zwei, RDF.type, FOAF.Organization);
-
-        ReifiedStatement rstmt1 = systemExplanationModel.createReifiedStatement(stmt1);
-        ReifiedStatement rstmt2 = systemExplanationModel.createReifiedStatement(stmt2);
-
-        questionResource.addProperty(RDF.li(1),rstmt1);
-        questionResource.addProperty(RDF.li(2),rstmt2);
-        */
-
-
-        /*
-        RDF Sequence with "number of Models" reified statements  => 2 components === 2 reified statements
-        Each reified statement contains
-         */
-
         for(int i = 0; i < components.length; i++) {
+            int j = i;
             Model model = models.get(components[i].getComponent().getValue()); // get the model for the component at position "i" in component list // remember: models is Map with componentUri as key
             Iterator<Statement> itr = model.listStatements();
+            // creating inner Sequence for the reified statements
+            Resource innerSequence = systemExplanationModel.createResource();
+            innerSequence.addProperty(rdfType, RDF.Seq);    // doesn't need to be a Sequence, order is not relevant here (?)
+            // adding the inner Sequence as a property to the outer sequence / the resource questionResource
+            questionResource.addProperty(RDF.li(i+1),innerSequence);
+            // iterate over the statements in the model which contains any triples for the current component
             while(itr.hasNext()) {
                 ReifiedStatement reifiedStatement = systemExplanationModel.createReifiedStatement(itr.next());
-                questionResource.addProperty(RDF.li(i+1), reifiedStatement);
+                innerSequence.addProperty(RDF.li(j), reifiedStatement);
+                j++;
             }
         }
-
 
         FileWriter fileWriter = new FileWriter("output.rdf");
         systemExplanationModel.write(fileWriter,"Turtle");
