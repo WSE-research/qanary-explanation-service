@@ -1,4 +1,4 @@
-= Webservice for explanation
+= Qanary Explanation Service
 :toc:
 
 == Description
