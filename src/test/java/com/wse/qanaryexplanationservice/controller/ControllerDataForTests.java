@@ -15,16 +15,14 @@ public class ControllerDataForTests {
 
     private final String[] qaExplanationModels = {
             "qa-system-explanation-models/modelForRandomComponent1.ttl",
-            "qa-system-explanation-models/modelForRandomComponent2.ttl",
-            "qa-system-explanation-models/modelForRandomComponent3.ttl"
+            "qa-system-explanation-models/modelForRandomComponent2.ttl"
     };
     private final ComponentPojo[] components = {
             new ComponentPojo(new Component("type", "randomComponent1")),
-            new ComponentPojo(new Component("type", "randomComponent2")),
-            new ComponentPojo(new Component("type", "randomComponent3"))
+            new ComponentPojo(new Component("type", "randomComponent2"))
     };
 
-    private final String EXPECTED_MODEL_FILE = "expectedModel.ttl";
+    private final String EXPECTED_MODEL_FILE = "qa-system-explanation-models/expectedModel.ttl";
 
     // private String givenResults = "{\"bindings\":[{\"annotationId\":{\"type\":\"uri\",\"value\":\"tag:stardog:api:0.5264017467650085\"},\"type\":{\"type\":\"uri\",\"value\":\"http://www.wdaqua.eu/qa#AnnotationOfInstance\"},\"body\":{\"type\":\"uri\",\"value\":\"http://dbpedia.org/resource/String_theory\"},\"target\":{\"type\":\"bnode\",\"value\":\"b0\"},\"createdBy\":{\"type\":\"uri\",\"value\":\"urn:qanary:NED-DBpediaSpotlight\"},\"createdAt\":{\"datatype\":\"http://www.w3.org/2001/XMLSchema#dateTime\",\"type\":\"typed-literal\",\"value\":\"2023-08-08T09:05:31.387Z\"}}]}";
     private String givenResults = "{\"bindings\":[{\"annotationId\":{\"type\":\"uri\",\"value\":\"tag:stardog:api:0.5264017467650085\"},\"type\":{\"type\":\"uri\",\"value\":\"http://www.wdaqua.eu/qa#AnnotationOfInstance\"},\"body\":{\"type\":\"uri\",\"value\":\"http://dbpedia.org/resource/String_theory\"},\"target\":{\"type\":\"bnode\",\"value\":\"b0\"},\"createdBy\":{\"type\":\"uri\",\"value\":\"urn:qanary:NED-DBpediaSpotlight\"},\"createdAt\":{\"datatype\":\"http://www.w3.org/2001/XMLSchema#dateTime\",\"type\":\"typed-literal\",\"value\":\"2023-08-08T09:05:31.387Z\"}}]}";
@@ -71,13 +69,12 @@ public class ControllerDataForTests {
         return new HashMap<>() {{
             put(getComponents()[0].getComponent().getValue(), models.get(0));
             put(getComponents()[1].getComponent().getValue(), models.get(1));
-            put(getComponents()[2].getComponent().getValue(), models.get(2));
         }};
     }
 
     public Model getExpectedModelForQaSystemExplanation() {
         Model model = ModelFactory.createDefaultModel();
-        model.read(EXPECTED_MODEL_FILE);
+        model.read(EXPECTED_MODEL_FILE, "TURTLE");
         return model;
     }
 }

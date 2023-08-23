@@ -198,7 +198,7 @@ public class ExplanationServiceTest {
     @Nested
     class QaSystemExplanationTest {
 
-        final String graphID = "exampleGraphID";
+        final String graphID = "http://exampleQuestionURI.a/question";
         final String questionURI = "http://question-example.com/123/32a";
         @MockBean
         ExplanationSparqlRepository explanationSparqlRepository;
@@ -232,17 +232,17 @@ public class ExplanationServiceTest {
             components = controllerDataForTests.getComponents();
         }
 
-        /*
+
         // Testing the createSystemModel-method with several assertions
         @Test
-        void createSystemModelTest() throws FileNotFoundException {
+        void createSystemModelTest() throws IOException {
             setupCreateSystemModelTest();
             Model expectedModel = controllerDataForTests.getExpectedModelForQaSystemExplanation();
             Model computedModel = explanationService.createSystemModel(models, components, questionURI, graphID);
 
             assertTrue(expectedModel.isIsomorphicWith(computedModel));
         }
-        */
+
     }
 
 }
