@@ -1,7 +1,6 @@
 package com.wse.qanaryexplanationservice.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.StringToJsonNode;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
@@ -34,7 +33,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class ExplanationControllerTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final ControllerDataForTests controllerDataForTests = new ControllerDataForTests();
     private final StringToJsonNode stringToJsonNode = new StringToJsonNode();
     private Logger logger = LoggerFactory.getLogger(ExplanationControllerTest.class);
@@ -84,7 +82,6 @@ public class ExplanationControllerTest {
                     .andReturn();
         }
     }
-
 
     @Nested
     class QueryBuilderTests {

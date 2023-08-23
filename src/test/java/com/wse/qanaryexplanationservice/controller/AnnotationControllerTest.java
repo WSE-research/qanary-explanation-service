@@ -1,7 +1,6 @@
 package com.wse.qanaryexplanationservice.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.StringToJsonNode;
 import com.wse.qanaryexplanationservice.repositories.AnnotationSparqlRepository;
 import com.wse.qanaryexplanationservice.services.GetAnnotationsService;
@@ -27,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class AnnotationControllerTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final ControllerDataForTests controllerDataForTests = new ControllerDataForTests();
     @Autowired
     private MockMvc mockMvc;

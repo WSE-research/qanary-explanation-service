@@ -111,10 +111,6 @@ public class ExplanationServiceTest {
             sparqlQuery = queryPrefixes + " SELECT ?subject ?object WHERE { ?subject explanation:hasExplanationForCreatedData ?object }";
         }
 
-        /**
-         * - INPUT: Content in languages german and english, componentURI
-         */
-
         @Test
         void createRdfRepresentationTest() throws Exception {
             String result = explanationService.convertToDesiredFormat(null, explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
@@ -149,6 +145,7 @@ public class ExplanationServiceTest {
 
         @Test
         public void compareRepresentationModels() throws Exception {
+            // Create Strings with different format (plain == turtle, turtle, rdfxml,jsonld)
             String resultEmptyHeader = explanationService.convertToDesiredFormat(null, explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
             String resultTurtleHeader = explanationService.convertToDesiredFormat("text/turtle", explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
             String resultRDFXMLHeader = explanationService.convertToDesiredFormat("application/rdf+xml", explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
@@ -210,9 +207,6 @@ public class ExplanationServiceTest {
         ComponentPojo[] components;
         Map<String, Model> models;
 
-        QaSystemExplanationTest() throws FileNotFoundException {
-        }
-
         @BeforeEach
         void setup() throws IOException {
             controllerDataForTests = new ControllerDataForTests();
@@ -227,22 +221,24 @@ public class ExplanationServiceTest {
             assertEquals("Couldn't fetch the question!", exception.getMessage());
         }
 
+        // Gets models and components from ControllerDataForTests
         void setupCreateSystemModelTest() throws FileNotFoundException {
             models = controllerDataForTests.getQaSystemExplanationMap();
             components = controllerDataForTests.getComponents();
         }
 
 
-        // Testing the createSystemModel-method with several assertions
+        // Testing the createSystemModel-method
         @Test
         void createSystemModelTest() throws IOException {
             setupCreateSystemModelTest();
+            // Get the expected model from the test data
             Model expectedModel = controllerDataForTests.getExpectedModelForQaSystemExplanation();
+            // call method to create model from Models and components
             Model computedModel = explanationService.createSystemModel(models, components, questionURI, graphID);
 
             assertTrue(expectedModel.isIsomorphicWith(computedModel));
         }
-
     }
 
 }

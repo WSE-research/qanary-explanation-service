@@ -1,6 +1,5 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -86,7 +85,7 @@ public class ExplanationService {
     }
 
     //Overloaded explainSpecificComponent-method for further use
-    public Model explainSpecificComponent(String graphUri, String componentUri, String rawQuery) throws IOException {
+    public Model explainSpecificComponent(String graphUri, String componentUri, String rawQuery) throws Exception {
         ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, componentUri, rawQuery);
         String contentDe = convertToTextualExplanation(explanationObjects, "de", componentUri);
         String contentEn = convertToTextualExplanation(explanationObjects, "en", componentUri);
@@ -116,7 +115,7 @@ public class ExplanationService {
      * @param componentURI component URI
      * @return String formatted in either RDFXML, JSONLD or Turtle, depending on Accept-Header
      */
-    public Model createRdfRepresentation(String contentDe, String contentEn, String componentURI) throws IOException {
+    public Model createRdfRepresentation(String contentDe, String contentEn, String componentURI) {
 
         Model model = ModelFactory.createDefaultModel();
 
@@ -238,9 +237,8 @@ public class ExplanationService {
      *
      * @param explanationObjectsJsonNode JSON Node with explanationObject properties
      * @return Array of ExplanationObject objects
-     * @throws JsonProcessingException
      */
-    public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) throws JsonProcessingException {
+    public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) {
         try {
             // Handle mapping for LocalDateTime
             objectMapper.registerModule(new JavaTimeModule());
@@ -260,7 +258,7 @@ public class ExplanationService {
      * @param componentURI       needed for string
      * @return textual representation for the objects
      */
-    public String convertToTextualExplanation(ExplanationObject[] explanationObjects, String lang, String componentURI) {
+    public String convertToTextualExplanation(ExplanationObject[] explanationObjects, String lang, String componentURI) throws Exception {
         DecimalFormat df = new DecimalFormat("#.####");
         StringBuilder textualRepresentation = null;
         switch (lang) {
@@ -279,6 +277,7 @@ public class ExplanationService {
                 }
             }
             default -> {
+                throw new Exception("Invalid lang!");
             }
         }
         return textualRepresentation.toString().replaceAll("\n", " ").replaceAll("\\\\", "a");
