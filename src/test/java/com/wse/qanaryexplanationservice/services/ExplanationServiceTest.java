@@ -4,9 +4,10 @@ package com.wse.qanaryexplanationservice.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wse.qanaryexplanationservice.controller.ControllerDataForTests;
+import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
-import com.wse.qanaryexplanationservice.repositories.AnnotationSparqlRepository;
-import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
+import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
@@ -15,17 +16,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.servlet.MockMvc;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,11 +40,9 @@ import static org.mockito.Mockito.when;
 public class ExplanationServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
 
-    /**
-     * Assertion-Tests on converted Data
-     */
-
     private static final String QUERY = "/queries/explanation_for_query_builder.rq";
+    protected final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
+
     @Nested
     public class ConversionTests {
 
@@ -196,20 +196,53 @@ public class ExplanationServiceTest {
     }
 
     @Nested
-    class explainQaSystemTests {
+    class QaSystemExplanationTest {
 
-        @Autowired
-        MockMvc mockMvc;
-        @Mock
-        AnnotationSparqlRepository annotationSparqlRepository;
         final String graphID = "exampleGraphID";
+        final String questionURI = "http://question-example.com/123/32a";
+        @MockBean
+        ExplanationSparqlRepository explanationSparqlRepository;
         JsonNode jsonNode;
+        ControllerDataForTests controllerDataForTests;
+        ObjectMapper objectMapper = new ObjectMapper();
+        @Autowired
+        ExplanationService explanationService;
+        ComponentPojo[] components;
+        Map<String, Model> models;
+
+        QaSystemExplanationTest() throws FileNotFoundException {
+        }
 
         @BeforeEach
         void setup() throws IOException {
-            jsonNode = null; // TODO:
-            when(annotationSparqlRepository.executeSparqlQuery(anyString())).thenReturn(jsonNode);
+            controllerDataForTests = new ControllerDataForTests();
+            jsonNode = objectMapper.readTree(controllerDataForTests.getGivenResults());
+            when(explanationSparqlRepository.executeSparqlQuery(anyString())).thenReturn(jsonNode);
         }
+
+        // Testing if a wrong JsonNode leads to an error
+        @Test
+        void fetchQuestionUriFailingTest() throws Exception {
+            Throwable exception = assertThrows(Exception.class, () -> explanationService.fetchQuestionUri(graphID));
+            assertEquals("Couldn't fetch the question!", exception.getMessage());
+        }
+
+        void setupCreateSystemModelTest() throws FileNotFoundException {
+            models = controllerDataForTests.getQaSystemExplanationMap();
+            components = controllerDataForTests.getComponents();
+        }
+
+        /*
+        // Testing the createSystemModel-method with several assertions
+        @Test
+        void createSystemModelTest() throws FileNotFoundException {
+            setupCreateSystemModelTest();
+            Model expectedModel = controllerDataForTests.getExpectedModelForQaSystemExplanation();
+            Model computedModel = explanationService.createSystemModel(models, components, questionURI, graphID);
+
+            assertTrue(expectedModel.isIsomorphicWith(computedModel));
+        }
+        */
     }
 
 }

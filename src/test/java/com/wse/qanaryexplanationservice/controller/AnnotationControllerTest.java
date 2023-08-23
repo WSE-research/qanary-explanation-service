@@ -16,11 +16,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
 import java.io.IOException;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
@@ -28,14 +27,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class AnnotationControllerTest {
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ControllerDataForTests controllerDataForTests = new ControllerDataForTests();
     @Autowired
     private MockMvc mockMvc;
     @MockBean
     private AnnotationSparqlRepository annotationSparqlRepository;
     @Mock
     private GetAnnotationsService getAnnotationsService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final ControllerDataForTests controllerDataForTests = new ControllerDataForTests();
 
     public void setup_givenResults_thenStatus200() throws IOException {
         StringToJsonNode stringToJsonNode = new StringToJsonNode();

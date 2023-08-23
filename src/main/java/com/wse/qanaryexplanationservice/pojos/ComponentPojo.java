@@ -4,9 +4,14 @@ import com.wse.qanaryexplanationservice.pojos.ResultObjectDTOs.Component;
 
 public class ComponentPojo {
 
-    public ComponentPojo() {}
-
     private Component component;
+
+    public ComponentPojo() {
+    }
+
+    public ComponentPojo(Component component) {
+        this.component = component;
+    }
 
     public Component getComponent() {
         return component;
