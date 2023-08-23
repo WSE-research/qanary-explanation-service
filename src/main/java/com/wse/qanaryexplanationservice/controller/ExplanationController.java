@@ -20,9 +20,8 @@ public class ExplanationController {
     private static final String DBpediaSpotlight_SPARQL_QUERY = "/queries/explanation_for_dbpediaSpotlight_sparql_query.rq";
     private static final String QBBirthdateWikidata_SPARQL_QUERY = "/queries/explanation_for_birthdate_wikidata.rq";
     private static final String GENERAL_EXPLANATION_SPARQL_QUERY = "/queries/general_explanation.rq";
-    private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
     private static final String QueryBuilder_SPARQL_QUERY = "/queries/explanation_for_query_builder.rq";
-
+    private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
     @Autowired
     private ExplanationService explanationService;
 
@@ -96,7 +95,7 @@ public class ExplanationController {
 
     @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
     public ResponseEntity<String> handleHttpMediaTypeNotAcceptableException() {
-        return new ResponseEntity<>("Accecpted header: " +
+        return new ResponseEntity<>("Accepted headers: " +
                 "application/rdf+xml, " +
                 "text/turtle, " +
                 "application/ld+json",
