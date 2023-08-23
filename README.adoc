@@ -1,73 +1,94 @@
+:toc:
+:toclevels: 5
+:toc-placement!:
+:source-highlighter: highlight.js
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 = Qanary Explanation Service
+
 :toc:
 
 == Description
 
-QA component mostly create outputs (e.g. query builder create SPARQL queries) and store them as new annotation to the origin graphID in the triplestore. To understand components it's helpful to understand the output they generate, while acknowledge that this is only a first step in explaining the component or even QA systems.
+Question Answering components following the https://github.com/WDAqua/Qanary[Qanary methodology] mostly create outputs (e.g., https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-QB-BirthDataWikidata[a query builder component typically generates RDF data or SPARQL queries, respectively ]) and store them as new annotations to an RDF graph in the triplestore. 
+To understand Qanary components it's helpful to have knowledge about the data they generate while acknowledging that this is only a first step in explaining the component or even QA systems.
 
-This webservice provides some functionalities to compute explanations for some components in triplestore-graphs.
+This webservice provides some functionalities to compute explanations for some Qanary components in triplestore graphs.
 
 == Build and Installation
 
 === Building
 
-==== Directly
+==== Building from scratch using Java
 
 Create the .jar-file like so:
-[]
+
+[source, bash]
 ----
 mvn clean install
 ----
 
-==== With Docker
+==== Building with Docker
 
 Build an image with the existing Dockerfile like so
-[]
+
+[source,bash]
 ----
 docker build . -t <yourDesiredImageName>
 ----
 
-=== Installation
+=== Running the application
 
-* when using the .jar-file: 
+* while using the JAR file: 
 +
 --
 ** execute it like so `java -jar ./PATH/TO/PACKAGED_JAR.jar`
 --
-* when using the created Docker-file:
+* while using the created Dockerfile:
 +
 --
-** `docker run -p 1234:4000 <yourDesiredImageName>`
-*** the "p"-tag is optional and maps the applications-port (4000) to another one, in this case "1234"
+** `docker run -p 12345:4000 <yourDesiredImageName>`
+*** the "p"-tag is optional and maps the applications-port (4000) to another one, in this case and on a local machine the service would be available at "http://localhost:12345"
 --
 
 == Usage
-* when accessing one of the following endpoints make sure to pass the required values as parameter
-** when you`re working with curl do it like so: `curl http://localhost:4000/explanation?graphID=<whateverGraphidYouHave>`
-*** for more than one parameter: `curl "http://localhost:4000/explanation?graphID=<whateverGraphidYouHave>&<anotherParameter>=<ValueOfTheOtherParameter>"`, with attention to the ' " " '
+
+* when accessing one of the following endpoints make sure to pass the required values as parameters
+** when you're working with the curl command do it like so: `curl http://localhost:12345/explanation?graphID=<whateverGraphidYouHave>`
+*** for more than one parameter: `curl "http://localhost:12345/explanation?graphID=<whateverGraphidYouHave>&<anotherParameter>=<ValueOfTheOtherParameter>"`, with attention to the ' " " '
 
 === Settings
+
 Change the following as you need them:
 
 .*applications.properties*
-[]
+[source, ini]
 ----
 server.port = 4000
 sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 ----
 
 === Functionalities
-Currently there are several endpoints with different tasks, as of the latest version these are:
+
+Currently, there are several endpoints with different tasks, as of the latest version these are:
 
 * `/explanation` 
 +
 --
-*required Parameter:*  graphID::String
+*required parameter:*  graphURI (parsable as IRI)
 
-*returns:* a list of objects of all annotations which have the following structure  https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-NED-DBpediaSpotlight[qanary-component-NED-DBpediaSpotlight]
+*example request:* ...
+
+*return:* a list of objects of all annotations which have the following structure  https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-NED-DBpediaSpotlight[qanary-component-NED-DBpediaSpotlight]
 
 *SPARQL query:*
-[]
+[source, sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
@@ -76,7 +97,7 @@ SELECT *
 FROM ?graphURI
 
 WHERE {
-  	?annotationId a qa:AnnotationOfInstance.
+    ?annotationId a qa:AnnotationOfInstance.
     ?annotationId rdf:type ?type.
     ?annotationId oa:hasBody ?body.
     ?annotationId oa:hasTarget [
@@ -97,12 +118,12 @@ WHERE {
 * `/explanationforquerybuilder`
 +
 --
-*required Parameter:*  graphID::String
+*required Parameter:*  graphURI (parsable as IRI)
 
-*returns:* a textual explanation with the created SPARQL-queries which has been created by every involved QB-component
+*return:* a textual explanation with the created SPARQL-queries which has been created by every involved QB-component
 
 *SPARQL query:*
-[]
+[source,sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
@@ -122,12 +143,12 @@ WHERE {
 * `/getannotations`
 +
 --
-*required Parameter:*  graphID::String
+*required Parameter:*  graphURI (parsable as IRI)
 
-*returns:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL-Query)
+*return:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL-Query)
 
 *SPARQL query:*
-[]
+[source,sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
@@ -146,9 +167,9 @@ WHERE {
 * `/explainspecificcomponent`
 +
 --
-*required Parameter:*  graphID::String, componentURI::String
+*required Parameter:*  graphURI (parsable as IRI), componentURI (parsable as IRI)
 
-*returns:* depending on the Accept-Header:
+*return:* depending on the Accept-Header:
 
 ** *none*: Turtle
 ** *application/rdf+xml*: RDF/XML
@@ -156,7 +177,7 @@ WHERE {
 ** *other*: no response
 
 *SPARQL query:*
-[]
+[source,sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
@@ -174,20 +195,21 @@ WHERE {
 --
 
 === Example 
+
 . Firstly we start a QA process with the Question "What is the real name of Superman?" and the components
 ** NED-DBpediaSpotlight and
 ** QB-SimpleRealNameOfSuperhero
-. As a result we should get q graphID
-** for me thats `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
-. Now we can use this graphID or a different one (maybe one where we donÄt know the acting components) for some requests against the webservice 
+. As a result, we should get a `graphURI`
+** in our example, let's assume it is `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
+. Now, we can use this graphURI or a different one (maybe one where we don't know the acting components) for some requests against the webservice 
 ** to get all annotations we could execute the following curl in a terminal
-*** `curl http://localhost:4000/getannotations?graphID=urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
-** as a result we should get a array of objects containing the properties from the SPARQL-query
+*** `curl http://localhost:12345/getannotations?graphID=urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
+** As a result, we should get an array of objects containing the properties from the SPARQL query
 
 .Ergebnis
 [%collapsible]
 ====
-[source]
+[source,json]
 ----
 [
     {
