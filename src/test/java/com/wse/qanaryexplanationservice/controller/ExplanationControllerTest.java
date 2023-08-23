@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,54 +37,64 @@ public class ExplanationControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ControllerDataForTests controllerDataForTests = new ControllerDataForTests();
     private final StringToJsonNode stringToJsonNode = new StringToJsonNode();
-    @Autowired
-    private MockMvc mockMvc;
-    @MockBean
-    private ExplanationSparqlRepository explanationSparqlRepository;
-    @MockBean
-    private ExplanationService explanationService;
-
     private Logger logger = LoggerFactory.getLogger(ExplanationControllerTest.class);
 
-    @Test
-    public void missingParameter_thenError() throws Exception {
-        mockMvc.perform(get("/explanation"))
-                .andExpect(status().isBadRequest());
+    @Nested
+    class Tests {
+        @Autowired
+        private MockMvc mockMvc;
+        @Mock
+        private ExplanationService explanationService;
+        @MockBean
+        private ExplanationSparqlRepository explanationSparqlRepository;
+
+        @Test
+        public void missingParameter_thenError() throws Exception {
+            mockMvc.perform(get("/explanation"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        public void setup_noResults_thenStatus400() throws IOException {
+            Mockito.when(explanationSparqlRepository.executeSparqlQuery(any())).thenReturn(null);
+        }
+
+        @Test
+        public void noExplanations_thenStatus400() throws Exception {
+            setup_noResults_thenStatus400();
+            mockMvc.perform(get("/explanation")
+                            .param("graphID", "anyGraphID"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        public void setup_givenExplanations_thenStatus200() throws IOException {
+            String jsonString = controllerDataForTests.getGivenExplanations();
+            JsonNode toBeTested = stringToJsonNode.convertStingToJsonNode(jsonString);
+            Mockito.when(explanationSparqlRepository.executeSparqlQuery(any())).thenReturn(toBeTested);
+            String givenQuestion = "What is the real name of Superman?";
+            Mockito.when(explanationSparqlRepository.fetchQuestion(any())).thenReturn(givenQuestion);
+        }
+
+
+        @Test
+        public void givenResults_thenStatus200() throws Exception {
+            setup_givenExplanations_thenStatus200();
+            MvcResult result = mockMvc.perform(get("/explanation")
+                            .param("graphID", "asd23132qwe"))
+                    .andExpect(status().isOk())
+                    .andReturn();
+        }
     }
 
-    public void setup_noResults_thenStatus400() throws IOException {
-        Mockito.when(explanationSparqlRepository.executeSparqlQuery(any())).thenReturn(null);
-    }
-
-    @Test
-    public void noExplanations_thenStatus400() throws Exception {
-        setup_noResults_thenStatus400();
-        mockMvc.perform(get("/explanation")
-                        .param("graphID", "anyGraphID"))
-                .andExpect(status().isBadRequest());
-    }
-
-    public void setup_givenExplanations_thenStatus200() throws IOException {
-        String jsonString = controllerDataForTests.getGivenExplanations();
-        JsonNode toBeTested = stringToJsonNode.convertStingToJsonNode(jsonString);
-        Mockito.when(explanationSparqlRepository.executeSparqlQuery(any())).thenReturn(toBeTested);
-        String givenQuestion = "What is the real name of Superman?";
-        Mockito.when(explanationSparqlRepository.fetchQuestion(any())).thenReturn(givenQuestion);
-    }
-
-    /* TODO: not working anymore?
-    @Test
-    public void givenResults_thenStatus200() throws Exception {
-        setup_givenExplanations_thenStatus200();
-        MvcResult result = mockMvc.perform(get("/explanation")
-                        .param("graphID", "asd23132qwe"))
-                .andExpect(status().isOk())
-                .andReturn();
-    }
-    */
 
     @Nested
     class QueryBuilderTests {
+        @Autowired
+        private MockMvc mockMvc;
+        @Mock
+        private ExplanationService explanationService;
+        @MockBean
+        private ExplanationSparqlRepository explanationSparqlRepository;
+
         public void setupExplainQueryBuilderTest(boolean withQBValues) throws IOException {
             String jsonString;
             if (withQBValues)
@@ -95,7 +106,6 @@ public class ExplanationControllerTest {
             Mockito.when(explanationService.buildSparqlQuery(any(), any(), any())).thenReturn("example Sparql-query");
         }
 
-        /* TODO: not working anymore?
         @Test
         public void explainQueryBuilderTest() throws Exception {
             setupExplainQueryBuilderTest(true);
@@ -110,8 +120,6 @@ public class ExplanationControllerTest {
             String resultBody = result.getResponse().getContentAsString();
             assertEquals(expectedResult, resultBody);
         }
-        */
-
 
         @Test
         public void explainQueryBuilderWithoutQueryBuilderComponentsTest() throws Exception {
@@ -132,6 +140,12 @@ public class ExplanationControllerTest {
     class QaSystemExplanationTest {
 
         private final String testReturn = "randomString";
+        @Autowired
+        MockMvc mockMvc;
+        @MockBean
+        private ExplanationSparqlRepository explanationSparqlRepository;
+        @MockBean
+        private ExplanationService explanationService;
 
         @BeforeEach
         void setup() throws Exception {
