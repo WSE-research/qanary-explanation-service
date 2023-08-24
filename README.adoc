@@ -78,71 +78,9 @@ sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 
 Currently, there are several endpoints with different tasks, as of the latest version these are:
 
-* `/explanation`
-+
 --
-*required parameter:*  graphURI (parsable as IRI)
-
-*example request:* ...
-
-*return:* a list of objects of all annotations which have the following structure  https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-NED-DBpediaSpotlight[qanary-component-NED-DBpediaSpotlight]
-
-*SPARQL query:*
-<<<<<<< HEAD
-
-[source,sparql]
-----
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
-PREFIX qa: <http://www.wdaqua.eu/qa#>
-SELECT *
-FROM ?graphURI
-
-WHERE {
-    ?annotationId a qa:AnnotationOfInstance.
-    ?annotationId rdf:type ?type.
-    ?annotationId oa:hasBody ?body.
-    ?annotationId oa:hasTarget [
-	a oa:SpecificResource;
-                  oa:hasSource ?source;
-                  oa:hasSelector [
-    	a oa:TextPositionSelector;
-                  oa:start ?start;
-                  oa:end ?end;
-    ]
-].
-    ?annotationId oa:annotatedBy $createdBy .
-    ?annotationId oa:annotatedAt $createdAt .
-    ?annotationId qa:score ?score .
-}
-----
 --
-* `/explanationforquerybuilder`
-+
---
-*required Parameter:*  graphURI (parsable as IRI)
 
-*return:* a textual explanation with the created SPARQL-queries which has been created by every involved QB-component
-
-*SPARQL query:*
-
-[source,sparql]
-----
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
-PREFIX qa: <http://www.wdaqua.eu/qa#>
-SELECT *
-FROM ?graphURI
-
-WHERE {
-    ?annotationId a qa:AnnotationOfAnswerSPARQL .
-    ?annotationId oa:hasBody ?body .
-    ?annotationId oa:annotatedBy $createdBy .
-    ?annotationId oa:annotatedAt $createdAt .
-    ?annotationId qa:score ?score .
-}
-----
---
 * `/getannotations`
 +
 --
@@ -167,40 +105,42 @@ WHERE {
     ?annotationId oa:annotatedAt $createdAt .
 }
 ----
+
 --
-* `/explainspecificcomponent`
+* `/explanations/{graphURI}/{componentURI}`
 +
 --
-*required Parameter:*  graphURI (parsable as IRI), componentURI (parsable as IRI)
+*Path Variables:*
+--
++
+--
+** required: graphURI::String
+** optional: componentURI::String
++
+--
 
-*return:* depending on the Accept-Header:
+*Returns:*
++
+--
+** with only the graphURI given: an formatted explanation for the QA-process on the graphURI depending on the following Accept-Header:
+* none: Turtle
+* "application/ld+json": JSONLD
+* "application/rdf+xml": RDFXML
+* "text/turtle": Turtle
+* other: no response, NOT_ACCEPTABLE (406)
+** with graphURI and componentURI given: an formatted explanation for the specific component within the QA-process of the given graphURI depending on the following Accept-Header:
+* none: Turtle
+* "application/ld+json": JSONLD
+* "application/rdf+xml": RDFXML
+* "text/turtle": Turtle
+* other: no response, NOT_ACCEPTABLE (406)
+--
 
-** *none*: Turtle
-** *application/rdf+xml*: RDF/XML
-** *application/ld+json*: JSONLD
-** *other*: no response
-
-*SPARQL query:*
-
-[source,sparql]
-----
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
-PREFIX qa: <http://www.wdaqua.eu/qa#>
-SELECT *
-FROM ?graphURI
-
-WHERE {
-    ?annotationId oa:annotatedBy ?componentURI .
-    ?annotationId oa:hasBody ?body .
-    ?annotationId oa:annotatedAt $createdAt .
-    ?annotationId qa:score ?score .
-}
-----
 --
 * `/explainqasystem`
 +
 --
+
 *required Parameter:* graphURI::String
 
 *returns:* Depending on the following Accept-Header
@@ -219,8 +159,8 @@ is a representation of the system returned.
 It includes the order of component execution and within this sequence it contains the component-specific explanation following the response from the specific Explanation for a componentURI on a graphID (see `/explainspecificcomponent`)
 
 *Example Return*
-* .Return
 
+.Return
 [%collapsible]
 ====
 [source]
@@ -290,13 +230,12 @@ It includes the order of component execution and within this sequence it contain
 
 ----
 ====
---
 
-=== Example 
+=== Example
 
 . Firstly we start a QA process with the Question "What is the real name of Superman?" and the components
 ** NED-DBpediaSpotlight and
-** QB-SimpleRealNameOfSuperhero <<<<<<< HEAD
+** QB-SimpleRealNameOfSuperhero
 . As a result, we should get a `graphURI`
 ** in our example, let's assume it is `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
 . Now, we can use this graphURI or a different one (maybe one where we don't know the acting components) for some requests against the webservice
@@ -304,7 +243,7 @@ It includes the order of component execution and within this sequence it contain
 =======
 . As a result we should get q graphID
 ** for me thats `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
-. Now we can use this graphID or a different one (maybe one where we donÄt know the acting components) for some requests against the webservice >>>>>>> origin/qaExplanationAsRdfTurtle
+. Now we can use this graphID or a different one (maybe one where we donÄt know the acting components) for some requests against the webservice
 ** to get all annotations we could execute the following curl in a terminal
 *** `curl http://localhost:12345/getannotations?graphID=urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
 ** As a result, we should get an array of objects containing the properties from the SPARQL query
