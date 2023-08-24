@@ -1,24 +1,19 @@
 package com.wse.qanaryexplanationservice.controller;
 
 
-import com.wse.qanaryexplanationservice.pojos.ResultObject;
-import com.wse.qanaryexplanationservice.services.AnnotationsService;
-
 import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
+import com.wse.qanaryexplanationservice.services.AnnotationsService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import java.io.IOException;
-import com.wse.qanaryexplanationservice.services.AnnotationsService;
 
 @RestController
 public class AnnotationController {
@@ -28,12 +23,17 @@ public class AnnotationController {
 
     /**
      * @param graphURI graphURI to work with
+     * @param graphID  graphId to work with
      * @return the list of results (ResultObjects)
-     * @param graphID graphId to work with
      * @return the list of results (ExplanationObjects)
      */
     @CrossOrigin
     @GetMapping("/getannotations")
+    @Operation(
+            summary = "Endpoint to request every made annotation within a QA-process",
+            description = "This endpoint returns a list of annotations made by the QA-process of the "
+                    + "provided graphURI. Requires graphURI."
+    )
     public ResponseEntity<ExplanationObject[]> getAnnotations(@RequestParam String graphURI) throws IOException {
         ExplanationObject[] explanationObjects = annotationsService.getAnnotations(graphURI);
         if (explanationObjects != null)
@@ -44,8 +44,13 @@ public class AnnotationController {
 
     @CrossOrigin
     @GetMapping("/components")
-    public ResponseEntity<ComponentPojo[]> getComponents(@RequestParam String graphID) throws IOException {
-        ComponentPojo[] result = annotationsService.getUsedComponents(graphID);
+    @Operation(
+            summary = "Endpoint to receive any involved component in a QA-process",
+            description = "To use that endpoint you have to provide a graphURI from a QA-process "
+                    + "and it'll return a distinct list of involved components"
+    )
+    public ResponseEntity<ComponentPojo[]> getComponents(@RequestParam String graphURI) throws IOException {
+        ComponentPojo[] result = annotationsService.getUsedComponents(graphURI);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
