@@ -8,10 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
@@ -23,18 +20,16 @@ public class AnnotationController {
 
     /**
      * @param graphURI graphURI to work with
-     * @param graphID  graphId to work with
-     * @return the list of results (ResultObjects)
      * @return the list of results (ExplanationObjects)
      */
     @CrossOrigin
-    @GetMapping("/getannotations")
+    @GetMapping("/annotations/{graphURI}")
     @Operation(
             summary = "Endpoint to request every made annotation within a QA-process",
             description = "This endpoint returns a list of annotations made by the QA-process of the "
                     + "provided graphURI. Requires graphURI."
     )
-    public ResponseEntity<ExplanationObject[]> getAnnotations(@RequestParam String graphURI) throws IOException {
+    public ResponseEntity<ExplanationObject[]> getAnnotations(@PathVariable String graphURI) throws IOException {
         ExplanationObject[] explanationObjects = annotationsService.getAnnotations(graphURI);
         if (explanationObjects != null)
             return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
