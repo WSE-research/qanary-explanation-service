@@ -248,7 +248,7 @@ explanation:hasExplanationForCreatedData
 *** `curl http://localhost:12345/annotations/urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
 ** As a result, we should get an array of objects containing the properties from the SPARQL query
 
-.Ergebnis
+.Result
 [%collapsible]
 ====
 [source,json]
