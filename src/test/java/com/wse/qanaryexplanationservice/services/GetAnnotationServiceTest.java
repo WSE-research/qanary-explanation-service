@@ -12,23 +12,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.IOException;
 
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class GetAnnotationServiceTest {
     @Autowired
-    private GetAnnotationsService getAnnotationsService;
+    private AnnotationsService annotationsService;
 
     @Test
     public void mapResponseToResultObjectsTest() {
         JsonNode jsonNode = null;
 
-        Assertions.assertNull(getAnnotationsService.mapResponseToObjectArray(jsonNode));
+        Assertions.assertNull(annotationsService.mapResponseToObjectArray(jsonNode));
     }
 
     @Nested
@@ -43,7 +43,7 @@ public class GetAnnotationServiceTest {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForResultObjects(), JsonNode.class);
 
-            resultObjects = getAnnotationsService.mapResponseToObjectArray(jsonNode);
+            resultObjects = annotationsService.mapResponseToObjectArray(jsonNode);
         }
 
         @Test

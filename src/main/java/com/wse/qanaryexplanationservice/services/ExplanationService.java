@@ -39,7 +39,7 @@ public class ExplanationService {
      * Currently explains the DBpediaSpotlight-component since the query has the specific structure
      *
      * @param rawQuery specific Query which is being used fetching data from triplestore (in this case dbpedia sprql query used) -> defined in Controller
-     * @param graphUri graphID to work with
+     * @param graphUri graphURI to work with
      * @return textual explanation // TODO: change later, depending on needs
      */
 
@@ -57,7 +57,7 @@ public class ExplanationService {
     }
 
     /**
-     * Computes an textual explanation for a specific component on a specific graphID
+     * Computes an textual explanation for a specific component on a specific graphURI
      *
      * @param graphUri     specific graphURI
      * @param componentUri specific componentURI
@@ -82,8 +82,8 @@ public class ExplanationService {
         return convertToExplanationObjects(explanationObjectsJsonNode);
     }
 
-    public ExplanationObject[] explainComponentDBpediaSpotlight(String graphID, String rawQuery) throws IOException {
-        ExplanationObject[] explanationObjects = getExplanationObjects(graphID, rawQuery);
+    public ExplanationObject[] explainComponentDBpediaSpotlight(String graphURI, String rawQuery) throws IOException {
+        ExplanationObject[] explanationObjects = getExplanationObjects(graphURI, rawQuery);
         String question;
         if (explanationObjects != null && explanationObjects.length > 0) {
             question = getQuestion(explanationObjects[0]); // question uri is saved in every single Object, just take the first one
@@ -161,8 +161,8 @@ public class ExplanationService {
         }
     }
 
-    public String explainQueryBuilder(String graphID, String rawQuery) throws IOException {
-        ExplanationObject[] explanationObjects = getExplanationObjects(graphID, rawQuery);
+    public String explainQueryBuilder(String graphURI, String rawQuery) throws IOException {
+        ExplanationObject[] explanationObjects = getExplanationObjects(graphURI, rawQuery);
 
         // Restriction to QueryBuilder
         String qb = "QB";
@@ -183,9 +183,9 @@ public class ExplanationService {
             return null;
     }
 
-    public ExplanationObject[] getExplanationObjects(String graphID, String rawQuery) throws IOException {
+    public ExplanationObject[] getExplanationObjects(String graphURI, String rawQuery) throws IOException {
         // Get annotation properties with explanation_for_dbpediaSpotlight_sparql_query.rq query
-        String query = buildSparqlQuery(graphID, null, rawQuery);
+        String query = buildSparqlQuery(graphURI, null, rawQuery);
         JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
 
         return convertToExplanationObjects(explanationObjectsJsonNode);
@@ -222,14 +222,14 @@ public class ExplanationService {
     }
 
     /**
-     * @param graphID given graphID
+     * @param graphURI given graphURI
      * @return query with params set (graphURI)
      */
 
-    public String buildSparqlQuery(String graphID, String componentUri, String rawQuery) throws IOException {
+    public String buildSparqlQuery(String graphURI, String componentUri, String rawQuery) throws IOException {
 
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
-        bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
+        bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphURI));
         if (componentUri != null)    // Extension for compatibility w/ explanation for specific component
             bindingsForSparqlQuery.add("componentURI", ResourceFactory.createResource(componentUri));
 

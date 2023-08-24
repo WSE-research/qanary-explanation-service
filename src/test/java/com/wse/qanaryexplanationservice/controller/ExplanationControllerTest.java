@@ -63,7 +63,7 @@ public class ExplanationControllerTest {
     public void noExplanations_thenStatus400() throws Exception {
         setup_noResults_thenStatus400();
         mockMvc.perform(get("/explanation")
-                        .param("graphID", "anyGraphID"))
+                        .param("graphURI", "anygraphURI"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -79,7 +79,7 @@ public class ExplanationControllerTest {
     public void givenResults_thenStatus200() throws Exception {
         setup_givenExplanations_thenStatus200();
         mockMvc.perform(get("/explanation")
-                        .param("graphID", "anyGraphID"))
+                        .param("graphURI", "anygraphURI"))
                 .andExpect(status().isOk());
     }
 
@@ -102,7 +102,7 @@ public class ExplanationControllerTest {
             String qbResourceInControllerDataForTests = "http://dbpedia.org/resource/String_theory";
             String expectedResult = "The component created the following SPARQL queries: '" + qbResourceInControllerDataForTests + "'\n";
             MvcResult result = mockMvc.perform(get("/explanationforquerybuilder")
-                            .param("graphID", "example"))
+                            .param("graphURI", "example"))
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andReturn();
@@ -116,7 +116,7 @@ public class ExplanationControllerTest {
             setupExplainQueryBuilderTest(false);
             String failedResponse = "There are no created sparql queries";
             MvcResult result = mockMvc.perform(get("/explanationforquerybuilder")
-                            .param("graphID", "example"))
+                            .param("graphURI", "example"))
                     .andDo(print())
                     .andExpect(status().isBadRequest())
                     .andReturn();

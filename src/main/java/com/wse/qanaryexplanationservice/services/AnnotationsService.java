@@ -5,32 +5,31 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.wse.qanaryexplanationservice.pojos.ResultObject;
+import com.wse.qanaryexplanationservice.repositories.AnnotationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.wse.qanaryexplanationservice.repositories.AnnotationSparqlRepository;
-
 import java.io.IOException;
 
 @Service
-public class GetAnnotationsService {
+public class AnnotationsService {
 
-    @Autowired
-    AnnotationSparqlRepository annotationSparqlRepository;
     private static final String FILE_SPARQL_QUERY = "/queries/annotations_sparql_query.rq";
     private final ObjectMapper objectMapper;
+    @Autowired
+    AnnotationSparqlRepository annotationSparqlRepository;
 
-    public GetAnnotationsService() {
+    public AnnotationsService() {
         objectMapper = new ObjectMapper();
     }
 
-    public String createQuery(String graphID) throws IOException {
+    public String createQuery(String graphURI) throws IOException {
         try {
             QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
-            bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphID));
+            bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphURI));
 
             return QanaryTripleStoreConnector.readFileFromResourcesWithMap(FILE_SPARQL_QUERY, bindingsForSparqlQuery);
         } catch (Exception e) {
@@ -39,11 +38,11 @@ public class GetAnnotationsService {
     }
 
     /**
-     * @param graphID graphID to operate with
+     * @param graphURI graphURI to operate with
      * @return Array of ResultObjects which will be redirected to the controller which returns it to the user
      */
-    public ResultObject[] getAnnotations(String graphID) throws IOException {
-        String query = createQuery(graphID);
+    public ResultObject[] getAnnotations(String graphURI) throws IOException {
+        String query = createQuery(graphURI);
         JsonNode resultObjectsJsonNode = annotationSparqlRepository.executeSparqlQuery(query);
 
         if (resultObjectsJsonNode != null)

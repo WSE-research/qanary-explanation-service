@@ -6,7 +6,7 @@ import java.io.IOException;
 
 public interface SparqlRepositoryIF {
 
-    JsonNode executeSparqlQuery(String graphID) throws IOException;
+    JsonNode executeSparqlQuery(String graphURI) throws IOException;
 
     String fetchQuestion(String questionURI);
 
