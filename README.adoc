@@ -16,7 +16,7 @@ endif::[]
 
 == Description
 
-Question Answering components following the https://github.com/WDAqua/Qanary[Qanary methodology] mostly create outputs (e.g., https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-QB-BirthDataWikidata[a query builder component typically generates RDF data or SPARQL queries, respectively ]) and store them as new annotations to an RDF graph in the triplestore. 
+Question Answering components following the https://github.com/WDAqua/Qanary[Qanary methodology] mostly create outputs (e.g., https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-QB-BirthDataWikidata[a query builder component typically generates RDF data or SPARQL queries, respectively ]) and store them as new annotations to an RDF graph in the triplestore.
 To understand Qanary components it's helpful to have knowledge about the data they generate while acknowledging that this is only a first step in explaining the component or even QA systems.
 
 This webservice provides some functionalities to compute explanations for some Qanary components in triplestore graphs.
@@ -29,7 +29,7 @@ This webservice provides some functionalities to compute explanations for some Q
 
 Create the .jar-file like so:
 
-[source, bash]
+[source,bash]
 ----
 mvn clean install
 ----
@@ -45,7 +45,7 @@ docker build . -t <yourDesiredImageName>
 
 === Running the application
 
-* while using the JAR file: 
+* while using the JAR file:
 +
 --
 ** execute it like so `java -jar ./PATH/TO/PACKAGED_JAR.jar`
@@ -68,7 +68,7 @@ docker build . -t <yourDesiredImageName>
 Change the following as you need them:
 
 .*applications.properties*
-[source, ini]
+[source,ini]
 ----
 server.port = 4000
 sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
@@ -78,7 +78,7 @@ sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 
 Currently, there are several endpoints with different tasks, as of the latest version these are:
 
-* `/explanation` 
+* `/explanation`
 +
 --
 *required parameter:*  graphURI (parsable as IRI)
@@ -88,7 +88,9 @@ Currently, there are several endpoints with different tasks, as of the latest ve
 *return:* a list of objects of all annotations which have the following structure  https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-NED-DBpediaSpotlight[qanary-component-NED-DBpediaSpotlight]
 
 *SPARQL query:*
-[source, sparql]
+<<<<<<< HEAD
+
+[source,sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
@@ -123,6 +125,7 @@ WHERE {
 *return:* a textual explanation with the created SPARQL-queries which has been created by every involved QB-component
 
 *SPARQL query:*
+
 [source,sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -148,6 +151,7 @@ WHERE {
 *return:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL-Query)
 
 *SPARQL query:*
+
 [source,sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -177,6 +181,7 @@ WHERE {
 ** *other*: no response
 
 *SPARQL query:*
+
 [source,sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -193,15 +198,113 @@ WHERE {
 }
 ----
 --
+* `/explainqasystem`
++
+--
+*required Parameter:* graphURI::String
+
+*returns:* Depending on the following Accept-Header
+
+** none: Turtle
+
+** "application/ld+json": JSONLD
+
+** "application/rdf+xml": RDFXML
+
+** "text/turtle": Turtle
+
+** other: no response, NOT_ACCEPTABLE (406)
+
+is a representation of the system returned.
+It includes the order of component execution and within this sequence it contains the component-specific explanation following the response from the specific Explanation for a componentURI on a graphID (see `/explainspecificcomponent`)
+
+*Example Return*
+* .Return
+
+[%collapsible]
+====
+[source]
+----
+@prefix explanation:
+<urn:qanary:explanations> .
+@prefix rdf:
+    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:
+        <http://www.w3.org/2000/01/rdf-schema#> .
+
+
+            <http://localhost:8080/question/stored-question__text_45594f4b-1dac-4b0c-a99b-2d93fe9acdbe>
+                <urn:qanary:wasProcessedBy>  [ rdf:type  rdf:Seq ;
+                                       rdf:_1    [ rdf:type  rdf:Seq ;
+                                                   rdf:_1    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     explanation:hasExplanation ;
+                                                               rdf:predicate  rdfs:subPropertyOf ;
+                                                               rdf:subject    explanation:hasExplanationForCreatedData
+                                                             ] ;
+                                                   rdf:_2    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-23T09:15:35.089921' | Confidence: 93.4757 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-23T09:15:35.102656' | Confidence: 97.7748 % | Content: http://dbpedia.org/resource/Real_number Time: '2023-08-23T09:15:35.113834' | Confidence: 99.9954 % | Content: http://dbpedia.org/resource/Batman"@en ;
+                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:subject
+                    <urn:qanary:NED-DBpediaSpotlight>
+                                                             ] ;
+                                                   rdf:_3    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-23T09:15:35.089921' | Konfidenz: 93.4757 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-23T09:15:35.102656' | Konfidenz: 97.7748 % | Inhalt: http://dbpedia.org/resource/Real_number Zeitpunkt: '2023-08-23T09:15:35.113834' | Konfidenz: 99.9954 % | Inhalt: http://dbpedia.org/resource/Batman"@de ;
+                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:subject
+                        <urn:qanary:NED-DBpediaSpotlight>
+                                                             ]
+                                                 ] ;
+                                       rdf:_2    [ rdf:type  rdf:Seq ;
+                                                   rdf:_1    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     explanation:hasExplanation ;
+                                                               rdf:predicate  rdfs:subPropertyOf ;
+                                                               rdf:subject    explanation:hasExplanationForCreatedData
+                                                             ] ;
+                                                   rdf:_2    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "The component urn:qanary:QB-SimpleRealNameOfSuperHero has added the following properties to the graph:  Time: '2023-08-23T09:15:35.408233' | Confidence: 100 % | Content: PREFIX  rdfs:
+                            <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:
+                                <http://purl.org/dc/terms/> PREFIX  dbr:
+                                <http://dbpedia.org/resource/> PREFIX  rdf:
+                                <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX  foaf:
+                                    <http://xmlns.com/foaf/0.1/>  SELECT  * WHERE   { ?resource  foaf:name  ?answer ;               rdfs:label  ?label     FILTER ( lang(?label) = \"en\" )     ?resource  dct:subject  dbr:Category:Superheroes_with_alter_egos     FILTER ( ! strstarts(lcase(?label), lcase(?answer)) )     VALUES ?resource { dbr:Batman }   } ORDER BY ?resource "@en ;
+                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:subject
+                                    <urn:qanary:QB-SimpleRealNameOfSuperHero>
+                                                             ] ;
+                                                   rdf:_3    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "Die Komponente urn:qanary:QB-SimpleRealNameOfSuperHero hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-23T09:15:35.408233' | Konfidenz: 100 % | Inhalt: PREFIX  rdfs:
+                                        <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:
+                                            <http://purl.org/dc/terms/> PREFIX  dbr:
+                                            <http://dbpedia.org/resource/> PREFIX  rdf:
+                                            <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX  foaf:
+                                                <http://xmlns.com/foaf/0.1/>  SELECT  * WHERE   { ?resource  foaf:name  ?answer ;               rdfs:label  ?label     FILTER ( lang(?label) = \"en\" )     ?resource  dct:subject  dbr:Category:Superheroes_with_alter_egos     FILTER ( ! strstarts(lcase(?label), lcase(?answer)) )     VALUES ?resource { dbr:Batman }   } ORDER BY ?resource "@de ;
+                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:subject
+                                                <urn:qanary:QB-SimpleRealNameOfSuperHero>
+                                                             ]
+                                                 ]
+                                     ] ;
+
+                                                    <urn:qanary:wasProcessedInGraph>
+                                                        <urn:graph:f8f55d59-ffc3-4336-b752-12d5676ef4e2> .
+
+----
+====
+--
 
 === Example 
 
 . Firstly we start a QA process with the Question "What is the real name of Superman?" and the components
 ** NED-DBpediaSpotlight and
-** QB-SimpleRealNameOfSuperhero
+** QB-SimpleRealNameOfSuperhero <<<<<<< HEAD
 . As a result, we should get a `graphURI`
 ** in our example, let's assume it is `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
-. Now, we can use this graphURI or a different one (maybe one where we don't know the acting components) for some requests against the webservice 
+. Now, we can use this graphURI or a different one (maybe one where we don't know the acting components) for some requests against the webservice
+
+=======
+. As a result we should get q graphID
+** for me thats `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
+. Now we can use this graphID or a different one (maybe one where we donÄt know the acting components) for some requests against the webservice >>>>>>> origin/qaExplanationAsRdfTurtle
 ** to get all annotations we could execute the following curl in a terminal
 *** `curl http://localhost:12345/getannotations?graphID=urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
 ** As a result, we should get an array of objects containing the properties from the SPARQL query

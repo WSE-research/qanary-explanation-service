@@ -1,15 +1,17 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,71 +21,72 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 @Service
 public class ExplanationService {
 
+    private static final String QUESTION_QUERY = "/queries/question_query.rq";
+    private static final Map<String, String> headerFormatMap = new HashMap<>() {{
+        put("application/rdf+xml", "RDFXML");
+        put("application/ld+json", "JSONLD");
+        put("text/turtle", "TURTLE");
+    }};
+    final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
     private final ObjectMapper objectMapper;
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
+    @Autowired
+    private AnnotationsService annotationsService;
 
     public ExplanationService() {
         objectMapper = new ObjectMapper();
     }
 
-    final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
-    final String RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
-
     /**
-     * Currently explains the DBpediaSpotlight-component since the query has the specific structure
+     * Computes a textual explanation for a specific component on a specific graphURI
      *
-     * @param rawQuery specific Query which is being used fetching data from triplestore (in this case dbpedia sprql query used) -> defined in Controller
-     * @param graphUri graphURI to work with
-     * @return textual explanation // TODO: change later, depending on needs
+     * @param graphUri        specific graphURI
+     * @param componentUri    specific componentURI
+     * @param fetchQueryEmpty Used query to fetch needed information
+     * @return explanation as RDF Turtle
      */
+    public String explainSpecificComponent(String graphUri, String componentUri, String fetchQueryEmpty, String header) throws Exception {
+        logger.info("Passed header: {}", header);
+        Model model = createModel(graphUri, componentUri, fetchQueryEmpty);
 
-    public ExplanationObject[] explainComponent(String graphUri, String rawQuery) throws IOException {
-
-        ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, null, rawQuery);
-
-        if (explanationObjects != null && explanationObjects.length > 0) {
-            if (explanationObjects[0].getSource() != null) {
-                return createEntitiesFromQuestion(explanationObjects, getQuestion(explanationObjects[0]));
-            } else
-                return explanationObjects;
-        } else
-            return null;
+        return convertToDesiredFormat(header, model);
     }
 
-    /**
-     * Computes an textual explanation for a specific component on a specific graphURI
-     *
-     * @param graphUri     specific graphURI
-     * @param componentUri specific componentURI
-     * @param rawQuery     Used query to fetch needed information
-     * @return representation as RDF Turtle
-     * @throws IOException IOException
-     */
-    public String explainSpecificComponent(String graphUri, String componentUri, String rawQuery, String header) throws IOException {
-        logger.info("Header: {}", header);
-        ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, componentUri, rawQuery);
+    // Returns a model for a specific component
+    public Model createModel(String graphUri, String componentUri, String fetchQueryEmpty) throws Exception {
+        ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, componentUri, fetchQueryEmpty);
         String contentDe = convertToTextualExplanation(explanationObjects, "de", componentUri);
         String contentEn = convertToTextualExplanation(explanationObjects, "en", componentUri);
 
-        String resultExplanation = createRdfRepresentation(contentDe, contentEn, componentUri, header);
-
-        return resultExplanation;
+        return createModelForSpecificComponent(contentDe, contentEn, componentUri);
     }
 
-    public ExplanationObject[] computeExplanationObjects(String graphUri, String componentUri, String rawQuery) throws IOException {
-        String queryToExecute = buildSparqlQuery(graphUri, componentUri, rawQuery);
+    // Creating the query, executing it and transform the response to an array of ExplanationObject objects
+    public ExplanationObject[] computeExplanationObjects(String graphUri, String componentUri, String fetchQueryEmpty) throws IOException {
+        String queryToExecute = buildSparqlQuery(graphUri, componentUri, fetchQueryEmpty);
         JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(queryToExecute);
         return convertToExplanationObjects(explanationObjectsJsonNode);
     }
 
-    public ExplanationObject[] explainComponentDBpediaSpotlight(String graphURI, String rawQuery) throws IOException {
-        ExplanationObject[] explanationObjects = getExplanationObjects(graphURI, rawQuery);
+
+    /**
+     * Creating the specific query, execute and transform response to array of ExplanationObject objects
+     *
+     * @param graphURI        Given graphURI
+     * @param fetchQueryEmpty specific query which will be executed against the triplestore
+     * @return Array of ExplanationObject objects or null if there are none
+     */
+    public ExplanationObject[] explainComponentDBpediaSpotlight(String graphURI, String fetchQueryEmpty) throws IOException {
+        ExplanationObject[] explanationObjects = computeExplanationObjects(graphURI, null, fetchQueryEmpty);
         String question;
         if (explanationObjects != null && explanationObjects.length > 0) {
             question = getQuestion(explanationObjects[0]); // question uri is saved in every single Object, just take the first one
@@ -93,17 +96,20 @@ public class ExplanationService {
     }
 
     /**
+     * Creates an explanation model for a specific componentURI. Further it can be formatted e.g.
+     * as RDF-XML, JSONLD, Turtle
+     *
      * @param contentDe    Textual representation of the explanation in german
      * @param contentEn    Textual representation of the explanation in english
-     * @param componentURI component URI
-     * @return String formatted in either RDFXML, JSONLD or Turtle, depending on Accept-Header
+     * @param componentURI componentURI
+     * @return Model with explanations as statements
      */
-    public String createRdfRepresentation(String contentDe, String contentEn, String componentURI, String header) throws IOException {
+    public Model createModelForSpecificComponent(String contentDe, String contentEn, String componentURI) {
 
         Model model = ModelFactory.createDefaultModel();
 
         // set Prefixes
-        model.setNsPrefix("rdfs", RDFS_NAMESPACE);
+        model.setNsPrefix("rdfs", RDFS.getURI());
         model.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
 
         // Literals for triples with LanguageKey
@@ -112,7 +118,7 @@ public class ExplanationService {
 
         // Create property 'hasExplanationForCreatedDataProperty'
         Property hasExplanationForCreatedDataProperty = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
-        Property rdfsSubPropertyOf = model.createProperty(RDFS_NAMESPACE, "subPropertyOf");
+        Property rdfsSubPropertyOf = model.createProperty(RDFS.getURI(), "subPropertyOf");
         Property hasExplanation = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanation");
 
         // creates Resource, in this case the componentURI
@@ -123,51 +129,33 @@ public class ExplanationService {
         model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentDeLiteral));
         model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentEnLiteral));
 
-        return convertToDesiredFormat(header, model);
+        return model;
     }
 
     /**
-     * Converts model to desired format (RDFXML, Turtle, JSONLD) depending on header
+     * Converts model to desired format (RDF-XML, Turtle, JSONLD) (depending on Accept-header)
+     *
      * @param header Accept-header
      * @param model  Model which contains Statements
-     * @return String in desired output format
+     * @return formatted String
      */
     public String convertToDesiredFormat(String header, Model model) {
         StringWriter writer = new StringWriter();
 
-        // if no header is provided, return as text/turtle
-        if (header == null) {
-            model.write(writer, "TURTLE");
-            return writer.toString();
-        }
-
-        switch (header) {
-            case "application/rdf+xml": {
-                model.write(writer, "RDFXML");
-                return writer.toString();
-            }
-            case "text/turtle": {
-                model.write(writer, "TURTLE");
-                return writer.toString();
-            }
-            case "application/ld+json": {
-                model.write(writer, "JSONLD");
-                return writer.toString();
-            }
-            default: {
-                logger.warn("Not supported Type in Accept Header");
-                return null;
-            }
-        }
+        model.write(writer, headerFormatMap.getOrDefault(header, "TURTLE"));
+        return writer.toString();
     }
 
+
+    // INFO: May be removed since there's a different approach for something like this
+    // e.g. pass the restriction as a parameter to the query
     public String explainQueryBuilder(String graphURI, String rawQuery) throws IOException {
-        ExplanationObject[] explanationObjects = getExplanationObjects(graphURI, rawQuery);
+        ExplanationObject[] explanationObjects = computeExplanationObjects(graphURI, null, rawQuery);
 
         // Restriction to QueryBuilder
         String qb = "QB";
 
-        // filter Explanationobjects for objects with annotations made by query builder
+        // filter ExplanationObjects for objects with annotations made by query builder
         explanationObjects = Arrays.stream(explanationObjects).filter(x -> x.getCreatedBy().getValue().contains(qb)).toArray(ExplanationObject[]::new);
 
         // create the explanation
@@ -183,19 +171,7 @@ public class ExplanationService {
             return null;
     }
 
-    public ExplanationObject[] getExplanationObjects(String graphURI, String rawQuery) throws IOException {
-        // Get annotation properties with explanation_for_dbpediaSpotlight_sparql_query.rq query
-        String query = buildSparqlQuery(graphURI, null, rawQuery);
-        JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(query); // already selected results-fields
-
-        return convertToExplanationObjects(explanationObjectsJsonNode);
-    }
-
-    /**
-     * @param explanationObjects list of ExplanationObjects to iterate through
-     * @param question           given raw question
-     * @return modified list with entities set
-     */
+    // Computes the entities as real Entities
     public ExplanationObject[] createEntitiesFromQuestion(ExplanationObject[] explanationObjects, String question) {
         for (ExplanationObject obj : explanationObjects
         ) {
@@ -204,28 +180,17 @@ public class ExplanationService {
         return explanationObjects;
     }
 
-    /**
-     * @param obj      Specific object for which the entity is to be found
-     * @param question the raw question-string
-     * @return the entity inside the given question
-     */
+    // get real entity from question with start- and end-value
     public String getEntity(ExplanationObject obj, String question) {
         return question.substring(obj.getStart().getValue(), obj.getEnd().getValue());
     }
 
-    /**
-     * @param firstObject takes the first object of the list to get the Question URI (any item in the list would work)
-     * @return question as raw string
-     */
+    // get raw question from question source
     public String getQuestion(ExplanationObject firstObject) {
         return explanationSparqlRepository.fetchQuestion(firstObject.getSource().getValue());
     }
 
-    /**
-     * @param graphURI given graphURI
-     * @return query with params set (graphURI)
-     */
-
+    // building request-query with passed attributes added to rawQuery
     public String buildSparqlQuery(String graphURI, String componentUri, String rawQuery) throws IOException {
 
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
@@ -234,60 +199,155 @@ public class ExplanationService {
             bindingsForSparqlQuery.add("componentURI", ResourceFactory.createResource(componentUri));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
+
     }
 
-    /**
-     * converts a JsonNode into an ArrayNode which contains the objects properties as a Array and converts there into an Array of ExplanationObject objects
-     *
-     * @param explanationObjectsJsonNode JSON Node with explanationObject properties
-     * @return Array of ExplanationObject objects
-     * @throws JsonProcessingException
-     */
-    public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) throws JsonProcessingException {
+    // converts JsonNode to array of ExplanationObject
+    public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) {
         try {
             // Handle mapping for LocalDateTime
             objectMapper.registerModule(new JavaTimeModule());
             // select the bindings-field inside the Json(Node)
             ArrayNode resultsArraynode = (ArrayNode) explanationObjectsJsonNode.get("bindings");
-            ExplanationObject[] explanationObjects = objectMapper.treeToValue(resultsArraynode, ExplanationObject[].class);
-            return explanationObjects;
+            logger.info("ArrayNode: {}", resultsArraynode);
+            return objectMapper.treeToValue(resultsArraynode, ExplanationObject[].class);
         } catch (Exception e) {
+            logger.error("Error while converting JsonNode to Objects");
             return null;
         }
     }
 
-
     /**
-     * @param explanationObjects Objects gathered from previous JsonNode, contains all information
-     * @param lang               desired language, hard coded translation and used attributes from the objects
-     * @param componentURI       needed for string
-     * @return textual representation for the objects
+     * Converts all explanations for one component to one explicit textual explanation
+     *
+     * @param lang         desired language, hard coded translation and used attributes from the objects
+     * @param componentURI needed for string
+     * @return textual explanation for the objects
      */
-    public String convertToTextualExplanation(ExplanationObject[] explanationObjects, String lang, String componentURI) {
+    public String convertToTextualExplanation(ExplanationObject[] explanationObjects, String lang, String componentURI) throws Exception {
         DecimalFormat df = new DecimalFormat("#.####");
-        StringBuilder textualRepresentation = null;
+        StringBuilder textualRepresentation;
         switch (lang) {
-            case "de": {
+            case "de" -> {
                 textualRepresentation = new StringBuilder("Die Komponente " + componentURI + " hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt: ");
                 for (ExplanationObject obj : explanationObjects
                 ) {
                     textualRepresentation.append(" Zeitpunkt: '").append(obj.getCreatedAt().getValue().toString()).append("' | Konfidenz: ").append(df.format(obj.getScore().getValue() * 100)).append(" %").append(" | Inhalt: ").append(obj.getBody().getValue());
                 }
-                break;
             }
-            case "en": {
+            case "en" -> {
                 textualRepresentation = new StringBuilder("The component " + componentURI + " has added the following properties to the graph: ");
                 for (ExplanationObject obj : explanationObjects
                 ) {
                     textualRepresentation.append(" Time: '").append(obj.getCreatedAt().getValue().toString()).append("' | Confidence: ").append(df.format(obj.getScore().getValue() * 100)).append(" %").append(" | Content: ").append(obj.getBody().getValue());
                 }
-                break;
             }
-            default:
-                break;
+            default -> {
+                String error = "Error while converting to textual Explanation, used default branch";
+                logger.error("{}", error);
+                throw new Exception(error);
+            }
         }
         return textualRepresentation.toString().replaceAll("\n", " ").replaceAll("\\\\", "a");
     }
 
+    /**
+     * Explains a qa-system in the following steps:
+     * 1. fetch involved components
+     * 2. create an explanation for every involved component
+     * 3. create an explanation model
+     *
+     * @param graphURI the only parameter given for a qa-system
+     */
+    public String explainQaSystem(String graphURI, String specificComponentQuery, String header) throws Exception {
+
+        ComponentPojo[] components = annotationsService.getUsedComponents(graphURI);
+        Map<String, Model> models = new HashMap<>();
+        for (ComponentPojo component : components
+        ) {
+            models.put(component.getComponent().getValue(),
+                    createModel(graphURI, component.getComponent().getValue(), specificComponentQuery));
+        }
+
+        String questionURI = fetchQuestionUri(graphURI);
+        Model systemExplanationModel = createSystemModel(models, components, questionURI, graphURI);
+
+        return convertToDesiredFormat(header, systemExplanationModel);
+    }
+
+    // get the origin questionURI for a graphURI
+    public String fetchQuestionUri(String graphURI) throws Exception {
+        String query = buildSparqlQuery(graphURI, null, QUESTION_QUERY);
+
+        JsonNode jsonNode = explanationSparqlRepository.executeSparqlQuery(query);
+
+        try {
+            String question = (jsonNode.get("bindings").get(0).get("source").get("value").asText());
+            logger.info("QuestionURI = {}", question);
+            return question;
+        } catch (Exception e) {
+            throw new Exception("Couldn't fetch the question!", e);
+        }
+
+    }
+
+    /**
+     * Creates an explanation model for a system explanation
+     *
+     * @param models     a map with the componentURI and its Model
+     * @param components Array of involved components
+     * @return an explanation model for a system explanation
+     */
+    public Model createSystemModel(Map<String, Model> models, ComponentPojo[] components, String questionURI, String graphURI) {
+
+        Model systemExplanationModel = ModelFactory.createDefaultModel();
+
+        // PREFIXES
+        String wasProcessedInGraphString = "urn:qanary:wasProcessedInGraph";
+        String wasProcessedByString = "urn:qanary:wasProcessedBy";
+        // Set namespaces
+        systemExplanationModel.setNsPrefix("rdfs", RDFS.getURI());
+        systemExplanationModel.setNsPrefix("rdf", RDF.getURI());
+        systemExplanationModel.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
+        // Set properties
+        Property wasProcessedInGraph = systemExplanationModel.createProperty(wasProcessedInGraphString);
+        Property wasProcessedBy = systemExplanationModel.createProperty(wasProcessedByString);
+        // Set resources
+        Resource questionResource = systemExplanationModel.createResource(questionURI);
+        Resource graphResource = systemExplanationModel.createResource(graphURI);
+        Resource sequence = systemExplanationModel.createResource(); // equals the outer sequence(s)
+        // questionResource is the reference resource
+        Property rdfType = systemExplanationModel.createProperty(RDF.getURI() + "type");
+        questionResource.addProperty(wasProcessedInGraph, graphResource);
+        questionResource.addProperty(wasProcessedBy, sequence);
+        sequence.addProperty(RDF.type, RDF.Seq);
+
+        // Iterates over Models with componentURI as key
+        // for every model an inner sequence is created and the statements from the model are transformed to reified statements
+        // (to save them as a "resource" in a Sequence)
+        for (int i = 0; i < components.length; i++) {
+            int j = 1;
+            // get the model for the component at position "i" in component list // remember: models is Map with componentUri as key
+            Model model = models.get(components[i].getComponent().getValue());
+            // creating inner Sequence for the reified statements
+            Resource innerSequence = systemExplanationModel.createResource();
+            // adding the inner Sequence as a property to the outer sequence / the resource questionResource
+            innerSequence.addProperty(rdfType, RDF.Seq);
+            sequence.addProperty(RDF.li(i + 1), innerSequence);
+            Iterator<Statement> itr = model.listStatements();
+            // iterate over the statements in the model which contains all statements for the current component
+            while (itr.hasNext()) {
+                ReifiedStatement reifiedStatement = systemExplanationModel.createReifiedStatement(itr.next());
+                innerSequence.addProperty(RDF.li(j), reifiedStatement);
+                j++;
+            }
+        }
+        // Logging the created model as TURTLE-String
+        StringWriter stringWriter = new StringWriter();
+        systemExplanationModel.write(stringWriter, "TURTLE");
+        logger.info("Created Turtle: {}", stringWriter);
+
+        return systemExplanationModel;
+    }
 
 }
