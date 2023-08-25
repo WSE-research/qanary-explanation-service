@@ -46,22 +46,20 @@ public class AnnotationControllerTest {
     @Test
     public void givenResults_thenStatus200() throws Exception {
         setup_givenResults_thenStatus200();
-        mockMvc.perform(get("/getannotations")
-                        .param("graphURI", "anygraphURI"))
+        mockMvc.perform(get("/annotations/" + "anyGraphURI"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    public void missingParameter_thenError() throws Exception {
-        mockMvc.perform(get("/getannotations"))
-                .andExpect(status().isBadRequest());
+    public void missingPathVariable_thenError() throws Exception {
+        mockMvc.perform(get("/annotations"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
     public void noResults_thenStatus400() throws Exception {
         setup_noResults_thenStatus400();
-        mockMvc.perform(get("/getannotations")
-                        .param("graphURI", "anygraphURI"))
+        mockMvc.perform(get("/annotations/" + "anyGraphURI"))
                 .andExpect(status().isBadRequest());
     }
 

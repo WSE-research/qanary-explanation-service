@@ -24,6 +24,8 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -72,31 +74,22 @@ public class ExplanationControllerTest {
             }
 
             @Test
-            void wrongAcceptHeaderLeadsToException() throws Exception {
-                String notAcceptableHeader = "application/json";
+            public void givenGraphURICallsSystemExplanation() throws Exception {
 
-                MvcResult result = mockMvc.perform(get("/explainqasystem")
-                                .header("Accept", notAcceptableHeader)
-                                .param("graphURI", "example"))
-                        .andExpect(status().isNotAcceptable())
+                MvcResult mvcResult = mockMvc.perform(get("/explanations/{graphURI}", "wewqeewrwe"))
                         .andReturn();
 
-                logger.info("Actual header: {}, Error-message: {}", notAcceptableHeader, result.getResponse().getContentAsString());
+                assertEquals(200, mvcResult.getResponse().getStatus());
+
+                // check if SystemExplanation method was called once
+                verify(explanationService, times(1)).explainQaSystem(any(),any(),any());
             }
 
             @Test
-            void correctAcceptHeaderLeadsTo() throws Exception {
-                String acceptableHeader = "application/rdf+xml";
-
-                MvcResult result = mockMvc.perform(get("/explainqasystem")
-                                .header("Accept", acceptableHeader)
-                                .param("graphURI", "example"))
-                        .andExpect(status().isOk())
-                        .andReturn();
-
-                assertEquals(result.getResponse().getContentAsString(), testReturn);
-
+            public void notFoundWhenNoPathVariables() throws Exception {
+                mockMvc.perform(get("/explanations")).andExpect(status().isNotFound());
             }
+
         }
     }
 }

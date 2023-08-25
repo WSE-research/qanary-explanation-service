@@ -10,8 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+@RestController
 @ControllerAdvice
-@Controller
 public class ExplanationController {
 
     private static final String DBpediaSpotlight_SPARQL_QUERY = "/queries/explanation_for_dbpediaSpotlight_sparql_query.rq";
@@ -23,7 +23,7 @@ public class ExplanationController {
 
 
     @CrossOrigin
-    @GetMapping(value = "/explanations/{graphURI}/{componentURI}", produces = {
+    @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{componentURI}"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
@@ -56,30 +56,5 @@ public class ExplanationController {
         }
 
     }
-
-    /*
-    @CrossOrigin
-    @GetMapping(value = "/explainqasystem", produces = {
-            "application/rdf+xml",
-            "text/turtle",
-            "application/ld+json"
-    })
-    public ResponseEntity<?> getQaSystemExplanation(@RequestParam String graphURI, @RequestHeader(value = "accept", required = false) String acceptHeader) throws Exception {
-        String result = explanationService.explainQaSystem(graphURI, GENERAL_EXPLANATION_SPARQL_QUERY, acceptHeader);
-        if (result != null)
-            return new ResponseEntity<>(result, HttpStatus.OK);
-        else
-            return new ResponseEntity<>(null, HttpStatus.NOT_ACCEPTABLE);
-    }
-
-    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
-    public ResponseEntity<String> handleHttpMediaTypeNotAcceptableException() {
-        return new ResponseEntity<>("Accepted headers: " +
-                "application/rdf+xml, " +
-                "text/turtle, " +
-                "application/ld+json",
-                HttpStatus.NOT_ACCEPTABLE);
-    }
-    */
 
 }
