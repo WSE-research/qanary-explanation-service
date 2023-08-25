@@ -12,18 +12,16 @@ endif::[]
 
 = Qanary Explanation Service
 
-:toc:
-
-== Description
-
 Question Answering components following the https://github.com/WDAqua/Qanary[Qanary methodology] mostly create outputs (e.g., https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-QB-BirthDataWikidata[a query builder component typically generates RDF data or SPARQL queries, respectively ]) and store them as new annotations to an RDF graph in the triplestore.
 To understand Qanary components it's helpful to have knowledge about the data they generate while acknowledging that this is only a first step in explaining the component or even QA systems.
 
 This webservice provides some functionalities to compute explanations for some Qanary components in triplestore graphs.
 
+toc::[]
+
 == Build and Installation
 
-=== Building
+=== Build process
 
 ==== Building from scratch using Java
 
@@ -36,7 +34,7 @@ mvn clean install
 
 ==== Building with Docker
 
-Build an image with the existing Dockerfile like so
+You might build a Docker image locally with the existing Dockerfile by using the following command:
 
 [source,bash]
 ----
@@ -54,7 +52,7 @@ docker build . -t <yourDesiredImageName>
 +
 --
 ** `docker run -p 12345:4000 <yourDesiredImageName>`
-*** the "p"-tag is optional and maps the applications-port (4000) to another one, in this case and on a local machine the service would be available at "http://localhost:12345"
+*** the "p"-tag is optional and maps the applications-port (4000) to another one, in this case (and on a local machine), the service would be available at "http://localhost:12345"
 --
 
 == Usage
@@ -89,7 +87,7 @@ Currently, there are several endpoints with different tasks, as of the latest ve
 --
 +
 --
-*return:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL-Query)
+*return:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL query)
 
 *SPARQL query:*
 
@@ -125,35 +123,33 @@ WHERE {
 *Returns:*
 +
 --
-** with only the graphURI given: an formatted explanation for the QA-process on the graphURI depending on the following Accept-Header:
+** with only the graphURI given: a formatted explanation for the QA-process on the graphURI depending on the following `Accept` header:
 * none: Turtle
-* "application/ld+json": JSONLD
-* "application/rdf+xml": RDFXML
-* "text/turtle": Turtle
+* `application/ld+json`: JSONLD
+* `application/rdf+xml`: RDFXML
+* `text/turtle`: Turtle
 * other: no response, NOT_ACCEPTABLE (406)
-** with graphURI and componentURI given: an formatted explanation for the specific component within the QA-process of the given graphURI depending on the following Accept-Header:
+** with graphURI and componentURI given: a formatted explanation for the specific component within the QA-process of the given graphURI depending on the following Accept-Header:
 * none: Turtle
-* "application/ld+json": JSONLD
-* "application/rdf+xml": RDFXML
-* "text/turtle": Turtle
+* `application/ld+json`: JSONLD
+* `application/rdf+xml`: RDFXML
+* `text/turtle`: Turtle
 * other: no response, NOT_ACCEPTABLE (406)
 --
 +
-provides two endpoints to either request an explanation for a QA-process with a given graphURI or a specific explanation for one componentURI (added as another Path variable).
-In both cases the explanation format depends on the Accept-Header: RDF-XML, JSONLD or Turtle - when there`s no Accept-Header the format is Turtle.
+provides two endpoints to either request an explanation for a QA process with a given graphURI or a specific explanation for one componentURI (added as another path variable).
+In both cases, the explanation format depends on the Accept-Header: RDF/XML, JSONLD, or RDF Turtle. 
+If there`s no `Accept` header provided in the request, then the format will be RDF Turtle.
 +
 --
-.*Example Return for QA-system:*
+.*Example Return for QA system:*
 [%collapsible]
 ====
 [source]
 ----
-@prefix explanation:
-<urn:qanary:explanations> .
-@prefix rdf:
-    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs:
-        <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix explanation: <urn:qanary:explanations> .
+@prefix rdf:         <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:        <http://www.w3.org/2000/01/rdf-schema#> .
 
 
             <http://localhost:8080/question/stored-question__text_45594f4b-1dac-4b0c-a99b-2d93fe9acdbe>
@@ -219,16 +215,12 @@ In both cases the explanation format depends on the Accept-Header: RDF-XML, JSON
 ====
 [source]
 ----
-@prefix explanation:
-<urn:qanary:explanations> .
-@prefix rdfs:
-    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix explanation: <urn:qanary:explanations> .
+@prefix rdfs:        <http://www.w3.org/2000/01/rdf-schema#> .
 
-explanation:hasExplanationForCreatedData
-        rdfs:subPropertyOf  explanation:hasExplanation .
+explanation:hasExplanationForCreatedData rdfs:subPropertyOf  explanation:hasExplanation .
 
-
-        <urn:qanary:NED-DBpediaSpotlight>
+<urn:qanary:NED-DBpediaSpotlight>
         explanation:hasExplanationForCreatedData
                 "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-24T14:31:10.906821' | Confidence: 98.3535 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-24T14:31:10.919961' | Confidence: 100 % | Content: http://dbpedia.org/resource/Stephen_Hawking"@en , "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-24T14:31:10.906821' | Konfidenz: 98.3535 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-24T14:31:10.919961' | Konfidenz: 100 % | Inhalt: http://dbpedia.org/resource/Stephen_Hawking"@de .
 
@@ -243,8 +235,8 @@ explanation:hasExplanationForCreatedData
 ** QB-SimpleRealNameOfSuperhero
 . As a result, we should get a `graphURI`
 ** in our example, let's assume it is `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
-. Now, we can use this graphURI or a different one (maybe one where we don't know the acting components) for some requests against the webservice
-** to get all annotations we could execute the following curl in a terminal
+. Now, we can use this graphURI or a different one (maybe one where we don't know the acting components) for some requests to the webservice.
+** To get all annotations we could execute the following `curl` command in a terminal:
 *** `curl http://localhost:12345/annotations/urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
 ** As a result, we should get an array of objects containing the properties from the SPARQL query
 
