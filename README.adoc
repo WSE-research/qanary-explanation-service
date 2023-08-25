@@ -16,7 +16,7 @@ endif::[]
 
 == Description
 
-Question Answering components following the https://github.com/WDAqua/Qanary[Qanary methodology] mostly create outputs (e.g., https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-QB-BirthDataWikidata[a query builder component typically generates RDF data or SPARQL queries, respectively ]) and store them as new annotations to an RDF graph in the triplestore. 
+Question Answering components following the https://github.com/WDAqua/Qanary[Qanary methodology] mostly create outputs (e.g., https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-QB-BirthDataWikidata[a query builder component typically generates RDF data or SPARQL queries, respectively ]) and store them as new annotations to an RDF graph in the triplestore.
 To understand Qanary components it's helpful to have knowledge about the data they generate while acknowledging that this is only a first step in explaining the component or even QA systems.
 
 This webservice provides some functionalities to compute explanations for some Qanary components in triplestore graphs.
@@ -29,7 +29,7 @@ This webservice provides some functionalities to compute explanations for some Q
 
 Create the .jar-file like so:
 
-[source, bash]
+[source,bash]
 ----
 mvn clean install
 ----
@@ -45,7 +45,7 @@ docker build . -t <yourDesiredImageName>
 
 === Running the application
 
-* while using the JAR file: 
+* while using the JAR file:
 +
 --
 ** execute it like so `java -jar ./PATH/TO/PACKAGED_JAR.jar`
@@ -59,16 +59,12 @@ docker build . -t <yourDesiredImageName>
 
 == Usage
 
-* when accessing one of the following endpoints make sure to pass the required values as parameters
-** when you're working with the curl command do it like so: `curl http://localhost:12345/explanation?graphID=<whateverGraphidYouHave>`
-*** for more than one parameter: `curl "http://localhost:12345/explanation?graphID=<whateverGraphidYouHave>&<anotherParameter>=<ValueOfTheOtherParameter>"`, with attention to the ' " " '
-
 === Settings
 
 Change the following as you need them:
 
 .*applications.properties*
-[source, ini]
+[source,ini]
 ----
 server.port = 4000
 sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
@@ -78,76 +74,25 @@ sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 
 Currently, there are several endpoints with different tasks, as of the latest version these are:
 
-* `/explanation` 
+--
+--
+
+* `/annotations/{graphURI}`
 +
 --
-*required parameter:*  graphURI (parsable as IRI)
-
-*example request:* ...
-
-*return:* a list of objects of all annotations which have the following structure  https://github.com/WDAqua/Qanary-question-answering-components/tree/master/qanary-component-NED-DBpediaSpotlight[qanary-component-NED-DBpediaSpotlight]
-
-*SPARQL query:*
-[source, sparql]
-----
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
-PREFIX qa: <http://www.wdaqua.eu/qa#>
-SELECT *
-FROM ?graphURI
-
-WHERE {
-    ?annotationId a qa:AnnotationOfInstance.
-    ?annotationId rdf:type ?type.
-    ?annotationId oa:hasBody ?body.
-    ?annotationId oa:hasTarget [
-	a oa:SpecificResource;
-                  oa:hasSource ?source;
-                  oa:hasSelector [
-    	a oa:TextPositionSelector;
-                  oa:start ?start;
-                  oa:end ?end;
-    ]
-].
-    ?annotationId oa:annotatedBy $createdBy .
-    ?annotationId oa:annotatedAt $createdAt .
-    ?annotationId qa:score ?score .
-}
-----
+*Path variables:*
 --
-* `/explanationforquerybuilder`
 +
 --
-*required Parameter:*  graphURI (parsable as IRI)
-
-*return:* a textual explanation with the created SPARQL-queries which has been created by every involved QB-component
-
-*SPARQL query:*
-[source,sparql]
-----
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
-PREFIX qa: <http://www.wdaqua.eu/qa#>
-SELECT *
-FROM ?graphURI
-
-WHERE {
-    ?annotationId a qa:AnnotationOfAnswerSPARQL .
-    ?annotationId oa:hasBody ?body .
-    ?annotationId oa:annotatedBy $createdBy .
-    ?annotationId oa:annotatedAt $createdAt .
-    ?annotationId qa:score ?score .
-}
-----
---
-* `/getannotations`
+** required: graphURI::String
 +
 --
-*required Parameter:*  graphURI (parsable as IRI)
-
++
+--
 *return:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL-Query)
 
 *SPARQL query:*
+
 [source,sparql]
 ----
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -163,50 +108,147 @@ WHERE {
     ?annotationId oa:annotatedAt $createdAt .
 }
 ----
+
 --
-* `/explainspecificcomponent`
+* `/explanations/{graphURI}/{componentURI}`
 +
 --
-*required Parameter:*  graphURI (parsable as IRI), componentURI (parsable as IRI)
-
-*return:* depending on the Accept-Header:
-
-** *none*: Turtle
-** *application/rdf+xml*: RDF/XML
-** *application/ld+json*: JSONLD
-** *other*: no response
-
-*SPARQL query:*
-[source,sparql]
+*Path Variables:*
+--
++
+--
+** required: graphURI::String
+** optional: componentURI::String
++
+--
++
+*Returns:*
++
+--
+** with only the graphURI given: an formatted explanation for the QA-process on the graphURI depending on the following Accept-Header:
+* none: Turtle
+* "application/ld+json": JSONLD
+* "application/rdf+xml": RDFXML
+* "text/turtle": Turtle
+* other: no response, NOT_ACCEPTABLE (406)
+** with graphURI and componentURI given: an formatted explanation for the specific component within the QA-process of the given graphURI depending on the following Accept-Header:
+* none: Turtle
+* "application/ld+json": JSONLD
+* "application/rdf+xml": RDFXML
+* "text/turtle": Turtle
+* other: no response, NOT_ACCEPTABLE (406)
+--
++
+provides two endpoints to either request an explanation for a QA-process with a given graphURI or a specific explanation for one componentURI (added as another Path variable).
+In both cases the explanation format depends on the Accept-Header: RDF-XML, JSONLD or Turtle - when there`s no Accept-Header the format is Turtle.
++
+--
+.*Example Return for QA-system:*
+[%collapsible]
+====
+[source]
 ----
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
-PREFIX qa: <http://www.wdaqua.eu/qa#>
-SELECT *
-FROM ?graphURI
+@prefix explanation:
+<urn:qanary:explanations> .
+@prefix rdf:
+    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:
+        <http://www.w3.org/2000/01/rdf-schema#> .
 
-WHERE {
-    ?annotationId oa:annotatedBy ?componentURI .
-    ?annotationId oa:hasBody ?body .
-    ?annotationId oa:annotatedAt $createdAt .
-    ?annotationId qa:score ?score .
-}
+
+            <http://localhost:8080/question/stored-question__text_45594f4b-1dac-4b0c-a99b-2d93fe9acdbe>
+                <urn:qanary:wasProcessedBy>  [ rdf:type  rdf:Seq ;
+                                       rdf:_1    [ rdf:type  rdf:Seq ;
+                                                   rdf:_1    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     explanation:hasExplanation ;
+                                                               rdf:predicate  rdfs:subPropertyOf ;
+                                                               rdf:subject    explanation:hasExplanationForCreatedData
+                                                             ] ;
+                                                   rdf:_2    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-23T09:15:35.089921' | Confidence: 93.4757 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-23T09:15:35.102656' | Confidence: 97.7748 % | Content: http://dbpedia.org/resource/Real_number Time: '2023-08-23T09:15:35.113834' | Confidence: 99.9954 % | Content: http://dbpedia.org/resource/Batman"@en ;
+                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:subject
+                    <urn:qanary:NED-DBpediaSpotlight>
+                                                             ] ;
+                                                   rdf:_3    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-23T09:15:35.089921' | Konfidenz: 93.4757 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-23T09:15:35.102656' | Konfidenz: 97.7748 % | Inhalt: http://dbpedia.org/resource/Real_number Zeitpunkt: '2023-08-23T09:15:35.113834' | Konfidenz: 99.9954 % | Inhalt: http://dbpedia.org/resource/Batman"@de ;
+                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:subject
+                        <urn:qanary:NED-DBpediaSpotlight>
+                                                             ]
+                                                 ] ;
+                                       rdf:_2    [ rdf:type  rdf:Seq ;
+                                                   rdf:_1    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     explanation:hasExplanation ;
+                                                               rdf:predicate  rdfs:subPropertyOf ;
+                                                               rdf:subject    explanation:hasExplanationForCreatedData
+                                                             ] ;
+                                                   rdf:_2    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "The component urn:qanary:QB-SimpleRealNameOfSuperHero has added the following properties to the graph:  Time: '2023-08-23T09:15:35.408233' | Confidence: 100 % | Content: PREFIX  rdfs:
+                            <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:
+                                <http://purl.org/dc/terms/> PREFIX  dbr:
+                                <http://dbpedia.org/resource/> PREFIX  rdf:
+                                <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX  foaf:
+                                    <http://xmlns.com/foaf/0.1/>  SELECT  * WHERE   { ?resource  foaf:name  ?answer ;               rdfs:label  ?label     FILTER ( lang(?label) = \"en\" )     ?resource  dct:subject  dbr:Category:Superheroes_with_alter_egos     FILTER ( ! strstarts(lcase(?label), lcase(?answer)) )     VALUES ?resource { dbr:Batman }   } ORDER BY ?resource "@en ;
+                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:subject
+                                    <urn:qanary:QB-SimpleRealNameOfSuperHero>
+                                                             ] ;
+                                                   rdf:_3    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "Die Komponente urn:qanary:QB-SimpleRealNameOfSuperHero hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-23T09:15:35.408233' | Konfidenz: 100 % | Inhalt: PREFIX  rdfs:
+                                        <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:
+                                            <http://purl.org/dc/terms/> PREFIX  dbr:
+                                            <http://dbpedia.org/resource/> PREFIX  rdf:
+                                            <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX  foaf:
+                                                <http://xmlns.com/foaf/0.1/>  SELECT  * WHERE   { ?resource  foaf:name  ?answer ;               rdfs:label  ?label     FILTER ( lang(?label) = \"en\" )     ?resource  dct:subject  dbr:Category:Superheroes_with_alter_egos     FILTER ( ! strstarts(lcase(?label), lcase(?answer)) )     VALUES ?resource { dbr:Batman }   } ORDER BY ?resource "@de ;
+                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:subject
+                                                <urn:qanary:QB-SimpleRealNameOfSuperHero>
+                                                             ]
+                                                 ]
+                                     ] ;
+
+                                                    <urn:qanary:wasProcessedInGraph>
+                                                        <urn:graph:f8f55d59-ffc3-4336-b752-12d5676ef4e2> .
+
 ----
+====
+
+.*Example Return for specific componentURI:*
+[%collapsible]
+====
+[source]
+----
+@prefix explanation:
+<urn:qanary:explanations> .
+@prefix rdfs:
+    <http://www.w3.org/2000/01/rdf-schema#> .
+
+explanation:hasExplanationForCreatedData
+        rdfs:subPropertyOf  explanation:hasExplanation .
+
+
+        <urn:qanary:NED-DBpediaSpotlight>
+        explanation:hasExplanationForCreatedData
+                "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-24T14:31:10.906821' | Confidence: 98.3535 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-24T14:31:10.919961' | Confidence: 100 % | Content: http://dbpedia.org/resource/Stephen_Hawking"@en , "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-24T14:31:10.906821' | Konfidenz: 98.3535 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-24T14:31:10.919961' | Konfidenz: 100 % | Inhalt: http://dbpedia.org/resource/Stephen_Hawking"@de .
+
+----
+====
 --
 
-=== Example 
+=== Example
 
 . Firstly we start a QA process with the Question "What is the real name of Superman?" and the components
 ** NED-DBpediaSpotlight and
 ** QB-SimpleRealNameOfSuperhero
 . As a result, we should get a `graphURI`
 ** in our example, let's assume it is `urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
-. Now, we can use this graphURI or a different one (maybe one where we don't know the acting components) for some requests against the webservice 
+. Now, we can use this graphURI or a different one (maybe one where we don't know the acting components) for some requests against the webservice
 ** to get all annotations we could execute the following curl in a terminal
-*** `curl http://localhost:12345/getannotations?graphID=urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
+*** `curl http://localhost:12345/annotations/urn:graph:c55b5c85-6a89-4dd6-83bc-3b6d1ea953ea`
 ** As a result, we should get an array of objects containing the properties from the SPARQL query
 
-.Ergebnis
+.Result
 [%collapsible]
 ====
 [source,json]
@@ -229,12 +271,12 @@ WHERE {
             "value": "urn:qanary:NED-DBpediaSpotlight"
         },
         "createdAt": {
-            "value": "2023-08-22T12:17:24.848",
+            "value": "2023-08-24T14:31:10.906821",
             "type": "typed-literal",
             "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
         },
         "score": {
-            "value": 0.9347568085631697,
+            "value": 0.9835348759090881,
             "type": "typed-literal",
             "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
         },
@@ -245,11 +287,11 @@ WHERE {
         },
         "annotationID": {
             "type": "uri",
-            "value": "tag:stardog:api:0.42490125431422954"
+            "value": "0.6851129018166628"
         },
         "annotationId": {
             "type": "uri",
-            "value": "tag:stardog:api:0.42490125431422954"
+            "value": "0.6851129018166628"
         }
     },
     {
@@ -258,7 +300,7 @@ WHERE {
         "end": null,
         "body": {
             "type": "uri",
-            "value": "http://dbpedia.org/resource/Real_number"
+            "value": "http://dbpedia.org/resource/Stephen_Hawking"
         },
         "type": {
             "type": "uri",
@@ -269,12 +311,12 @@ WHERE {
             "value": "urn:qanary:NED-DBpediaSpotlight"
         },
         "createdAt": {
-            "value": "2023-08-22T12:17:25.052",
+            "value": "2023-08-24T14:31:10.919961",
             "type": "typed-literal",
             "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
         },
         "score": {
-            "value": 0.977747974809564,
+            "value": 0.9999999999941593,
             "type": "typed-literal",
             "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
         },
@@ -285,91 +327,11 @@ WHERE {
         },
         "annotationID": {
             "type": "uri",
-            "value": "tag:stardog:api:0.39515999164525084"
+            "value": "0.5337743826833434"
         },
         "annotationId": {
             "type": "uri",
-            "value": "tag:stardog:api:0.39515999164525084"
-        }
-    },
-    {
-        "source": null,
-        "start": null,
-        "end": null,
-        "body": {
-            "type": "uri",
-            "value": "http://dbpedia.org/resource/Superman"
-        },
-        "type": {
-            "type": "uri",
-            "value": "http://www.wdaqua.eu/qa#AnnotationOfInstance"
-        },
-        "createdBy": {
-            "type": "uri",
-            "value": "urn:qanary:NED-DBpediaSpotlight"
-        },
-        "createdAt": {
-            "value": "2023-08-22T12:17:25.265",
-            "type": "typed-literal",
-            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
-        },
-        "score": {
-            "value": 0.999238163684283,
-            "type": "typed-literal",
-            "datatype": "http://www.w3.org/2001/XMLSchema#decimal"
-        },
-        "entity": null,
-        "target": {
-            "type": "bnode",
-            "value": "b2"
-        },
-        "annotationID": {
-            "type": "uri",
-            "value": "tag:stardog:api:0.23587012456677092"
-        },
-        "annotationId": {
-            "type": "uri",
-            "value": "tag:stardog:api:0.23587012456677092"
-        }
-    },
-    {
-        "source": null,
-        "start": null,
-        "end": null,
-        "body": {
-            "type": "literal",
-            "value": "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX  dct:  <http://purl.org/dc/terms/>\nPREFIX  dbr:  <http://dbpedia.org/resource/>\nPREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX  foaf: <http://xmlns.com/foaf/0.1/>\n\nSELECT  *\nWHERE\n  { ?resource  foaf:name  ?answer ;\n              rdfs:label  ?label\n    FILTER ( lang(?label) = \"en\" )\n    ?resource  dct:subject  dbr:Category:Superheroes_with_alter_egos\n    FILTER ( ! strstarts(lcase(?label), lcase(?answer)) )\n    VALUES ?resource { dbr:Superman }\n  }\nORDER BY ?resource\n"
-        },
-        "type": {
-            "type": "uri",
-            "value": "http://www.wdaqua.eu/qa#AnnotationOfAnswerSPARQL"
-        },
-        "createdBy": {
-            "type": "uri",
-            "value": "urn:qanary:QB-SimpleRealNameOfSuperHero"
-        },
-        "createdAt": {
-            "value": "2023-08-22T12:17:26.104",
-            "type": "typed-literal",
-            "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"
-        },
-        "score": {
-            "value": 1.0,
-            "type": "typed-literal",
-            "datatype": "http://www.w3.org/2001/XMLSchema#float"
-        },
-        "entity": null,
-        "target": {
-            "type": "uri",
-            "value": "http://demos.swe.htwk-leipzig.de:40111/question/stored-question__text_57bede26-f976-4946-97c2-993acddfdd08"
-        },
-        "annotationID": {
-            "type": "uri",
-            "value": "tag:stardog:api:0.4428726379989152"
-        },
-        "annotationId": {
-            "type": "uri",
-            "value": "tag:stardog:api:0.4428726379989152"
+            "value": "0.5337743826833434"
         }
     }
 ]

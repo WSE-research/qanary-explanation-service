@@ -4,7 +4,10 @@ package com.wse.qanaryexplanationservice.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wse.qanaryexplanationservice.controller.ControllerDataForTests;
+import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
+import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
@@ -18,30 +21,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static reactor.core.publisher.Mono.when;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class ExplanationServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
 
-    /**
-     * Assertion-Tests on converted Data
-     */
-
     private static final String QUERY = "/queries/explanation_for_query_builder.rq";
+    protected final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
+
     @Nested
     public class ConversionTests {
 
-        private static Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
+        private final static Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
         @Autowired
         ExplanationService explanationService;
         ExplanationObject[] explanationObjects;
@@ -106,13 +111,9 @@ public class ExplanationServiceTest {
             sparqlQuery = queryPrefixes + " SELECT ?subject ?object WHERE { ?subject explanation:hasExplanationForCreatedData ?object }";
         }
 
-        /**
-         * - INPUT: Content in languages german and english, componentURI
-         */
-
         @Test
-        void createRdfRepresentationTest() throws IOException {
-            String result = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, null);
+        void createRdfRepresentationTest() throws Exception {
+            String result = explanationService.convertToDesiredFormat(null, explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertAll("String contains content elements as well as componentURI",
                     () -> assertTrue(result.contains(languageContentProvider.getContentDe())),
@@ -143,11 +144,12 @@ public class ExplanationServiceTest {
         }
 
         @Test
-        public void compareRepresentationModels() throws IOException {
-            String resultEmptyHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, null);
-            String resultTurtleHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "text/turtle");
-            String resultRDFXMLHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/rdf+xml");
-            String resultJSONLDHeader = explanationService.createRdfRepresentation(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI, "application/ld+json");
+        public void compareRepresentationModels() throws Exception {
+            // Create Strings with different format (plain == turtle, turtle, rdfxml,jsonld)
+            String resultEmptyHeader = explanationService.convertToDesiredFormat(null, explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultTurtleHeader = explanationService.convertToDesiredFormat("text/turtle", explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultRDFXMLHeader = explanationService.convertToDesiredFormat("application/rdf+xml", explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultJSONLDHeader = explanationService.convertToDesiredFormat("application/ld+json", explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertEquals(resultEmptyHeader, resultTurtleHeader);
             assertAll("Check different result-string",
@@ -187,6 +189,55 @@ public class ExplanationServiceTest {
             explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
             explanationServiceMock = mock(ExplanationService.class);
             Mockito.when(explanationServiceMock.computeExplanationObjects(any(), any(), any())).thenReturn(explanationObjects);
+        }
+    }
+
+    @Nested
+    class QaSystemExplanationTest {
+
+        final String graphID = "http://exampleQuestionURI.a/question";
+        final String questionURI = "http://question-example.com/123/32a";
+        @MockBean
+        ExplanationSparqlRepository explanationSparqlRepository;
+        JsonNode jsonNode;
+        ControllerDataForTests controllerDataForTests;
+        ObjectMapper objectMapper = new ObjectMapper();
+        @Autowired
+        ExplanationService explanationService;
+        ComponentPojo[] components;
+        Map<String, Model> models;
+
+        @BeforeEach
+        void setup() throws IOException {
+            controllerDataForTests = new ControllerDataForTests();
+            jsonNode = objectMapper.readTree(controllerDataForTests.getGivenResults());
+            when(explanationSparqlRepository.executeSparqlQuery(anyString())).thenReturn(jsonNode);
+        }
+
+        // Testing if a wrong JsonNode leads to an error
+        @Test
+        void fetchQuestionUriFailingTest() throws Exception {
+            Throwable exception = assertThrows(Exception.class, () -> explanationService.fetchQuestionUri(graphID));
+            assertEquals("Couldn't fetch the question!", exception.getMessage());
+        }
+
+        // Gets models and components from ControllerDataForTests
+        void setupCreateSystemModelTest() throws FileNotFoundException {
+            models = controllerDataForTests.getQaSystemExplanationMap();
+            components = controllerDataForTests.getComponents();
+        }
+
+
+        // Testing the createSystemModel-method
+        @Test
+        void createSystemModelTest() throws IOException {
+            setupCreateSystemModelTest();
+            // Get the expected model from the test data
+            Model expectedModel = controllerDataForTests.getExpectedModelForQaSystemExplanation();
+            // call method to create model from Models and components
+            Model computedModel = explanationService.createSystemModel(models, components, questionURI, graphID);
+
+            assertTrue(expectedModel.isIsomorphicWith(computedModel));
         }
     }
 

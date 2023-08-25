@@ -2,7 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.qanaryexplanationservice.pojos.ResultObject;
+import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -12,29 +12,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.IOException;
 
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class GetAnnotationServiceTest {
     @Autowired
-    private GetAnnotationsService getAnnotationsService;
+    private AnnotationsService annotationsService;
 
     @Test
-    public void mapResponseToResultObjectsTest() {
+    public void mapResponseToExplanationObjectsTest() {
         JsonNode jsonNode = null;
 
-        Assertions.assertNull(getAnnotationsService.mapResponseToObjectArray(jsonNode));
+        Assertions.assertNull(annotationsService.mapResponseToObjectArray(jsonNode));
     }
 
     @Nested
     public class ConversionTests {
 
-        ResultObject[] resultObjects;
+        ExplanationObject[] explanationObjects;
         ServiceDataForTests serviceDataForTests;
 
         @BeforeEach
@@ -42,18 +42,17 @@ public class GetAnnotationServiceTest {
             serviceDataForTests = new ServiceDataForTests();
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForResultObjects(), JsonNode.class);
-
-            resultObjects = getAnnotationsService.mapResponseToObjectArray(jsonNode);
+            explanationObjects = annotationsService.mapResponseToObjectArray(jsonNode);
         }
 
         @Test
         public void convertJsonNodeToExplanationObjectsTest() {
 
             assertAll("Correct conversion",
-                    () -> assertEquals(4, resultObjects.length),
-                    () -> assertEquals("http://dbpedia.org/resource/String_theory", resultObjects[0].getBody().getValue()),
-                    () -> assertEquals("http://dbpedia.org/resource/Real_number", resultObjects[1].getBody().getValue()),
-                    () -> assertEquals("http://dbpedia.org/resource/Batman", resultObjects[2].getBody().getValue())
+                    () -> assertEquals(4, explanationObjects.length),
+                    () -> assertEquals("http://dbpedia.org/resource/String_theory", explanationObjects[0].getBody().getValue()),
+                    () -> assertEquals("http://dbpedia.org/resource/Real_number", explanationObjects[1].getBody().getValue()),
+                    () -> assertEquals("http://dbpedia.org/resource/Batman", explanationObjects[2].getBody().getValue())
             );
         }
     }

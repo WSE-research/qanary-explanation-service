@@ -23,9 +23,21 @@ public class ExplanationObject {
     private Type type;
     private CreatedBy createdBy;
     private CreatedAt createdAt;
+    @JsonIgnoreProperties
     private Score score;
     @JsonIgnoreProperties
     private String entity;
+
+    @JsonIgnoreProperties
+    private Target target;
+
+    public Target getTarget() {
+        return target;
+    }
+
+    public void setTarget(Target target) {
+        this.target = target;
+    }
 
     // default constructor
     public ExplanationObject() {
@@ -123,7 +135,7 @@ public class ExplanationObject {
                 ", type=" + type +
                 ", createdBy=" + createdBy +
                 ", createdAt=" + createdAt +
-                ", score=" + score.getValue() +
+                ", score=" + score +
                 ", entity=" + entity +
                 '}';
     }
