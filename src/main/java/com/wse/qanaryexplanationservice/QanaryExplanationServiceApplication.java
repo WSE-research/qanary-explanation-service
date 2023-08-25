@@ -27,7 +27,7 @@ public class QanaryExplanationServiceApplication {
 
     @Bean
     public OpenAPI customOpenAPI(
-            @Value("1") String appVersion, //
+            @Value("${springdoc.version}") String appVersion, //
             @Value("${spring.application.name}") String appName //
     ) {
         return new OpenAPI().info(new Info()
