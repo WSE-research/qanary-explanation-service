@@ -337,3 +337,6 @@ explanation:hasExplanationForCreatedData
 ]
 ----
 ====
+=== Spring Doc & Swagger UI
+Swagger UI is available at http://localhost:40190/swagger-ui/index.html
+API Docs are available at http://localhost:40190/api-docs
