@@ -24,5 +24,5 @@ RUN mvn clean install
 
 FROM openjdk:17-jdk-alpine
 WORKDIR /app
-COPY --from=build /app/target/webservice_for_componentExplanation-*.jar webservice.jar
-ENTRYPOINT ["java","-jar","webservice.jar"]
+COPY --from=build /app/target/qanary-explanation-service-*.jar qanary-explanation-service.jar
+ENTRYPOINT ["java","-jar","qanary-explanation-service.jar"]
