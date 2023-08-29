@@ -34,7 +34,7 @@ public class ExplanationService {
         put("application/ld+json", "JSONLD");
         put("text/turtle", "TURTLE");
     }};
-    final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+    final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final ObjectMapper objectMapper;
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     @Autowired
@@ -110,7 +110,7 @@ public class ExplanationService {
 
         // set Prefixes
         model.setNsPrefix("rdfs", RDFS.getURI());
-        model.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
+        model.setNsPrefix("explanations", EXPLANATION_NAMESPACE);
 
         // Literals for triples with LanguageKey
         Literal contentDeLiteral = model.createLiteral(contentDe, "de");
@@ -308,7 +308,7 @@ public class ExplanationService {
         // Set namespaces
         systemExplanationModel.setNsPrefix("rdfs", RDFS.getURI());
         systemExplanationModel.setNsPrefix("rdf", RDF.getURI());
-        systemExplanationModel.setNsPrefix("explanation", EXPLANATION_NAMESPACE);
+        systemExplanationModel.setNsPrefix("explanations", EXPLANATION_NAMESPACE);
         // Set properties
         Property wasProcessedInGraph = systemExplanationModel.createProperty(wasProcessedInGraphString);
         Property wasProcessedBy = systemExplanationModel.createProperty(wasProcessedByString);
