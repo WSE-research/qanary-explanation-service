@@ -68,6 +68,8 @@ server.port = 4000
 sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 ----
 
+
+
 === Functionalities
 
 Currently, there are several endpoints with different tasks, as of the latest version these are:
@@ -75,19 +77,18 @@ Currently, there are several endpoints with different tasks, as of the latest ve
 --
 --
 
-* `/annotations/{graphURI}`
-+
+==== `/annotations/{graphURI}`
+
 --
 *Path variables:*
 --
-+
 --
 ** required: graphURI::String
-+
 --
-+
 --
-*return:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL query)
+*Returns:*
+
+* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL query)
 
 *SPARQL query:*
 
@@ -108,20 +109,16 @@ WHERE {
 ----
 
 --
-* `/explanations/{graphURI}/{componentURI}`
-+
+==== `/explanations/{graphURI}/{componentURI}`
+
 --
 *Path Variables:*
 --
-+
 --
 ** required: graphURI::String
 ** optional: componentURI::String
-+
 --
-+
 *Returns:*
-+
 --
 ** with only the graphURI given: a formatted explanation for the QA-process on the graphURI depending on the following `Accept` header:
 * none: Turtle
@@ -136,77 +133,77 @@ WHERE {
 * `text/turtle`: Turtle
 * other: no response, NOT_ACCEPTABLE (406)
 --
-+
 provides two endpoints to either request an explanation for a QA process with a given graphURI or a specific explanation for one componentURI (added as another path variable).
 In both cases, the explanation format depends on the Accept-Header: RDF/XML, JSONLD, or RDF Turtle. 
 If there`s no `Accept` header provided in the request, then the format will be RDF Turtle.
-+
 --
 .*Example Return for QA system:*
 [%collapsible]
 ====
 [source]
 ----
-@prefix explanation: <urn:qanary:explanations> .
-@prefix rdf:         <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs:        <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix explanations: 
+<urn:qanary:explanations#> .
+@prefix rdf:          
+    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:         
+        <http://www.w3.org/2000/01/rdf-schema#> .
 
 
-            <http://localhost:8080/question/stored-question__text_45594f4b-1dac-4b0c-a99b-2d93fe9acdbe>
+            <http://demos.swe.htwk-leipzig.de:40111/question/stored-question__text_078f518e-4b51-4679-a800-1bb3c7fe91b7>
                 <urn:qanary:wasProcessedBy>  [ rdf:type  rdf:Seq ;
                                        rdf:_1    [ rdf:type  rdf:Seq ;
                                                    rdf:_1    [ rdf:type       rdf:Statement ;
-                                                               rdf:object     explanation:hasExplanation ;
-                                                               rdf:predicate  rdfs:subPropertyOf ;
-                                                               rdf:subject    explanation:hasExplanationForCreatedData
-                                                             ] ;
-                                                   rdf:_2    [ rdf:type       rdf:Statement ;
-                                                               rdf:object     "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-23T09:15:35.089921' | Confidence: 93.4757 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-23T09:15:35.102656' | Confidence: 97.7748 % | Content: http://dbpedia.org/resource/Real_number Time: '2023-08-23T09:15:35.113834' | Confidence: 99.9954 % | Content: http://dbpedia.org/resource/Batman"@en ;
-                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
-                                                               rdf:subject
+                                                               rdf:object     "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-29T06:40:48.375' | Confidence: 93.4757 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-29T06:40:48.595' | Confidence: 97.7748 % | Content: http://dbpedia.org/resource/Real_number Time: '2023-08-29T06:40:48.806' | Confidence: 99.9954 % | Content: http://dbpedia.org/resource/Batman"@en ;
+                                                               rdf:predicate  explanations:hasExplanationForCreatedData ;
+                                                               rdf:subject    
                     <urn:qanary:NED-DBpediaSpotlight>
                                                              ] ;
-                                                   rdf:_3    [ rdf:type       rdf:Statement ;
-                                                               rdf:object     "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-23T09:15:35.089921' | Konfidenz: 93.4757 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-23T09:15:35.102656' | Konfidenz: 97.7748 % | Inhalt: http://dbpedia.org/resource/Real_number Zeitpunkt: '2023-08-23T09:15:35.113834' | Konfidenz: 99.9954 % | Inhalt: http://dbpedia.org/resource/Batman"@de ;
-                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
-                                                               rdf:subject
+                                                   rdf:_2    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-29T06:40:48.375' | Konfidenz: 93.4757 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-29T06:40:48.595' | Konfidenz: 97.7748 % | Inhalt: http://dbpedia.org/resource/Real_number Zeitpunkt: '2023-08-29T06:40:48.806' | Konfidenz: 99.9954 % | Inhalt: http://dbpedia.org/resource/Batman"@de ;
+                                                               rdf:predicate  explanations:hasExplanationForCreatedData ;
+                                                               rdf:subject    
                         <urn:qanary:NED-DBpediaSpotlight>
+                                                             ] ;
+                                                   rdf:_3    [ rdf:type       rdf:Statement ;
+                                                               rdf:object     explanations:hasExplanation ;
+                                                               rdf:predicate  rdfs:subPropertyOf ;
+                                                               rdf:subject    explanations:hasExplanationForCreatedData
                                                              ]
                                                  ] ;
                                        rdf:_2    [ rdf:type  rdf:Seq ;
                                                    rdf:_1    [ rdf:type       rdf:Statement ;
-                                                               rdf:object     explanation:hasExplanation ;
+                                                               rdf:object     explanations:hasExplanation ;
                                                                rdf:predicate  rdfs:subPropertyOf ;
-                                                               rdf:subject    explanation:hasExplanationForCreatedData
+                                                               rdf:subject    explanations:hasExplanationForCreatedData
                                                              ] ;
                                                    rdf:_2    [ rdf:type       rdf:Statement ;
-                                                               rdf:object     "The component urn:qanary:QB-SimpleRealNameOfSuperHero has added the following properties to the graph:  Time: '2023-08-23T09:15:35.408233' | Confidence: 100 % | Content: PREFIX  rdfs:
-                            <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:
+                                                               rdf:object     "The component urn:qanary:QB-SimpleRealNameOfSuperHero has added the following properties to the graph:  Time: '2023-08-29T06:40:49.691' | Confidence: 100 % | Content: PREFIX  rdfs: 
+                            <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:  
                                 <http://purl.org/dc/terms/> PREFIX  dbr:
                                 <http://dbpedia.org/resource/> PREFIX  rdf:
-                                <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX  foaf:
+                                <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX  foaf: 
                                     <http://xmlns.com/foaf/0.1/>  SELECT  * WHERE   { ?resource  foaf:name  ?answer ;               rdfs:label  ?label     FILTER ( lang(?label) = \"en\" )     ?resource  dct:subject  dbr:Category:Superheroes_with_alter_egos     FILTER ( ! strstarts(lcase(?label), lcase(?answer)) )     VALUES ?resource { dbr:Batman }   } ORDER BY ?resource "@en ;
-                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:predicate  explanations:hasExplanationForCreatedData ;
                                                                rdf:subject
                                     <urn:qanary:QB-SimpleRealNameOfSuperHero>
                                                              ] ;
                                                    rdf:_3    [ rdf:type       rdf:Statement ;
-                                                               rdf:object     "Die Komponente urn:qanary:QB-SimpleRealNameOfSuperHero hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-23T09:15:35.408233' | Konfidenz: 100 % | Inhalt: PREFIX  rdfs:
-                                        <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:
+                                                               rdf:object     "Die Komponente urn:qanary:QB-SimpleRealNameOfSuperHero hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-29T06:40:49.691' | Konfidenz: 100 % | Inhalt: PREFIX  rdfs: 
+                                        <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dct:  
                                             <http://purl.org/dc/terms/> PREFIX  dbr:
                                             <http://dbpedia.org/resource/> PREFIX  rdf:
-                                            <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX  foaf:
+                                            <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX  foaf: 
                                                 <http://xmlns.com/foaf/0.1/>  SELECT  * WHERE   { ?resource  foaf:name  ?answer ;               rdfs:label  ?label     FILTER ( lang(?label) = \"en\" )     ?resource  dct:subject  dbr:Category:Superheroes_with_alter_egos     FILTER ( ! strstarts(lcase(?label), lcase(?answer)) )     VALUES ?resource { dbr:Batman }   } ORDER BY ?resource "@de ;
-                                                               rdf:predicate  explanation:hasExplanationForCreatedData ;
+                                                               rdf:predicate  explanations:hasExplanationForCreatedData ;
                                                                rdf:subject
                                                 <urn:qanary:QB-SimpleRealNameOfSuperHero>
                                                              ]
                                                  ]
                                      ] ;
-
+        
                                                     <urn:qanary:wasProcessedInGraph>
-                                                        <urn:graph:f8f55d59-ffc3-4336-b752-12d5676ef4e2> .
-
+                                                        <urn:graph:ad7a72a6-9036-4219-803e-d6dab991a28e> .
 ----
 ====
 
@@ -215,20 +212,23 @@ If there`s no `Accept` header provided in the request, then the format will be R
 ====
 [source]
 ----
-@prefix explanation: <urn:qanary:explanations> .
-@prefix rdfs:        <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix explanations: 
+<urn:qanary:explanations#> .
+@prefix rdfs:         
+    <http://www.w3.org/2000/01/rdf-schema#> .
 
-explanation:hasExplanationForCreatedData rdfs:subPropertyOf  explanation:hasExplanation .
 
-<urn:qanary:NED-DBpediaSpotlight>
-        explanation:hasExplanationForCreatedData
-                "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-24T14:31:10.906821' | Confidence: 98.3535 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-24T14:31:10.919961' | Confidence: 100 % | Content: http://dbpedia.org/resource/Stephen_Hawking"@en , "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-24T14:31:10.906821' | Konfidenz: 98.3535 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-24T14:31:10.919961' | Konfidenz: 100 % | Inhalt: http://dbpedia.org/resource/Stephen_Hawking"@de .
+        <urn:qanary:NED-DBpediaSpotlight>
+        explanations:hasExplanationForCreatedData
+                "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-29T06:40:48.375' | Confidence: 93.4757 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-29T06:40:48.595' | Confidence: 97.7748 % | Content: http://dbpedia.org/resource/Real_number Time: '2023-08-29T06:40:48.806' | Confidence: 99.9954 % | Content: http://dbpedia.org/resource/Batman"@en , "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-29T06:40:48.375' | Konfidenz: 93.4757 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-29T06:40:48.595' | Konfidenz: 97.7748 % | Inhalt: http://dbpedia.org/resource/Real_number Zeitpunkt: '2023-08-29T06:40:48.806' | Konfidenz: 99.9954 % | Inhalt: http://dbpedia.org/resource/Batman"@de .
+
+explanations:hasExplanationForCreatedData
+        rdfs:subPropertyOf  explanations:hasExplanation .
 
 ----
 ====
 --
-
-=== Example
+== Example
 
 . Firstly we start a QA process with the Question "What is the real name of Superman?" and the components
 ** NED-DBpediaSpotlight and
