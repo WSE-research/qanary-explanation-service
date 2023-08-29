@@ -68,6 +68,8 @@ server.port = 4000
 sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 ----
 
+
+
 === Functionalities
 
 Currently, there are several endpoints with different tasks, as of the latest version these are:
@@ -75,19 +77,18 @@ Currently, there are several endpoints with different tasks, as of the latest ve
 --
 --
 
-* `/annotations/{graphURI}`
-+
+==== `/annotations/{graphURI}`
+
 --
 *Path variables:*
 --
-+
 --
 ** required: graphURI::String
-+
 --
-+
 --
-*return:* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL query)
+*Returns:*
+
+* a list of objects with all annotations (similar to `/explanation` but not as strict, see SPARQL query)
 
 *SPARQL query:*
 
@@ -108,20 +109,16 @@ WHERE {
 ----
 
 --
-* `/explanations/{graphURI}/{componentURI}`
-+
+==== `/explanations/{graphURI}/{componentURI}`
+
 --
 *Path Variables:*
 --
-+
 --
 ** required: graphURI::String
 ** optional: componentURI::String
-+
 --
-+
 *Returns:*
-+
 --
 ** with only the graphURI given: a formatted explanation for the QA-process on the graphURI depending on the following `Accept` header:
 * none: Turtle
@@ -136,11 +133,9 @@ WHERE {
 * `text/turtle`: Turtle
 * other: no response, NOT_ACCEPTABLE (406)
 --
-+
 provides two endpoints to either request an explanation for a QA process with a given graphURI or a specific explanation for one componentURI (added as another path variable).
 In both cases, the explanation format depends on the Accept-Header: RDF/XML, JSONLD, or RDF Turtle. 
 If there`s no `Accept` header provided in the request, then the format will be RDF Turtle.
-+
 --
 .*Example Return for QA system:*
 [%collapsible]
@@ -233,8 +228,7 @@ explanations:hasExplanationForCreatedData
 ----
 ====
 --
-
-=== Example
+== Example
 
 . Firstly we start a QA process with the Question "What is the real name of Superman?" and the components
 ** NED-DBpediaSpotlight and
