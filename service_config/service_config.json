@@ -2,7 +2,7 @@
   "services": [
     {
       "mode": "dockerfile",
-      "image": "wseresearch/component-explanation",
+      "image": "wseresearch/qanary-explanation-service",
       "tag": "latest",
       "port": "40190:4000"
     }

@@ -38,7 +38,7 @@ You might build a Docker image locally with the existing Dockerfile by using the
 
 [source,bash]
 ----
-docker build . -t <yourDesiredImageName>
+docker build . -t qanary-explanation-service:latest
 ----
 
 === Running the application
@@ -51,7 +51,7 @@ docker build . -t <yourDesiredImageName>
 * while using the created Dockerfile:
 +
 --
-** `docker run -p 12345:4000 <yourDesiredImageName>`
+** `docker run -p 12345:4000 qanary-explanation-service:latest`
 *** the "p"-tag is optional and maps the applications-port (4000) to another one, in this case (and on a local machine), the service would be available at "http://localhost:12345"
 --
 
