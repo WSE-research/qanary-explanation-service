@@ -1,4 +1,5 @@
 :toc:
+:toc-title:
 :toclevels: 5
 :toc-placement!:
 :source-highlighter: highlight.js
@@ -19,65 +20,66 @@ This webservice provides some functionalities to compute explanations for some Q
 
 toc::[]
 
-== Build and Installation
+== Build and Run
 
-=== Build process
+=== Build
 
-==== Building from scratch using Java
+==== *Preparations*
 
-Create the .jar-file like so:
+You may change these settings to fit your requirements:
 
-[source,bash]
-----
-mvn clean install
-----
-
-==== Building with Docker
-
-You might build a Docker image locally with the existing Dockerfile by using the following command:
-
-[source,bash]
-----
-docker build . -t qanary-explanation-service:latest
-----
-
-=== Running the application
-
-* while using the JAR file:
-+
---
-** execute it like so `java -jar ./PATH/TO/PACKAGED_JAR.jar`
---
-* while using the created Dockerfile:
-+
---
-** `docker run -p 12345:4000 qanary-explanation-service:latest`
-*** the "p"-tag is optional and maps the applications-port (4000) to another one, in this case (and on a local machine), the service would be available at "http://localhost:12345"
---
-
-== Usage
-
-=== Settings
-
-Change the following as you need them:
-
-.*applications.properties*
+._applications.properties_
 [source,ini]
 ----
 server.port = 4000
 sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 ----
 
+==== *from scratch using Java*
 
+* create a executable -jar-file like so:
+  
+ ** `mvn clean install`
 
-=== Functionalities
+==== *by using Docker*
+
+. *_locally:_*
+  
+  - build a Docker image with the existing Dockerfile by using the following command inside the projects folder
+  - `docker build . -t qanary-explanation-service`
+  
+. *_from Dockerhub:_*
+
+  - pull the repository *wseresearch/qanary-explanation-service* with `docker pull wseresearch/qanary-explanation-service:latest`
+  
+  - you might replace the tag `latest` with your desired release-tag from `https://hub.docker.com/repository/docker/wseresearch/qanary-explanation-service/tags`
+  
+
+=== Running the application
+
+==== *using Java*
+
+* start the built jar-file by executing `java -jar PATH/TO/JAR/qanary-explanation-service.jar`
+** the built jar is usually located inside the target-directory (of the projects directory)
+
+==== *using Docker*
+
+. *_locally built:_*
+
+* run the built image with `docker run -p 12345:4000 qanary-explanation-service` with parameters:
+** *_"p":_* is the optional port mapping if you wish to run the application on a different port on your machine, e.g. in this case the *applications port (default: 4000) is mapped to port 12345*
+
+. *_from Dockerhub:_* 
+
+* run the pulled image with `docker run -p 12345:4000 qanary-explanation-service:latest` with:
+** your previous selected tag (replace *latest* with *your tag*)
+** parameter *_"p":_* the optional port mapping if you wish to run the application on a different port on your machine, e.g. in this case the *applications port (default: 4000) is mapped to port 12345*
+
+== Functionalities
 
 Currently, there are several endpoints with different tasks, as of the latest version these are:
 
---
---
-
-==== `/annotations/{graphURI}`
+=== `/annotations/{graphURI}`
 
 --
 *Path variables:*
@@ -109,7 +111,8 @@ WHERE {
 ----
 
 --
-==== `/explanations/{graphURI}/{componentURI}`
+
+=== `/explanations/{graphURI}/{componentURI}`
 
 --
 *Path Variables:*
@@ -228,6 +231,8 @@ explanations:hasExplanationForCreatedData
 ----
 ====
 --
+
+
 == Example
 
 . Firstly we start a QA process with the Question "What is the real name of Superman?" and the components
@@ -329,6 +334,10 @@ explanations:hasExplanationForCreatedData
 ]
 ----
 ====
-=== Spring Doc & Swagger UI
+
+== SpringDocs & SwaggerUI
 Swagger UI is available at http://localhost:40190/swagger-ui/index.html
+
 API Docs are available at http://localhost:40190/api-docs
+
+
