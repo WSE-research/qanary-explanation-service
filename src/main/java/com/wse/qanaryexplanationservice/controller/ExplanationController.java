@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @ControllerAdvice
 public class ExplanationController {
@@ -54,7 +56,14 @@ public class ExplanationController {
             else
                 return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
         }
+    }
 
+    @GetMapping("/explain/{graphURI}/{componentURI}")
+    public ResponseEntity<?> explain(
+            @PathVariable String graphURI,
+            @PathVariable String componentURI
+    ) throws IOException {
+        return new ResponseEntity<>(this.explanationService.fetchAllAnnotation(graphURI, componentURI), HttpStatus.OK);
     }
 
 }

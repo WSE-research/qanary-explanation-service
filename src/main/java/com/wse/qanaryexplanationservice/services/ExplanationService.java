@@ -20,20 +20,26 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ExplanationService {
 
+    // Query files
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
+    private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
+
+    // Mappings
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
         put("application/rdf+xml", "RDFXML");
         put("application/ld+json", "JSONLD");
         put("text/turtle", "TURTLE");
     }};
+    private static final Map<String,String> annotationsTypeAndQuery = new HashMap<>() {{
+        // AnnotationOfInstance
+        put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
+    }};
+
     final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final ObjectMapper objectMapper;
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
@@ -349,5 +355,66 @@ public class ExplanationService {
 
         return systemExplanationModel;
     }
+
+    public List<String> fetchAllAnnotation(String graphURI, String componentURI) throws IOException {
+        String query = buildSparqlQuery(graphURI, componentURI, ANNOTATIONS_QUERY);
+
+        JsonNode results = this.explanationSparqlRepository.executeSparqlQuery(query);
+        ArrayNode resultsAsArray = (ArrayNode) results.get("bindings");
+        logger.info("ArrayNode: {}", resultsAsArray);
+        ArrayList<String> types = new ArrayList<>();
+        for (JsonNode node : resultsAsArray
+             ) {
+           // Resource resource = (Resource) node.get("annotationType").get("value");
+        }
+
+        List<String> explanations = createSpecificExplanations(
+                types.toArray(String[]::new),
+                graphURI
+        );
+
+        return explanations;
+
+    }
+
+    // Create a specific explanation for every annotation
+
+    public List<String> createSpecificExplanations(String[] usedTypes, String graphURI) throws IOException {
+
+        logger.info("TypAndId-List: {}", usedTypes);
+
+        List<String> explanations = new ArrayList<>();
+
+        for (String type : usedTypes
+             ) {
+            explanations.addAll(createSpecificExplanation(type, graphURI));
+        }
+
+        return explanations;
+    }
+
+    public List<String> createSpecificExplanation(String type, String graphURI) throws IOException {
+        String query = buildSparqlQuery(graphURI, null, annotationsTypeAndQuery.get(type));
+        List<String> explanationsForCurrentType = new ArrayList<>();
+
+        if(Objects.equals(type, "annotationofspotinstance")) {
+            JsonNode result = this.explanationSparqlRepository.executeSparqlQuery(query);
+            ArrayNode resultsAsArrayNode = (ArrayNode) result.get("bindings");
+
+            Iterator<JsonNode> arrayNodeIterator = resultsAsArrayNode.iterator();
+            while(arrayNodeIterator.hasNext()) {
+                JsonNode currentObject = arrayNodeIterator.next();
+                explanationsForCurrentType.add(
+                        "At " + currentObject.get("annotatedAt").get("value") + " the component found a entity starting from position "
+                        + currentObject.get("start").get("value") + " and ending at position " + currentObject.get("end").get("value") + " in the origin question."
+                );
+            }
+        }
+
+        logger.info("Explanations: {}", explanationsForCurrentType);
+
+        return explanationsForCurrentType;
+    }
+
 
 }
