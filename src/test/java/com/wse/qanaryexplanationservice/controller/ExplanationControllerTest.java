@@ -70,7 +70,7 @@ public class ExplanationControllerTest {
 
             @BeforeEach
             void setup() throws Exception {
-                Mockito.when(explanationService.explainQaSystem(any(), any(), any())).thenReturn(testReturn);
+                Mockito.when(explanationService.explainQaSystem(any(), any())).thenReturn(testReturn);
             }
 
             @Test
@@ -82,7 +82,7 @@ public class ExplanationControllerTest {
                 assertEquals(200, mvcResult.getResponse().getStatus());
 
                 // check if SystemExplanation method was called once
-                verify(explanationService, times(1)).explainQaSystem(any(),any(),any());
+                verify(explanationService, times(1)).explainQaSystem(any(),any());
             }
 
             @Test

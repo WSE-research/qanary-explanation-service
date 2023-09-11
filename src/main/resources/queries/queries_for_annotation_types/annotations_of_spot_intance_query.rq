@@ -5,7 +5,7 @@ PREFIX qa: <http://www.wdaqua.eu/qa#>
 SELECT *
 FROM ?graphURI
 WHERE {
-    ?annotationId rdf:type qa:AnnotationOfSpotInstance
+    ?annotationId rdf:type qa:AnnotationOfSpotInstance.
     ?annotationId oa:hasTarget [
         a oa:SpecificResource;
                       oa:hasSource ?source;

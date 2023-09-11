@@ -44,13 +44,13 @@ public class ExplanationController {
             @PathVariable(required = false) String componentURI,
             @RequestHeader(value = "accept", required = false) String acceptHeader) throws Exception {
         if (componentURI == null) {
-            String result = explanationService.explainQaSystem(graphURI, GENERAL_EXPLANATION_SPARQL_QUERY, acceptHeader);
+            String result = explanationService.explainQaSystem(graphURI, acceptHeader);
             if (result != null)
                 return new ResponseEntity<>(result, HttpStatus.OK);
             else
                 return new ResponseEntity<>(null, HttpStatus.NOT_ACCEPTABLE);
         } else {
-            String result = this.explanationService.explainSpecificComponent(graphURI, componentURI, GENERAL_EXPLANATION_SPARQL_QUERY, acceptHeader);
+            String result = this.explanationService.explainSpecificComponent(graphURI, componentURI, acceptHeader);
             if (result != null)
                 return new ResponseEntity<>(result, HttpStatus.OK);
             else
@@ -61,9 +61,10 @@ public class ExplanationController {
     @GetMapping("/explain/{graphURI}/{componentURI}")
     public ResponseEntity<?> explain(
             @PathVariable String graphURI,
-            @PathVariable String componentURI
-    ) throws IOException {
-        return new ResponseEntity<>(this.explanationService.fetchAllAnnotation(graphURI, componentURI), HttpStatus.OK);
+            @PathVariable String componentURI,
+            @RequestHeader(value = "accept", required = false) String acceptHeader
+    ) throws Exception {
+        return new ResponseEntity<>(this.explanationService.explainSpecificComponent(graphURI, componentURI, acceptHeader), HttpStatus.OK);
     }
 
 }

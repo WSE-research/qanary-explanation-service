@@ -8,7 +8,10 @@ import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
@@ -21,6 +24,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 public class ExplanationService {
@@ -28,6 +33,8 @@ public class ExplanationService {
     // Query files
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
+    private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
+
 
     // Mappings
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
@@ -57,21 +64,21 @@ public class ExplanationService {
      *
      * @param graphUri        specific graphURI
      * @param componentUri    specific componentURI
-     * @param fetchQueryEmpty Used query to fetch needed information
      * @return explanation as RDF Turtle
      */
-    public String explainSpecificComponent(String graphUri, String componentUri, String fetchQueryEmpty, String header) throws Exception {
+    public String explainSpecificComponent(String graphUri, String componentUri, String header) throws Exception {
         logger.info("Passed header: {}", header);
-        Model model = createModel(graphUri, componentUri, fetchQueryEmpty);
+        Model model = createModel(graphUri, componentUri);
 
         return convertToDesiredFormat(header, model);
     }
 
     // Returns a model for a specific component
-    public Model createModel(String graphUri, String componentUri, String fetchQueryEmpty) throws Exception {
-        ExplanationObject[] explanationObjects = computeExplanationObjects(graphUri, componentUri, fetchQueryEmpty);
-        String contentDe = convertToTextualExplanation(explanationObjects, "de", componentUri);
-        String contentEn = convertToTextualExplanation(explanationObjects, "en", componentUri);
+    public Model createModel(String graphUri, String componentUri) throws Exception {
+        String contentDe = createTextualExplanation(graphUri, "de", componentUri);
+        String contentEn = createTextualExplanation(graphUri, "en", componentUri);
+
+        String contentde = createTextualExplanation(graphUri, componentUri, "de");
 
         return createModelForSpecificComponent(contentDe, contentEn, componentUri);
     }
@@ -265,14 +272,14 @@ public class ExplanationService {
      *
      * @param graphURI the only parameter given for a qa-system
      */
-    public String explainQaSystem(String graphURI, String specificComponentQuery, String header) throws Exception {
+    public String explainQaSystem(String graphURI, String header) throws Exception {
 
         ComponentPojo[] components = annotationsService.getUsedComponents(graphURI);
         Map<String, Model> models = new HashMap<>();
         for (ComponentPojo component : components
         ) {
             models.put(component.getComponent().getValue(),
-                    createModel(graphURI, component.getComponent().getValue(), specificComponentQuery));
+                    createModel(graphURI, component.getComponent().getValue()));
         }
 
         String questionURI = fetchQuestionUri(graphURI);
@@ -356,65 +363,88 @@ public class ExplanationService {
         return systemExplanationModel;
     }
 
+    public List<String> createComponentExplanation(String graphURI, String componentURI, String lang) throws IOException {
+
+        List<String> types = new ArrayList<>();
+        if(stringResultSetMap.isEmpty())
+            types = fetchAllAnnotation(graphURI, componentURI);
+
+        return createSpecificExplanations(
+                types.toArray(String[]::new),
+                graphURI,
+                lang
+        );
+
+    }
+
     public List<String> fetchAllAnnotation(String graphURI, String componentURI) throws IOException {
         String query = buildSparqlQuery(graphURI, componentURI, ANNOTATIONS_QUERY);
 
-        JsonNode results = this.explanationSparqlRepository.executeSparqlQuery(query);
-        ArrayNode resultsAsArray = (ArrayNode) results.get("bindings");
-        logger.info("ArrayNode: {}", resultsAsArray);
         ArrayList<String> types = new ArrayList<>();
-        for (JsonNode node : resultsAsArray
-             ) {
-           // Resource resource = (Resource) node.get("annotationType").get("value");
+        ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
+
+        while(resultSet.hasNext()) {
+            QuerySolution result = resultSet.next();
+            RDFNode type = result.get("annotationType");
+            String typeLocalName = type.asResource().getLocalName();
+            logger.info("Annotation-Type found: {}", typeLocalName);
+            types.add(typeLocalName.toLowerCase()); // lower case for equality comparison w/ map keys
         }
 
-        List<String> explanations = createSpecificExplanations(
-                types.toArray(String[]::new),
-                graphURI
-        );
-
-        return explanations;
+        return types;
 
     }
 
     // Create a specific explanation for every annotation
-
-    public List<String> createSpecificExplanations(String[] usedTypes, String graphURI) throws IOException {
-
-        logger.info("TypAndId-List: {}", usedTypes);
+    public List<String> createSpecificExplanations(String[] usedTypes, String graphURI, String lang) throws IOException {
 
         List<String> explanations = new ArrayList<>();
 
         for (String type : usedTypes
              ) {
-            explanations.addAll(createSpecificExplanation(type, graphURI));
+            explanations.addAll(createSpecificExplanation(type, graphURI, lang));
         }
 
         return explanations;
     }
 
-    public List<String> createSpecificExplanation(String type, String graphURI) throws IOException {
+    public List<String> createSpecificExplanation(String type, String graphURI, String lang) throws IOException {
         String query = buildSparqlQuery(graphURI, null, annotationsTypeAndQuery.get(type));
         List<String> explanationsForCurrentType = new ArrayList<>();
+        ResultSet results = null;
+        if(!stringResultSetMap.containsKey(type))
+            results = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
 
+        // TODO: Something similar to the Mapping approach? More generalization?
         if(Objects.equals(type, "annotationofspotinstance")) {
-            JsonNode result = this.explanationSparqlRepository.executeSparqlQuery(query);
-            ArrayNode resultsAsArrayNode = (ArrayNode) result.get("bindings");
 
-            Iterator<JsonNode> arrayNodeIterator = resultsAsArrayNode.iterator();
-            while(arrayNodeIterator.hasNext()) {
-                JsonNode currentObject = arrayNodeIterator.next();
+            while(results.hasNext()) {
+                QuerySolution currentObject = results.next();
                 explanationsForCurrentType.add(
-                        "At " + currentObject.get("annotatedAt").get("value") + " the component found a entity starting from position "
-                        + currentObject.get("start").get("value") + " and ending at position " + currentObject.get("end").get("value") + " in the origin question."
+                        "At " + currentObject.get("createdAt").asLiteral().getString() + " it found an entity starting from position "
+                        + currentObject.get("start").asLiteral().getInt() + " and ending at position " + currentObject.get("end").asLiteral().getInt()
+                        + " in the origin question."
                 );
             }
         }
 
-        logger.info("Explanations: {}", explanationsForCurrentType);
+        logger.info("Created explanations: {}", explanationsForCurrentType);
 
         return explanationsForCurrentType;
     }
 
+
+    public String createTextualExplanation(String graphURI, String componentURI, String lang) throws IOException {
+
+        List<String> createdExplanations = createComponentExplanation(graphURI, componentURI, lang);
+
+        AtomicInteger i = new AtomicInteger();
+        List<String> explanations = createdExplanations.stream().map((explanation) -> String.valueOf(i.incrementAndGet()) + " " + explanation + "\n").toList();
+
+        String result =  "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the triplestore: "
+                + StringUtils.join(explanations, "\n");
+        stringResultSetMap.clear();
+        return result;
+    }
 
 }
