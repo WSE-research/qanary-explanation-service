@@ -18,14 +18,16 @@ import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 @Service
 public class ExplanationService {
@@ -33,23 +35,25 @@ public class ExplanationService {
     // Query files
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
-    private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
-
-
     // Mappings
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
         put("application/rdf+xml", "RDFXML");
         put("application/ld+json", "JSONLD");
         put("text/turtle", "TURTLE");
     }};
-    private static final Map<String,String> annotationsTypeAndQuery = new HashMap<>() {{
+    private static final Map<String, String> annotationsTypeAndQuery = new HashMap<>() {{
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
     }};
 
+    // Holds the annotationtype with path
+    private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
+        put("annotationofspotinstance", "/explanations/annotation_of_instance/");
+    }};
     final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final ObjectMapper objectMapper;
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
+    private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
     @Autowired
@@ -62,8 +66,8 @@ public class ExplanationService {
     /**
      * Computes a textual explanation for a specific component on a specific graphURI
      *
-     * @param graphUri        specific graphURI
-     * @param componentUri    specific componentURI
+     * @param graphUri     specific graphURI
+     * @param componentUri specific componentURI
      * @return explanation as RDF Turtle
      */
     public String explainSpecificComponent(String graphUri, String componentUri, String header) throws Exception {
@@ -75,12 +79,11 @@ public class ExplanationService {
 
     // Returns a model for a specific component
     public Model createModel(String graphUri, String componentUri) throws Exception {
-        String contentDe = createTextualExplanation(graphUri, "de", componentUri);
-        String contentEn = createTextualExplanation(graphUri, "en", componentUri);
 
         String contentde = createTextualExplanation(graphUri, componentUri, "de");
+        String contenten = createTextualExplanation(graphUri, componentUri, "en");
 
-        return createModelForSpecificComponent(contentDe, contentEn, componentUri);
+        return createModelForSpecificComponent(contentde, contenten, componentUri);
     }
 
     // Creating the query, executing it and transform the response to an array of ExplanationObject objects
@@ -366,7 +369,7 @@ public class ExplanationService {
     public List<String> createComponentExplanation(String graphURI, String componentURI, String lang) throws IOException {
 
         List<String> types = new ArrayList<>();
-        if(stringResultSetMap.isEmpty())
+        if (stringResultSetMap.isEmpty())
             types = fetchAllAnnotation(graphURI, componentURI);
 
         return createSpecificExplanations(
@@ -383,7 +386,7 @@ public class ExplanationService {
         ArrayList<String> types = new ArrayList<>();
         ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
 
-        while(resultSet.hasNext()) {
+        while (resultSet.hasNext()) {
             QuerySolution result = resultSet.next();
             RDFNode type = result.get("annotationType");
             String typeLocalName = type.asResource().getLocalName();
@@ -401,7 +404,7 @@ public class ExplanationService {
         List<String> explanations = new ArrayList<>();
 
         for (String type : usedTypes
-             ) {
+        ) {
             explanations.addAll(createSpecificExplanation(type, graphURI, lang));
         }
 
@@ -412,19 +415,22 @@ public class ExplanationService {
         String query = buildSparqlQuery(graphURI, null, annotationsTypeAndQuery.get(type));
         List<String> explanationsForCurrentType = new ArrayList<>();
         ResultSet results = null;
-        if(!stringResultSetMap.containsKey(type))
+        if (!stringResultSetMap.containsKey(type))
             results = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
 
         // TODO: Something similar to the Mapping approach? More generalization?
-        if(Objects.equals(type, "annotationofspotinstance")) {
+        if (Objects.equals(type, "annotationofspotinstance")) {
 
-            while(results.hasNext()) {
+            File templateFile = new ClassPathResource(annotationTypeExplanationTemplate.get(type) + lang).getFile();
+            String template = new String(Files.readAllBytes(templateFile.toPath()));
+
+            while (results.hasNext()) {
+                String filledTemplate = template;
                 QuerySolution currentObject = results.next();
-                explanationsForCurrentType.add(
-                        "At " + currentObject.get("createdAt").asLiteral().getString() + " it found an entity starting from position "
-                        + currentObject.get("start").asLiteral().getInt() + " and ending at position " + currentObject.get("end").asLiteral().getInt()
-                        + " in the origin question."
-                );
+                filledTemplate = filledTemplate.replace("$createdAt", currentObject.get("createdAt").asLiteral().getString());
+                filledTemplate = filledTemplate.replace("$start", String.valueOf(currentObject.get("start").asLiteral().getInt()));
+                filledTemplate = filledTemplate.replace("$end", String.valueOf(currentObject.get("end").asLiteral().getInt()));
+                explanationsForCurrentType.add(filledTemplate);
             }
         }
 
@@ -434,14 +440,20 @@ public class ExplanationService {
     }
 
 
+    /**
+     * Creates a textual explanation for all annotations made by the componentURI for a language lang. The explanation for the annotations are formatted as a list
+     *
+     * @param lang Currently supported en and de
+     * @return Complete explanation for the componentURI including all information to each annotation
+     */
     public String createTextualExplanation(String graphURI, String componentURI, String lang) throws IOException {
 
         List<String> createdExplanations = createComponentExplanation(graphURI, componentURI, lang);
 
         AtomicInteger i = new AtomicInteger();
-        List<String> explanations = createdExplanations.stream().map((explanation) -> String.valueOf(i.incrementAndGet()) + " " + explanation + "\n").toList();
+        List<String> explanations = createdExplanations.stream().map((explanation) -> String.valueOf(i.incrementAndGet()) + ". " + explanation).toList();
 
-        String result =  "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the triplestore: "
+        String result = "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the triplestore: "
                 + StringUtils.join(explanations, "\n");
         stringResultSetMap.clear();
         return result;
