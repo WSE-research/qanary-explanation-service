@@ -39,8 +39,6 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 public class ExplanationServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
-
-    private static final String QUERY = "/queries/explanation_for_query_builder.rq";
     protected final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
 
     @Nested
