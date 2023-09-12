@@ -44,11 +44,13 @@ public class ExplanationService {
     private static final Map<String, String> annotationsTypeAndQuery = new HashMap<>() {{
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
+        put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
     }};
 
     // Holds the annotationtype with path
     private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
         put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
+        put("annotationofinstance", "/explanations/annotation_of_instance/");
     }};
     final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final ObjectMapper objectMapper;
@@ -413,18 +415,24 @@ public class ExplanationService {
 
     public List<String> createSpecificExplanation(String type, String graphURI, String lang) throws IOException {
         String query = buildSparqlQuery(graphURI, null, annotationsTypeAndQuery.get(type));
-        List<String> explanationsForCurrentType = new ArrayList<>();
         ResultSet results = null;
         if (!stringResultSetMap.containsKey(type))
             results = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
 
-        // TODO: Something similar to the Mapping approach? More generalization?
+        List<String> explanationsForCurrentType = addingExplanations(type, lang, results);
+
+        logger.info("Created explanations: {}", explanationsForCurrentType);
+        return explanationsForCurrentType;
+    }
+
+    public List<String> addingExplanations(String type, String lang, ResultSet results) throws IOException {
+
+        List<String> explanationsForCurrentType = new ArrayList<>();
+        String langExplanationPrefix = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_prefix");
+        explanationsForCurrentType.add(langExplanationPrefix);
+        String template = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
+
         if (Objects.equals(type, "annotationofspotinstance")) {
-
-            String langExplanationPrefix = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_prefix");
-            explanationsForCurrentType.add(langExplanationPrefix);
-            String template = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
-
             while (results.hasNext()) {
                 String filledTemplate = template;
                 QuerySolution currentObject = results.next();
@@ -434,7 +442,17 @@ public class ExplanationService {
                 explanationsForCurrentType.add(filledTemplate);
             }
         }
-        logger.info("Created explanations: {}", explanationsForCurrentType);
+        else if(Objects.equals(type, "annotationofinstance")) {
+            while(results.hasNext()) {
+                String filledTemplate = template;
+                QuerySolution currentObject = results.next();
+                filledTemplate = filledTemplate.replace("$createdAt", currentObject.get("createdAt").asLiteral().getString());
+                filledTemplate = filledTemplate.replace("$score", String.valueOf(currentObject.get("score").asLiteral().getDouble()));
+                filledTemplate = filledTemplate.replace("$body", currentObject.get("body").asResource().toString());
+                explanationsForCurrentType.add(filledTemplate);
+            }
+        }
+
         return explanationsForCurrentType;
     }
 
@@ -455,8 +473,8 @@ public class ExplanationService {
         List<String> createdExplanations = createComponentExplanation(graphURI, componentURI, lang);
 
         AtomicInteger i = new AtomicInteger();
+        // skips the first prefix // TODO: needs to be done better since there could me more than one prefix (if several annot. type are provided)
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> String.valueOf(i.incrementAndGet()) + ". " + explanation).toList();
-
         String result = getResult(componentURI, lang, explanations, createdExplanations.get(0));
         stringResultSetMap.clear();
         return result;
@@ -465,11 +483,11 @@ public class ExplanationService {
     private static String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
         String result = null;
         if(lang == "en") {
-            result = "The component " + componentURI + " has added " + String.valueOf(explanations.size()) + " annotation(s) to the triplestore "
+            result = "The component " + componentURI + " has added " + String.valueOf(explanations.size()) + " annotation(s) to the graph "
                     + prefix + "\n" + StringUtils.join(explanations, "\n");
         }
         else if(lang == "de") {
-            result = "Die Komponente " + componentURI + "hat " + String.valueOf(explanations.size()) + " annotationen zum Triplestore hinzugefügt "
+            result = "Die Komponente " + componentURI + " hat " + String.valueOf(explanations.size()) + " Annotation(en) zum Graph hinzugefügt "
                     + prefix + "\n" + StringUtils.join(explanations, "\n");
         }
         return result;

@@ -5,9 +5,9 @@ PREFIX qa: <http://www.wdaqua.eu/qa#>
 SELECT *
 FROM ?graphURI
 WHERE {
+    ?annotationId rdf:type qa:AnnotationOfInstance.
     ?annotationId oa:annotatedBy ?componentURI .
     ?annotationId oa:hasBody ?body .
-    ?annotationId oa:annotatedAt $createdAt .
+    ?annotationId oa:annotatedAt ?createdAt .
     ?annotationId qa:score ?score .
 }
-
