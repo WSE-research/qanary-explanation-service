@@ -4,15 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.protobuf.MapEntry;
 import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringSubstitutor;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.impl.Util;
+import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
@@ -28,6 +32,7 @@ import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 public class ExplanationService {
@@ -41,20 +46,28 @@ public class ExplanationService {
         put("application/ld+json", "JSONLD");
         put("text/turtle", "TURTLE");
     }};
+    // Holds request query for declared annotations types
     private static final Map<String, String> annotationsTypeAndQuery = new HashMap<>() {{
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
         put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
     }};
 
-    // Holds the annotationtype with path
+    // Holds explanation templates for the declared annotation types
     private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
         put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
         put("annotationofinstance", "/explanations/annotation_of_instance/");
     }};
+
     final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final ObjectMapper objectMapper;
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
+
+    /*
+    TODO: Is there a smart approach to avoid global changing variable?
+    Key = annotation-type, Value = ResultSet
+    Should avoid multiple execution of same sparql query
+     */
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
@@ -82,10 +95,10 @@ public class ExplanationService {
     // Returns a model for a specific component
     public Model createModel(String graphUri, String componentUri) throws Exception {
 
-        String contentde = createTextualExplanation(graphUri, componentUri, "de");
-        String contenten = createTextualExplanation(graphUri, componentUri, "en");
+        String contentDE = createTextualExplanation(graphUri, componentUri, "de");
+        String contentEN = createTextualExplanation(graphUri, componentUri, "en");
 
-        return createModelForSpecificComponent(contentde, contenten, componentUri);
+        return createModelForSpecificComponent(contentDE, contentEN, componentUri);
     }
 
     // Creating the query, executing it and transform the response to an array of ExplanationObject objects
@@ -432,28 +445,35 @@ public class ExplanationService {
         explanationsForCurrentType.add(langExplanationPrefix);
         String template = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
 
-        if (Objects.equals(type, "annotationofspotinstance")) {
-            while (results.hasNext()) {
-                String filledTemplate = template;
-                QuerySolution currentObject = results.next();
-                filledTemplate = filledTemplate.replace("$createdAt", currentObject.get("createdAt").asLiteral().getString());
-                filledTemplate = filledTemplate.replace("$start", String.valueOf(currentObject.get("start").asLiteral().getInt()));
-                filledTemplate = filledTemplate.replace("$end", String.valueOf(currentObject.get("end").asLiteral().getInt()));
-                explanationsForCurrentType.add(filledTemplate);
-            }
-        }
-        else if(Objects.equals(type, "annotationofinstance")) {
-            while(results.hasNext()) {
-                String filledTemplate = template;
-                QuerySolution currentObject = results.next();
-                filledTemplate = filledTemplate.replace("$createdAt", currentObject.get("createdAt").asLiteral().getString());
-                filledTemplate = filledTemplate.replace("$score", String.valueOf(currentObject.get("score").asLiteral().getDouble()));
-                filledTemplate = filledTemplate.replace("$body", currentObject.get("body").asResource().toString());
-                explanationsForCurrentType.add(filledTemplate);
-            }
+        while(results.hasNext()) {
+            explanationsForCurrentType.add(replaceProperties(results.next(), template));
         }
 
         return explanationsForCurrentType;
+    }
+
+    public String replaceProperties(QuerySolution querySolution, String template) {
+        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
+        querySolutionMap.addAll(querySolution);
+        Map<String, RDFNode> querySolutionMapAsMap = querySolutionMap.asMap();
+        Map<String, String> convertedMap = convertRdfNodeToStringValue(querySolutionMapAsMap);
+
+        // Replace all placeholders with values from map
+        template = StringSubstitutor.replace(template, convertedMap, "${", "}");
+        logger.info("Template with inserted params: {}", template);
+        return template;
+    }
+
+    public Map<String,String> convertRdfNodeToStringValue(Map<String,RDFNode> map) {
+        return map.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> {
+                    if(entry.getValue().isResource())
+                        return entry.getValue().toString();
+                    else
+                        return entry.getValue().asNode().getLiteralValue().toString();
+                }
+        ));
     }
 
     public String getStringFromFile(String path) throws IOException {
@@ -483,12 +503,12 @@ public class ExplanationService {
     private static String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
         String result = null;
         if(lang == "en") {
-            result = "The component " + componentURI + " has added " + String.valueOf(explanations.size()) + " annotation(s) to the graph "
-                    + prefix + "\n" + StringUtils.join(explanations, "\n");
+            result = "The component " + componentURI + " has added " + String.valueOf(explanations.size()) + " annotation(s) to the graph"
+                    + prefix + ":\n" + StringUtils.join(explanations, "\n");
         }
         else if(lang == "de") {
-            result = "Die Komponente " + componentURI + " hat " + String.valueOf(explanations.size()) + " Annotation(en) zum Graph hinzugefügt "
-                    + prefix + "\n" + StringUtils.join(explanations, "\n");
+            result = "Die Komponente " + componentURI + " hat " + String.valueOf(explanations.size()) + " Annotation(en) zum Graph hinzugefügt"
+                    + prefix + ":\n" + StringUtils.join(explanations, "\n");
         }
         return result;
     }

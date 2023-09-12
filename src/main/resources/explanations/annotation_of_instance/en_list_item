@@ -1,1 +1,1 @@
-on $createdAt with a confidence of $score and the resource $body
+on ${createdAt} with a confidence of ${score} and the resource ${body}
