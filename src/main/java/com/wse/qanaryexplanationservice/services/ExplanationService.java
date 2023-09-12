@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.protobuf.MapEntry;
 import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
@@ -15,8 +14,6 @@ import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.rdf.model.impl.Util;
-import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
@@ -40,6 +37,8 @@ public class ExplanationService {
     // Query files
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
+    private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
+    private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     // Mappings
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
         put("application/rdf+xml", "RDFXML");
@@ -95,8 +94,12 @@ public class ExplanationService {
     // Returns a model for a specific component
     public Model createModel(String graphUri, String componentUri) throws Exception {
 
-        String contentDE = createTextualExplanation(graphUri, componentUri, "de");
-        String contentEN = createTextualExplanation(graphUri, componentUri, "en");
+        List<String> types = new ArrayList<>();
+        if (stringResultSetMap.isEmpty())
+            types = fetchAllAnnotations(graphUri, componentUri);
+
+        String contentDE = createTextualExplanation(graphUri, componentUri, "de", types);
+        String contentEN = createTextualExplanation(graphUri, componentUri, "en", types);
 
         return createModelForSpecificComponent(contentDE, contentEN, componentUri);
     }
@@ -381,26 +384,32 @@ public class ExplanationService {
         return systemExplanationModel;
     }
 
-    public List<String> createComponentExplanation(String graphURI, String componentURI, String lang) throws IOException {
-
-        List<String> types = new ArrayList<>();
-        if (stringResultSetMap.isEmpty())
-            types = fetchAllAnnotation(graphURI, componentURI);
-
+    /**
+     * Creates a comprehensive explanation in a given language
+     * @param types Inherits all annotation-types
+     * @param lang Given language
+     * @return List with explanations for the given language. At the end it includes all explanations for every annotation type
+     */
+    public List<String> createComponentExplanation(String graphURI, String componentURI, String lang, ArrayList<String> types) throws IOException {
         return createSpecificExplanations(
                 types.toArray(String[]::new),
                 graphURI,
                 lang
         );
-
     }
 
-    public List<String> fetchAllAnnotation(String graphURI, String componentURI) throws IOException {
+    /**
+     * Fetching all annotations a component has created.
+     * @return A list with all different annotation-types
+     * @throws IOException
+     */
+    public List<String> fetchAllAnnotations(String graphURI, String componentURI) throws IOException {
         String query = buildSparqlQuery(graphURI, componentURI, ANNOTATIONS_QUERY);
 
         ArrayList<String> types = new ArrayList<>();
         ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
 
+        // Iterate through the QuerySolutions and gather all annotation-types
         while (resultSet.hasNext()) {
             QuerySolution result = resultSet.next();
             RDFNode type = result.get("annotationType");
@@ -410,34 +419,51 @@ public class ExplanationService {
         }
 
         return types;
-
     }
 
-    // Create a specific explanation for every annotation
+    /**
+     * Collects the explanation for every annotation type and concat the received lists to its own list
+     * @param usedTypes Includes all annotation types the given componentURI has created
+     * @param lang The language for the explanation
+     * @return List with explanations. At the end it includes all explanations for every annotation type
+     */
     public List<String> createSpecificExplanations(String[] usedTypes, String graphURI, String lang) throws IOException {
 
         List<String> explanations = new ArrayList<>();
-
         for (String type : usedTypes
         ) {
             explanations.addAll(createSpecificExplanation(type, graphURI, lang));
         }
-
         return explanations;
     }
 
+    /**
+     * Creates an explanation for the passed type and language
+     * @param type The annotation type
+     * @param lang The language for the explanation
+     * @return A list of explanation containing a prefix explanation and one entry for every annotation of the givent type
+     */
     public List<String> createSpecificExplanation(String type, String graphURI, String lang) throws IOException {
         String query = buildSparqlQuery(graphURI, null, annotationsTypeAndQuery.get(type));
-        ResultSet results = null;
-        if (!stringResultSetMap.containsKey(type))
-            results = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
 
-        List<String> explanationsForCurrentType = addingExplanations(type, lang, results);
+        // For the first language that will be executed, for each annotation-type a component created
+        if (!stringResultSetMap.containsKey(type))
+            stringResultSetMap.put(type, this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query));
+
+        List<String> explanationsForCurrentType = addingExplanations(type, lang, stringResultSetMap.get(type));
 
         logger.info("Created explanations: {}", explanationsForCurrentType);
         return explanationsForCurrentType;
     }
 
+    /**
+     *
+     * @param type The actual type for which the explanation is being generated, relevant for selection of correct template
+     * @param lang The actual language the explanation is created for
+     * @param results The ResultSet for the actual type
+     * @return
+     * @throws IOException
+     */
     public List<String> addingExplanations(String type, String lang, ResultSet results) throws IOException {
 
         List<String> explanationsForCurrentType = new ArrayList<>();
@@ -452,6 +478,12 @@ public class ExplanationService {
         return explanationsForCurrentType;
     }
 
+    /**
+     * Replaces all placeholders in the template with attributes from the passed QuerySolution
+     * @param querySolution Contains variables and corresponding RDFNodes
+     * @param template Template including the defined pre- and suffixes
+     * @return Template with replaced placeholders
+     */
     public String replaceProperties(QuerySolution querySolution, String template) {
         QuerySolutionMap querySolutionMap = new QuerySolutionMap();
         querySolutionMap.addAll(querySolution);
@@ -459,11 +491,16 @@ public class ExplanationService {
         Map<String, String> convertedMap = convertRdfNodeToStringValue(querySolutionMapAsMap);
 
         // Replace all placeholders with values from map
-        template = StringSubstitutor.replace(template, convertedMap, "${", "}");
+        template = StringSubstitutor.replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
         logger.info("Template with inserted params: {}", template);
         return template;
     }
 
+    /**
+     * Converts RDFNodes to Strings without the XML datatype declaration and leaves resources as they are.
+     * @param map Key = variable from sparql-query, Value = its corresponding RDFNode
+     * @return Map with value::String instead of value::RDFNode
+     */
     public Map<String,String> convertRdfNodeToStringValue(Map<String,RDFNode> map) {
         return map.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
@@ -476,6 +513,11 @@ public class ExplanationService {
         ));
     }
 
+    /**
+     * Reads a file and parses the content to a string
+     * @param path Given path
+     * @return String with the file's content
+     */
     public String getStringFromFile(String path) throws IOException {
         File file = new ClassPathResource(path).getFile();
         return new String(Files.readAllBytes(file.toPath()));
@@ -493,7 +535,6 @@ public class ExplanationService {
         List<String> createdExplanations = createComponentExplanation(graphURI, componentURI, lang);
 
         AtomicInteger i = new AtomicInteger();
-        // skips the first prefix // TODO: needs to be done better since there could me more than one prefix (if several annot. type are provided)
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> String.valueOf(i.incrementAndGet()) + ". " + explanation).toList();
         String result = getResult(componentURI, lang, explanations, createdExplanations.get(0));
         stringResultSetMap.clear();
