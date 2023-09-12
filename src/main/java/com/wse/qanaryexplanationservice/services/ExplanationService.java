@@ -48,7 +48,7 @@ public class ExplanationService {
 
     // Holds the annotationtype with path
     private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
-        put("annotationofspotinstance", "/explanations/annotation_of_instance/");
+        put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
     }};
     final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final ObjectMapper objectMapper;
@@ -391,7 +391,7 @@ public class ExplanationService {
             RDFNode type = result.get("annotationType");
             String typeLocalName = type.asResource().getLocalName();
             logger.info("Annotation-Type found: {}", typeLocalName);
-            types.add(typeLocalName.toLowerCase()); // lower case for equality comparison w/ map keys
+            types.add(typeLocalName.toLowerCase());
         }
 
         return types;
@@ -421,8 +421,9 @@ public class ExplanationService {
         // TODO: Something similar to the Mapping approach? More generalization?
         if (Objects.equals(type, "annotationofspotinstance")) {
 
-            File templateFile = new ClassPathResource(annotationTypeExplanationTemplate.get(type) + lang).getFile();
-            String template = new String(Files.readAllBytes(templateFile.toPath()));
+            String langExplanationPrefix = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_prefix");
+            explanationsForCurrentType.add(langExplanationPrefix);
+            String template = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
 
             while (results.hasNext()) {
                 String filledTemplate = template;
@@ -433,17 +434,20 @@ public class ExplanationService {
                 explanationsForCurrentType.add(filledTemplate);
             }
         }
-
         logger.info("Created explanations: {}", explanationsForCurrentType);
-
         return explanationsForCurrentType;
+    }
+
+    public String getStringFromFile(String path) throws IOException {
+        File file = new ClassPathResource(path).getFile();
+        return new String(Files.readAllBytes(file.toPath()));
     }
 
 
     /**
      * Creates a textual explanation for all annotations made by the componentURI for a language lang. The explanation for the annotations are formatted as a list
      *
-     * @param lang Currently supported en and de
+     * @param lang Currently supported en_list_item and de_list_item
      * @return Complete explanation for the componentURI including all information to each annotation
      */
     public String createTextualExplanation(String graphURI, String componentURI, String lang) throws IOException {
@@ -451,11 +455,23 @@ public class ExplanationService {
         List<String> createdExplanations = createComponentExplanation(graphURI, componentURI, lang);
 
         AtomicInteger i = new AtomicInteger();
-        List<String> explanations = createdExplanations.stream().map((explanation) -> String.valueOf(i.incrementAndGet()) + ". " + explanation).toList();
+        List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> String.valueOf(i.incrementAndGet()) + ". " + explanation).toList();
 
-        String result = "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the triplestore: "
-                + StringUtils.join(explanations, "\n");
+        String result = getResult(componentURI, lang, explanations, createdExplanations.get(0));
         stringResultSetMap.clear();
+        return result;
+    }
+
+    private static String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
+        String result = null;
+        if(lang == "en") {
+            result = "The component " + componentURI + " has added " + String.valueOf(explanations.size()) + " annotation(s) to the triplestore "
+                    + prefix + "\n" + StringUtils.join(explanations, "\n");
+        }
+        else if(lang == "de") {
+            result = "Die Komponente " + componentURI + "hat " + String.valueOf(explanations.size()) + " annotationen zum Triplestore hinzugefügt "
+                    + prefix + "\n" + StringUtils.join(explanations, "\n");
+        }
         return result;
     }
 
