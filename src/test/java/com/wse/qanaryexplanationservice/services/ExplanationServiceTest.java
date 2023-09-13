@@ -12,10 +12,13 @@ import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +27,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -237,6 +243,94 @@ public class ExplanationServiceTest {
 
             assertTrue(expectedModel.isIsomorphicWith(computedModel));
         }
+    }
+
+    @Nested
+    class ComponentExplanationTests {
+
+        private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
+            put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
+            put("annotationofinstance", "/explanations/annotation_of_instance/");
+        }};
+        private ServiceDataForTests serviceDataForTests;
+        @Autowired
+        private ExplanationService explanationService;
+
+        @BeforeEach
+        public void setup() {
+            serviceDataForTests = new ServiceDataForTests();
+        }
+
+
+        @Test
+        public void createTextualRepresentationTest() {
+
+        }
+
+        /*
+        Converts a given Map<String,RDFNode> to a Map<String, String>
+         */
+        @Test
+        public void convertRdfNodeToStringValue() {
+            Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
+            Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
+
+            Map<String, String> comparedMap = explanationService.convertRdfNodeToStringValue(toBeConvertedMap);
+
+            assertEquals(comparingMap, comparedMap);
+        }
+
+        /*
+        Given a set of (key, value) the result should be the template without any more placeholders,
+        TODO: For further annotation types this test can be easily extended by adding values to the map within the serviceDataForTests as well as
+        TODO: adding a test-case with the corresponding template
+         */
+        @ParameterizedTest
+        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance"})
+        public void replacePropertiesTest(String type) {
+
+            Map<String, String> convertedMap = serviceDataForTests.getConvertedMapWithStringValues();
+            ClassLoader classLoader = this.getClass().getClassLoader();
+
+            assertAll("Testing correct replacement for templates",
+                    () -> {
+                        String computedTemplate = explanationService.replaceProperties(convertedMap, explanationService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
+                        String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/de_list_item";
+                        File file = new File(classLoader.getResource(expectedOutcomeFilePath).getFile());
+                        String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+                        assertEquals(expectedOutcome, computedTemplate);
+                    },
+                    () -> {
+                        String computedTemplate = explanationService.replaceProperties(convertedMap, explanationService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
+                        String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/en_list_item";
+                        File file = new File(classLoader.getResource(expectedOutcomeFilePath).getFile());
+                        String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+                        assertEquals(expectedOutcome, computedTemplate);
+                    }
+            );
+        }
+
+        @Test
+        public void addingExplanationsTest() {
+
+        }
+
+        @Test
+        public void createSpecificExplanationTest() {
+
+        }
+
+        @Test
+        public void createSpecificExplanationsTest() {
+
+        }
+
+        @Test
+        public void fetchAllAnnotationsTest() {
+
+        }
+
+
     }
 
 }

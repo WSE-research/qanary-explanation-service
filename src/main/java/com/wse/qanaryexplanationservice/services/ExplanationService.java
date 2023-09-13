@@ -81,10 +81,10 @@ public class ExplanationService {
         String result = null;
         if (Objects.equals(lang, "en")) {
             result = "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the graph"
-                    + prefix + ":\n" + StringUtils.join(explanations, "\n");
+                    + prefix + ": " + StringUtils.join(explanations, " ");
         } else if (Objects.equals(lang, "de")) {
             result = "Die Komponente " + componentURI + " hat " + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
-                    + prefix + ":\n" + StringUtils.join(explanations, "\n");
+                    + prefix + ": " + StringUtils.join(explanations, " ");
         }
         return result;
     }
@@ -483,7 +483,8 @@ public class ExplanationService {
         String template = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
 
         while (results.hasNext()) {
-            explanationsForCurrentType.add(replaceProperties(results.next(), template));
+            QuerySolution querySolution = results.next();
+            explanationsForCurrentType.add(replaceProperties(convertQuerySolutionToMap(querySolution), template));
         }
 
         return explanationsForCurrentType;
@@ -492,20 +493,22 @@ public class ExplanationService {
     /**
      * Replaces all placeholders in the template with attributes from the passed QuerySolution
      *
-     * @param querySolution Contains variables and corresponding RDFNodes
-     * @param template      Template including the defined pre- and suffixes
+     * @param template Template including the defined pre- and suffixes
      * @return Template with replaced placeholders
      */
-    public String replaceProperties(QuerySolution querySolution, String template) {
-        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
-        querySolutionMap.addAll(querySolution);
-        Map<String, RDFNode> querySolutionMapAsMap = querySolutionMap.asMap();
-        Map<String, String> convertedMap = convertRdfNodeToStringValue(querySolutionMapAsMap);
+    public String replaceProperties(Map<String, String> convertedMap, String template) {
 
         // Replace all placeholders with values from map
         template = StringSubstitutor.replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
         logger.info("Template with inserted params: {}", template);
         return template;
+    }
+
+    public Map<String, String> convertQuerySolutionToMap(QuerySolution querySolution) {
+        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
+        querySolutionMap.addAll(querySolution);
+        Map<String, RDFNode> querySolutionMapAsMap = querySolutionMap.asMap();
+        return convertRdfNodeToStringValue(querySolutionMapAsMap);
     }
 
     /**
