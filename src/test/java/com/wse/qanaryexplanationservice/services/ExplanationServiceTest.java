@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,6 +47,8 @@ import static org.mockito.Mockito.when;
 public class ExplanationServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
     protected final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
+    @MockBean
+    ExplanationSparqlRepository explanationSparqlRepository;
 
     @Nested
     public class ConversionTests {
@@ -116,7 +119,7 @@ public class ExplanationServiceTest {
         }
 
         @Test
-        void createRdfRepresentationTest() throws Exception {
+        void createRdfRepresentationTest() {
             String result = explanationService.convertToDesiredFormat(null, explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertAll("String contains content elements as well as componentURI",
@@ -148,7 +151,7 @@ public class ExplanationServiceTest {
         }
 
         @Test
-        public void compareRepresentationModels() throws Exception {
+        public void compareRepresentationModels() {
             // Create Strings with different format (plain == turtle, turtle, rdfxml,jsonld)
             String resultEmptyHeader = explanationService.convertToDesiredFormat(null, explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
             String resultTurtleHeader = explanationService.convertToDesiredFormat("text/turtle", explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
@@ -201,8 +204,6 @@ public class ExplanationServiceTest {
 
         final String graphID = "http://exampleQuestionURI.a/question";
         final String questionURI = "http://question-example.com/123/32a";
-        @MockBean
-        ExplanationSparqlRepository explanationSparqlRepository;
         JsonNode jsonNode;
         ControllerDataForTests controllerDataForTests;
         ObjectMapper objectMapper = new ObjectMapper();
@@ -220,7 +221,7 @@ public class ExplanationServiceTest {
 
         // Testing if a wrong JsonNode leads to an error
         @Test
-        void fetchQuestionUriFailingTest() throws Exception {
+        void fetchQuestionUriFailingTest() {
             Throwable exception = assertThrows(Exception.class, () -> explanationService.fetchQuestionUri(graphID));
             assertEquals("Couldn't fetch the question!", exception.getMessage());
         }
@@ -310,13 +311,29 @@ public class ExplanationServiceTest {
             );
         }
 
-        @Test
-        public void addingExplanationsTest() {
+        // Paramterized ? // Create .ttl-files parse them into a model, set RDFConnection, execute w/ repository
+        // just several maps with different values -> increased testability for other tests
+        @ParameterizedTest
+        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance"})
+        public void addingExplanationsTest(String type) throws IOException {
+            List<QuerySolutionMap> querySolutionMapList = serviceDataForTests.getQuerySolutionMapList();
+            ResultSet resultSet = serviceDataForTests.createResultSet(querySolutionMapList);
+
+            List<String> computedExplanations = explanationService.addingExplanations(type, "de", resultSet);
+
+            // Should contain the (if existing) prefix (is an empty element) and one explanation
+            assertEquals(2, computedExplanations.size());
+            assertNotEquals("", computedExplanations.get(1));
+            for (String expl : computedExplanations
+            ) {
+                assertFalse(expl.contains("$"));
+            }
 
         }
 
         @Test
         public void createSpecificExplanationTest() {
+
 
         }
 
