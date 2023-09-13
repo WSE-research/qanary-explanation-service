@@ -401,11 +401,12 @@ public class ExplanationService {
      * @param lang  Given language
      * @return List with explanations for the given language. At the end it includes all explanations for every annotation type
      */
-    public List<String> createComponentExplanation(String graphURI, String lang, List<String> types) throws IOException {
+    public List<String> createComponentExplanation(String graphURI, String lang, List<String> types, String componentURI) throws IOException {
         return createSpecificExplanations(
                 types.toArray(String[]::new),
                 graphURI,
-                lang
+                lang,
+                componentURI
         );
     }
 
@@ -439,12 +440,12 @@ public class ExplanationService {
      * @param lang      The language for the explanation
      * @return List with explanations. At the end it includes all explanations for every annotation type
      */
-    public List<String> createSpecificExplanations(String[] usedTypes, String graphURI, String lang) throws IOException {
+    public List<String> createSpecificExplanations(String[] usedTypes, String graphURI, String lang, String componentURI) throws IOException {
 
         List<String> explanations = new ArrayList<>();
         for (String type : usedTypes
         ) {
-            explanations.addAll(createSpecificExplanation(type, graphURI, lang));
+            explanations.addAll(createSpecificExplanation(type, graphURI, lang, componentURI));
         }
         return explanations;
     }
@@ -456,8 +457,8 @@ public class ExplanationService {
      * @param lang The language for the explanation
      * @return A list of explanation containing a prefix explanation and one entry for every annotation of the givent type
      */
-    public List<String> createSpecificExplanation(String type, String graphURI, String lang) throws IOException {
-        String query = buildSparqlQuery(graphURI, null, annotationsTypeAndQuery.get(type));
+    public List<String> createSpecificExplanation(String type, String graphURI, String lang, String componentURI) throws IOException {
+        String query = buildSparqlQuery(graphURI, componentURI, annotationsTypeAndQuery.get(type));
 
         // For the first language that will be executed, for each annotation-type a component created
         if (!stringResultSetMap.containsKey(type))
@@ -548,7 +549,7 @@ public class ExplanationService {
      */
     public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException {
 
-        List<String> createdExplanations = createComponentExplanation(graphURI, lang, types);
+        List<String> createdExplanations = createComponentExplanation(graphURI, lang, types, componentURI);
 
         AtomicInteger i = new AtomicInteger();
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
