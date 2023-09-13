@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.wse</groupId>
     <artifactId>qanary-explanation-service</artifactId>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
     <name>Qanary explanation service</name>
     <description>Webservice for rule-based explanation of QA-Systems as well as specific components</description>
     <properties>
