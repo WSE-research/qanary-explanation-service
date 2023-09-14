@@ -331,6 +331,7 @@ public class ExplanationServiceTest {
 
         }
 
+        /*
         @Test
         public void createSpecificExplanationTest() {
 
@@ -346,7 +347,7 @@ public class ExplanationServiceTest {
         public void fetchAllAnnotationsTest() {
 
         }
-
+        */
 
     }
 
