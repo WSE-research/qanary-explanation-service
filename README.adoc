@@ -20,6 +20,18 @@ This webservice provides some functionalities to compute explanations for some Q
 
 toc::[]
 
+== Supported Annotation Types
+
+The explanation's creation follows a rule-based approach, what means that each explanation for a component is created different depending on the annotationType of its written output.
+
+Therefor not all Annotation types (=components) are supported yet.
+The supported ones are the following:
+
+. AnnotationOfInstance
+. AnnotationOfSpotInstance
+
+You can check the output annotation type for existing components in the component's README at https://github.com/WDAqua/Qanary-question-answering-component .
+
 == Build and Run
 
 === Build
@@ -38,22 +50,21 @@ sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 ==== *from scratch using Java*
 
 * create a executable -jar-file like so:
-  
- ** `mvn clean install`
+
+** `mvn clean install`
 
 ==== *by using Docker*
 
 . *_locally:_*
-  
-  - build a Docker image with the existing Dockerfile by using the following command inside the projects folder
-  - `docker build . -t qanary-explanation-service`
-  
+
+- build a Docker image with the existing Dockerfile by using the following command inside the projects folder
+- `docker build . -t qanary-explanation-service`
+
 . *_from Dockerhub:_*
 
-  - pull the repository *wseresearch/qanary-explanation-service* with `docker pull wseresearch/qanary-explanation-service:latest`
-  
-  - you might replace the tag `latest` with your desired release-tag from `https://hub.docker.com/repository/docker/wseresearch/qanary-explanation-service/tags`
-  
+- pull the repository *wseresearch/qanary-explanation-service* with `docker pull wseresearch/qanary-explanation-service:latest`
+
+- you might replace the tag `latest` with your desired release-tag from `https://hub.docker.com/repository/docker/wseresearch/qanary-explanation-service/tags`
 
 === Running the application
 
@@ -69,7 +80,7 @@ sparqlEndpoint = http://demos.swe.htwk-leipzig.de:40111/sparql
 * run the built image with `docker run -p 12345:4000 qanary-explanation-service` with parameters:
 ** *_"p":_* is the optional port mapping if you wish to run the application on a different port on your machine, e.g. in this case the *applications port (default: 4000) is mapped to port 12345*
 
-. *_from Dockerhub:_* 
+. *_from Dockerhub:_*
 
 * run the pulled image with `docker run -p 12345:4000 qanary-explanation-service:latest` with:
 ** your previous selected tag (replace *latest* with *your tag*)
@@ -84,9 +95,11 @@ Currently, there are several endpoints with different tasks, as of the latest ve
 --
 *Path variables:*
 --
+
 --
 ** required: graphURI::String
 --
+
 --
 *Returns:*
 
@@ -117,11 +130,14 @@ WHERE {
 --
 *Path Variables:*
 --
+
 --
 ** required: graphURI::String
 ** optional: componentURI::String
 --
+
 *Returns:*
+
 --
 ** with only the graphURI given: a formatted explanation for the QA-process on the graphURI depending on the following `Accept` header:
 * none: Turtle
@@ -136,9 +152,11 @@ WHERE {
 * `text/turtle`: Turtle
 * other: no response, NOT_ACCEPTABLE (406)
 --
+
 provides two endpoints to either request an explanation for a QA process with a given graphURI or a specific explanation for one componentURI (added as another path variable).
-In both cases, the explanation format depends on the Accept-Header: RDF/XML, JSONLD, or RDF Turtle. 
+In both cases, the explanation format depends on the Accept-Header: RDF/XML, JSONLD, or RDF Turtle.
 If there`s no `Accept` header provided in the request, then the format will be RDF Turtle.
+
 --
 .*Example Return for QA system:*
 [%collapsible]
@@ -231,7 +249,6 @@ explanations:hasExplanationForCreatedData
 ----
 ====
 --
-
 
 == Example
 
@@ -336,6 +353,7 @@ explanations:hasExplanationForCreatedData
 ====
 
 == SpringDocs & SwaggerUI
+
 Swagger UI is available at http://localhost:40190/swagger-ui/index.html
 
 API Docs are available at http://localhost:40190/api-docs

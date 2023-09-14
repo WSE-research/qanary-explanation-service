@@ -3,6 +3,10 @@ package com.wse.qanaryexplanationservice.repositories;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.services.ParameterStringBuilder;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdfconnection.RDFConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
@@ -15,6 +19,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +32,7 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
     protected WebClient webClient;
 
     protected Environment environment;
+    private final RDFConnection rdfConnection = RDFConnection.connect("http://localhost:8080/sparql");
 
     @Autowired
     protected AbstractRepository(Environment environment) throws MalformedURLException {
@@ -81,5 +87,10 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
+    }
+
+    public ResultSet executeSparqlQueryWithResultSet(String executableQuery) throws RuntimeException {
+        QueryExecution queryExecution = rdfConnection.query(executableQuery);
+        return queryExecution.execSelect();
     }
 }

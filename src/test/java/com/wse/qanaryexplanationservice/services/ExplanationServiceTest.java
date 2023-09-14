@@ -12,10 +12,13 @@ import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +27,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,9 +46,9 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 public class ExplanationServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
-
-    private static final String QUERY = "/queries/explanation_for_query_builder.rq";
     protected final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
+    @MockBean
+    ExplanationSparqlRepository explanationSparqlRepository;
 
     @Nested
     public class ConversionTests {
@@ -112,7 +119,7 @@ public class ExplanationServiceTest {
         }
 
         @Test
-        void createRdfRepresentationTest() throws Exception {
+        void createRdfRepresentationTest() {
             String result = explanationService.convertToDesiredFormat(null, explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertAll("String contains content elements as well as componentURI",
@@ -144,7 +151,7 @@ public class ExplanationServiceTest {
         }
 
         @Test
-        public void compareRepresentationModels() throws Exception {
+        public void compareRepresentationModels() {
             // Create Strings with different format (plain == turtle, turtle, rdfxml,jsonld)
             String resultEmptyHeader = explanationService.convertToDesiredFormat(null, explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
             String resultTurtleHeader = explanationService.convertToDesiredFormat("text/turtle", explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
@@ -197,8 +204,6 @@ public class ExplanationServiceTest {
 
         final String graphID = "http://exampleQuestionURI.a/question";
         final String questionURI = "http://question-example.com/123/32a";
-        @MockBean
-        ExplanationSparqlRepository explanationSparqlRepository;
         JsonNode jsonNode;
         ControllerDataForTests controllerDataForTests;
         ObjectMapper objectMapper = new ObjectMapper();
@@ -216,7 +221,7 @@ public class ExplanationServiceTest {
 
         // Testing if a wrong JsonNode leads to an error
         @Test
-        void fetchQuestionUriFailingTest() throws Exception {
+        void fetchQuestionUriFailingTest() {
             Throwable exception = assertThrows(Exception.class, () -> explanationService.fetchQuestionUri(graphID));
             assertEquals("Couldn't fetch the question!", exception.getMessage());
         }
@@ -239,6 +244,111 @@ public class ExplanationServiceTest {
 
             assertTrue(expectedModel.isIsomorphicWith(computedModel));
         }
+    }
+
+    @Nested
+    class ComponentExplanationTests {
+
+        private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
+            put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
+            put("annotationofinstance", "/explanations/annotation_of_instance/");
+        }};
+        private ServiceDataForTests serviceDataForTests;
+        @Autowired
+        private ExplanationService explanationService;
+
+        @BeforeEach
+        public void setup() {
+            serviceDataForTests = new ServiceDataForTests();
+        }
+
+
+        @Test
+        public void createTextualRepresentationTest() {
+
+        }
+
+        /*
+        Converts a given Map<String,RDFNode> to a Map<String, String>
+         */
+        @Test
+        public void convertRdfNodeToStringValue() {
+            Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
+            Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
+
+            Map<String, String> comparedMap = explanationService.convertRdfNodeToStringValue(toBeConvertedMap);
+
+            assertEquals(comparingMap, comparedMap);
+        }
+
+        /*
+        Given a set of (key, value) the result should be the template without any more placeholders,
+        TODO: For further annotation types this test can be easily extended by adding values to the map within the serviceDataForTests as well as
+        TODO: adding a test-case with the corresponding template
+         */
+        @ParameterizedTest
+        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance"})
+        public void replacePropertiesTest(String type) {
+
+            Map<String, String> convertedMap = serviceDataForTests.getConvertedMapWithStringValues();
+            ClassLoader classLoader = this.getClass().getClassLoader();
+
+            assertAll("Testing correct replacement for templates",
+                    () -> {
+                        String computedTemplate = explanationService.replaceProperties(convertedMap, explanationService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
+                        String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/de_list_item";
+                        File file = new File(classLoader.getResource(expectedOutcomeFilePath).getFile());
+                        String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+                        assertEquals(expectedOutcome, computedTemplate);
+                    },
+                    () -> {
+                        String computedTemplate = explanationService.replaceProperties(convertedMap, explanationService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
+                        String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/en_list_item";
+                        File file = new File(classLoader.getResource(expectedOutcomeFilePath).getFile());
+                        String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+                        assertEquals(expectedOutcome, computedTemplate);
+                    }
+            );
+        }
+
+        // Paramterized ? // Create .ttl-files parse them into a model, set RDFConnection, execute w/ repository
+        // just several maps with different values -> increased testability for other tests
+        @ParameterizedTest
+        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance"})
+        public void addingExplanationsTest(String type) throws IOException {
+            List<QuerySolutionMap> querySolutionMapList = serviceDataForTests.getQuerySolutionMapList();
+            ResultSet resultSet = serviceDataForTests.createResultSet(querySolutionMapList);
+
+            List<String> computedExplanations = explanationService.addingExplanations(type, "de", resultSet);
+
+            // Should contain the (if existing) prefix (is an empty element) and one explanation
+            assertEquals(2, computedExplanations.size());
+            assertNotEquals("", computedExplanations.get(1));
+            for (String expl : computedExplanations
+            ) {
+                assertFalse(expl.contains("$"));
+            }
+
+        }
+
+        /*
+        @Test
+        public void createSpecificExplanationTest() {
+
+
+        }
+
+        @Test
+        public void createSpecificExplanationsTest() {
+
+        }
+
+        @Test
+        public void fetchAllAnnotationsTest() {
+
+        }
+        */
+
     }
 
 }
