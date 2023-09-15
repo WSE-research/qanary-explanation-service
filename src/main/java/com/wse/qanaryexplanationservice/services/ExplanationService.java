@@ -50,7 +50,7 @@ public class ExplanationService {
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
         put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
-        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql.rq");
+        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql_query.rq");
     }};
 
     // Holds explanation templates for the declared annotation types
