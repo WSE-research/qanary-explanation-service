@@ -1,0 +1,17 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT *
+FROM ?graph
+WHERE {
+ 		?annotationAnswer
+ 				a				qa:AnnotationOfAnswerJson ;
+ 				oa:hasTarget	?question ;
+ 				oa:hasBody		?answer ;
+ 				oa:annotatedBy	?service ;
+ 				oa:annotatedAt	?time ;
+ 				qa:score		?score .
+ 	  	?answer
+ 				a				qa:AnswerJson ;
+ 		   		rdf:value		?answerJson .
+}
