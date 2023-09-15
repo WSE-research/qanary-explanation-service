@@ -252,6 +252,7 @@ public class ExplanationServiceTest {
         private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
             put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
             put("annotationofinstance", "/explanations/annotation_of_instance/");
+            put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
         }};
         private ServiceDataForTests serviceDataForTests;
         @Autowired
@@ -287,7 +288,7 @@ public class ExplanationServiceTest {
         TODO: adding a test-case with the corresponding template
          */
         @ParameterizedTest
-        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance"})
+        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance", "annotationofanswersparql"})
         public void replacePropertiesTest(String type) {
 
             Map<String, String> convertedMap = serviceDataForTests.getConvertedMapWithStringValues();
@@ -314,7 +315,7 @@ public class ExplanationServiceTest {
         // Paramterized ? // Create .ttl-files parse them into a model, set RDFConnection, execute w/ repository
         // just several maps with different values -> increased testability for other tests
         @ParameterizedTest
-        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance"})
+        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance", "annotationofanswersparql"})
         public void addingExplanationsTest(String type) throws IOException {
             List<QuerySolutionMap> querySolutionMapList = serviceDataForTests.getQuerySolutionMapList();
             ResultSet resultSet = serviceDataForTests.createResultSet(querySolutionMapList);

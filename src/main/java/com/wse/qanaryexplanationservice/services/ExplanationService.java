@@ -50,12 +50,14 @@ public class ExplanationService {
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
         put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
+        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql.rq");
     }};
 
     // Holds explanation templates for the declared annotation types
     private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
         put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
         put("annotationofinstance", "/explanations/annotation_of_instance/");
+        put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
     }};
 
     final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
