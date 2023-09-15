@@ -8,8 +8,8 @@ WHERE {
  				a				qa:AnnotationOfAnswerJson ;
  				oa:hasTarget	?question ;
  				oa:hasBody		?answer ;
- 				oa:annotatedBy	?service ;
- 				oa:annotatedAt	?time ;
+ 				oa:annotatedBy	?componentURI ;
+ 				oa:annotatedAt	?createdAt ;
  				qa:score		?score .
  	  	?answer
  				a				qa:AnswerJson ;
