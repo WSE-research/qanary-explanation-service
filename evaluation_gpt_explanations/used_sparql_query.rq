@@ -1,0 +1,29 @@
+PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+PREFIX dbpedia: <http://dbpedia.org/resource/>
+PREFIX wikidata: <http://www.wikidata.org/entity/>
+PREFIX annotationID: <tag:stardog:api:>
+PREFIX questionID: <http://demos.swe.htwk-leipzig.de:40111/question/stored-question__text_>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT DISTINCT ?s ?p ?o 
+FROM ?INSERTGRAPHURI
+WHERE {
+    ?id oa:annotatedBy ?INSERTCOMPONENTURI .
+          {
+    ?id ?p ?o . 
+          ?s ?p ?o .
+          }
+    UNION
+    {
+        ?id ?parentPredicate ?s . # s ist das ?o 
+        ?s ?p ?o .
+    }
+    UNION
+          {
+            ?id ?parentPredicatae2 ?o2 .
+                  ?o2 ?p1 ?s .
+                  ?s ?p ?o .
+          }
+}
