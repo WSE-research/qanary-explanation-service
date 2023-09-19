@@ -55,18 +55,13 @@
 		- 1-shot: good, even adopted the prefix from given explanation
 		- 2-shot (example of type `AnnotationOfInstance` or `AnnotationOfAnswerSPARQL`): good
 ### Annotation of type `AnnotationOfAnswerJSON`
-- withing the same ann.-type:
-
+- within the same ann.-type:
+	- not tested yet (missing datasets)
 - cross-type ann.-types:
 	- with`AnnotationOfInstance` as provided 1-shot example:
-		- 1-shot:
-		- 2-shot:
-		- 3-shot:
+		- 1-shot: okay, did not evaluate the JSON (like the golden standard(!))
+		- 2-shot (example of type `AnnotationOfAnswerSPARQL`): good, even evaluated the JSON
 	- with`AnnotationOfAnswerSPARQL` as provided 1-shot example:
-		- 1-shot:
-		- 2-shot:
-		- 3-shot:
+		- 1-shot: good, did not evaluate the JSON (like the golden standard (!))
 	- with`AnnotationOfSpotInstance` as provided 1-shot example:
-		- 1-shot:
-		- 2-shot:
-		- 3-shot:
+		- 1-shot (examples of type `AnnotationOfSpotInstance`): very well, evaluated the JSON
