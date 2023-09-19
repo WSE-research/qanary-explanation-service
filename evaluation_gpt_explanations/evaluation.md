@@ -56,7 +56,7 @@
 		- 2-shot (example of type `AnnotationOfInstance` or `AnnotationOfAnswerSPARQL`): good
 ### Annotation of type `AnnotationOfAnswerJSON`
 - within the same ann.-type:
-	- not tested yet (missing datasets)
+	- not yet tested (missing datasets)
 - cross-type ann.-types:
 	- with`AnnotationOfInstance` as provided 1-shot example:
 		- 1-shot: okay, did not evaluate the JSON (like the golden standard(!))
