@@ -37,6 +37,36 @@
 		- 2-shot (example of type `AnnotationOfAnswerSPARQL` and/or `AnnotationOfInstance`): both bad, questionID or annotation-type as "entities" refered -> semantically wrong
 		- 3-shot: acceptable, minimalized details
 ### Annotation of type `AnnotationOfInstance`
-
+- within the same ann.-type:
+	- depending on "score" exists in data:
+		- if provided in example -> generated on is correct
+		- if not provided -> generated one doesnt provide it as well, even though it's available in data
+	- otherwise its good
+- cross-type ann.-types:
+	- with`AnnotationOfAnswerSPARQL` as provided 1-shot example:
+		- 1-shot: well, entities are refered as instances, missing time-stamp, otherwise okay
+		- 2-shot (example of type `AnnotationOfSpotInstance`): okay, missing score but a good explanation
+		- 3-shot (additional example of type `AnnotationOfAnswerJSON`): similar to 2-shot-approach
+	- with`AnnotationOfAnswerJSON` as provided 1-shot example:
+		- 1-shot: well, referes to blank nodes
+		- 2-shot (example of type `AnnotationOfAnswerSPARQL`): same as 1-shot-approach
+		- 3-shot (additional example of type `AnnotationOfSpotInstance`): good
+	- with`AnnotationOfSpotInstance` as provided 1-shot example:
+		- 1-shot: good, even adopted the prefix from given explanation
+		- 2-shot (example of type `AnnotationOfInstance` or `AnnotationOfAnswerSPARQL`): good
 ### Annotation of type `AnnotationOfAnswerJSON`
+- withing the same ann.-type:
 
+- cross-type ann.-types:
+	- with`AnnotationOfInstance` as provided 1-shot example:
+		- 1-shot:
+		- 2-shot:
+		- 3-shot:
+	- with`AnnotationOfAnswerSPARQL` as provided 1-shot example:
+		- 1-shot:
+		- 2-shot:
+		- 3-shot:
+	- with`AnnotationOfSpotInstance` as provided 1-shot example:
+		- 1-shot:
+		- 2-shot:
+		- 3-shot:
