@@ -1,1 +1,1 @@
-am ${createdAt} &{mit einer Konfidenz von ${score}} die Resource ${body}
+am ${createdAt} &{mit einer Konfidenz von ${score}&} die Resource ${body}
