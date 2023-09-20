@@ -50,7 +50,7 @@ public class ExplanationService {
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
         put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
-        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql.rq");
+        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql_query.rq");
         put("annotationofanswerjson", "/queries/queries_for_annotation_types/annotations_of_answer_json_query.rq");
     }};
 
@@ -506,6 +506,13 @@ public class ExplanationService {
 
         // Replace all placeholders with values from map
         template = StringSubstitutor.replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
+        if(template.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
+                template = template.replace("&{mit einer Konfidenz von ${score}&}", "");
+                template = template.replace("&{with a confidence of ${score}&}","");
+        }
+        else {
+            template = template.replace("&{", "").replace("&}", "");
+        }
         logger.info("Template with inserted params: {}", template);
         return template;
     }
