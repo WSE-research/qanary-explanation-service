@@ -51,6 +51,7 @@ public class ExplanationService {
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
         put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
         put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql_query.rq");
+        put("annotationofanswerjson", "/queries/queries_for_annotation_types/annotations_of_answer_json_query.rq");
     }};
 
     // Holds explanation templates for the declared annotation types
@@ -58,6 +59,7 @@ public class ExplanationService {
         put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
         put("annotationofinstance", "/explanations/annotation_of_instance/");
         put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
+        put("annotationofanswerjson", "/explanations/annotation_of_answer_json/");
     }};
 
     final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
@@ -238,7 +240,6 @@ public class ExplanationService {
 
     // building request-query with passed attributes added to rawQuery
     public String buildSparqlQuery(String graphURI, String componentUri, String rawQuery) throws IOException {
-
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphURI));
         if (componentUri != null)    // Extension for compatibility w/ explanation for specific component
@@ -429,7 +430,8 @@ public class ExplanationService {
             RDFNode type = result.get("annotationType");
             String typeLocalName = type.asResource().getLocalName();
             logger.info("Annotation-Type found: {}", typeLocalName);
-            types.add(typeLocalName.toLowerCase());
+            if(!Objects.equals(typeLocalName, "AnswerJson"))
+                types.add(typeLocalName.toLowerCase());
         }
 
         return types;
@@ -460,6 +462,7 @@ public class ExplanationService {
      * @return A list of explanation containing a prefix explanation and one entry for every annotation of the givent type
      */
     public List<String> createSpecificExplanation(String type, String graphURI, String lang, String componentURI) throws IOException {
+        logger.info("Type: {}", type);
         String query = buildSparqlQuery(graphURI, componentURI, annotationsTypeAndQuery.get(type));
 
         // For the first language that will be executed, for each annotation-type a component created
@@ -503,6 +506,13 @@ public class ExplanationService {
 
         // Replace all placeholders with values from map
         template = StringSubstitutor.replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
+        if(template.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
+                template = template.replace("&{mit einer Konfidenz von ${score}&}", "");
+                template = template.replace("&{with a confidence of ${score}&}","");
+        }
+        else {
+            template = template.replace("&{", "").replace("&}", "");
+        }
         logger.info("Template with inserted params: {}", template);
         return template;
     }
