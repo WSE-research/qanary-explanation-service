@@ -29,6 +29,8 @@ import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +41,9 @@ public class ExplanationService {
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
+    private final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
+    private final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
+    private final String OUTER_TEMPLATE_REGEX = "\\&\\{.*\\}\\&";
     // Mappings
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
         put("application/rdf+xml", "RDFXML");
@@ -50,7 +55,8 @@ public class ExplanationService {
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
         put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
-        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql_query.rq");
+        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql.rq");
+        put("annotationofrelation", "/queries/queries_for_annotation_types/annotations_of_relation_query.rq");
         put("annotationofanswerjson", "/queries/queries_for_annotation_types/annotations_of_answer_json_query.rq");
     }};
 
@@ -59,6 +65,7 @@ public class ExplanationService {
         put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
         put("annotationofinstance", "/explanations/annotation_of_instance/");
         put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
+        put("annotationofrelation", "/explanations/annotation_of_relation/");
         put("annotationofanswerjson", "/explanations/annotation_of_answer_json/");
     }};
 
@@ -506,14 +513,29 @@ public class ExplanationService {
 
         // Replace all placeholders with values from map
         template = StringSubstitutor.replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
-        if(template.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
-                template = template.replace("&{mit einer Konfidenz von ${score}&}", "");
-                template = template.replace("&{with a confidence of ${score}&}","");
-        }
-        else {
-            template = template.replace("&{", "").replace("&}", "");
-        }
+
+        template = checkAndReplaceOuterPlaceholder(template);
+
         logger.info("Template with inserted params: {}", template);
+        return template;
+    }
+
+    public String checkAndReplaceOuterPlaceholder(String template) {
+        Pattern pattern = Pattern.compile(OUTER_TEMPLATE_REGEX);
+        Matcher matcher = pattern.matcher(template);
+
+        while(matcher.find()) {
+            String a = matcher.group();
+            if(a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
+                template = template.replace(a, "");
+            }
+            else
+                template = template.replace(
+                        a,
+                        a.replace(OUTER_TEMPLATE_PLACEHOLDER_PREFIX, "")
+                         .replace(OUTER_TEMPLATE_PLACEHOLDER_SUFFIX,""));
+        }
+
         return template;
     }
 
