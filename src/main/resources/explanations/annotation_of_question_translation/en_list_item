@@ -1,0 +1,1 @@
+at ${createdAt}: '${question}' into "${translation}"
