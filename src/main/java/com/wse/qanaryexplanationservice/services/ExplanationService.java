@@ -29,6 +29,8 @@ import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +41,9 @@ public class ExplanationService {
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
+    private final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
+    private final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
+    private final String OUTER_TEMPLATE_REGEX = "\\&\\{.*\\}\\&";
     // Mappings
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
         put("application/rdf+xml", "RDFXML");
@@ -508,14 +513,29 @@ public class ExplanationService {
 
         // Replace all placeholders with values from map
         template = StringSubstitutor.replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
-        if(template.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
-                template = template.replace("&{mit einer Konfidenz von ${score}&}", "");
-                template = template.replace("&{with a confidence of ${score}&}","");
-        }
-        else {
-            template = template.replace("&{", "").replace("&}", "");
-        }
+
+        template = checkAndReplaceOuterPlaceholder(template);
+
         logger.info("Template with inserted params: {}", template);
+        return template;
+    }
+
+    public String checkAndReplaceOuterPlaceholder(String template) {
+        Pattern pattern = Pattern.compile(OUTER_TEMPLATE_REGEX);
+        Matcher matcher = pattern.matcher(template);
+
+        while(matcher.find()) {
+            String a = matcher.group();
+            if(a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
+                template = template.replace(a, "");
+            }
+            else
+                template = template.replace(
+                        a,
+                        a.replace(OUTER_TEMPLATE_PLACEHOLDER_PREFIX, "")
+                         .replace(OUTER_TEMPLATE_PLACEHOLDER_SUFFIX,""));
+        }
+
         return template;
     }
 
