@@ -255,6 +255,7 @@ public class ExplanationServiceTest {
             put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
             put("annotationofrelation", "/explanations/annotation_of_relation/");
             put("annotationofanswerjson", "/explanations/annotation_of_answer_json/");
+            put("annotationofquestiontranslation", "/explanations/annotation_of_question_translation/");
         }};
         private ServiceDataForTests serviceDataForTests;
         @Autowired
@@ -290,7 +291,7 @@ public class ExplanationServiceTest {
         TODO: adding a test-case with the corresponding template
          */
         @ParameterizedTest
-        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance", "annotationofanswersparql", "annotationofanswerjson", "annotationofrelation"})
+        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance", "annotationofanswersparql", "annotationofanswerjson", "annotationofrelation", "annotationofquestiontranslation"})
         public void replacePropertiesTest(String type) {
 
             Map<String, String> convertedMap = serviceDataForTests.getConvertedMapWithStringValues();
