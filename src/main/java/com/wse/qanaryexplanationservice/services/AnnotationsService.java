@@ -49,19 +49,18 @@ public class AnnotationsService {
      * @param graphURI graphURI to operate with
      * @return Array of ResultObjects which will be redirected to the controller which returns it to the user
      */
-
     public ExplanationObject[] getAnnotations(String graphURI) throws IOException {
         String query = createQuery(FILE_SPARQL_QUERY, graphURI);
         logger.info("Created query {}", query);
         JsonNode resultObjectsJsonNode = annotationSparqlRepository.executeSparqlQuery(query);
-        logger.info("Jsonnode: {}", resultObjectsJsonNode);
+        logger.info("JsonNode: {}", resultObjectsJsonNode);
         if (resultObjectsJsonNode != null)
             return mapResponseToObjectArray(resultObjectsJsonNode);
         else
             return null;
     }
 
-    public List<String> getUsedComponents(String graphID) throws IOException {
+    public List<String> getUsedComponents(String graphID) {
         String query = createQuery(COMPONENTS_SPARQL_QUERY, graphID);
         ResultSet resultSet = annotationSparqlRepository.executeSparqlQueryWithResultSet(query);
         List<String> components = new ArrayList<>();

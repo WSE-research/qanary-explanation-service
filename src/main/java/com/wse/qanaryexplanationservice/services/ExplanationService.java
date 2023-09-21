@@ -1,7 +1,5 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -69,7 +67,6 @@ public class ExplanationService {
     }};
 
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
-    private final ObjectMapper objectMapper;
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
     @Autowired
@@ -78,7 +75,6 @@ public class ExplanationService {
     private AnnotationsService annotationsService;
 
     public ExplanationService() {
-        objectMapper = new ObjectMapper();
     }
 
     /**
@@ -118,7 +114,6 @@ public class ExplanationService {
      * Creates language-specific explanations and computes explanation model
      *
      * @return Model including
-     * @throws Exception
      */
     public Model createModel(String graphUri, String componentUri) throws Exception {
 
@@ -223,13 +218,12 @@ public class ExplanationService {
     // get the origin questionURI for a graphURI
     public String fetchQuestionUri(String graphURI) throws Exception {
         String query = buildSparqlQuery(graphURI, null, QUESTION_QUERY);
-
-        JsonNode jsonNode = explanationSparqlRepository.executeSparqlQuery(query);
+        ResultSet resultSet = explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
 
         try {
-            String question = (jsonNode.get("bindings").get(0).get("source").get("value").asText());
-            logger.info("QuestionURI = {}", question);
-            return question;
+            String questionURI = resultSet.next().get("source").toString();
+            logger.info("QuestionURI = {}", questionURI);
+            return questionURI;
         } catch (Exception e) {
             throw new Exception("Couldn't fetch the question!", e);
         }

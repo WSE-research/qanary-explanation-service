@@ -2,7 +2,6 @@ com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/Body.class
 com/wse/qanaryexplanationservice/repositories/AbstractRepository.class
 com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/Source.class
 com/wse/qanaryexplanationservice/pojos/ExplanationPojo.class
-com/wse/qanaryexplanationservice/pojos/ResultObject.class
 com/wse/qanaryexplanationservice/services/ExplanationService$3.class
 com/wse/qanaryexplanationservice/services/AnnotationsService.class
 com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/Component.class
@@ -14,7 +13,6 @@ com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/CreatedAt.class
 com/wse/qanaryexplanationservice/repositories/ExplanationSparqlRepository.class
 com/wse/qanaryexplanationservice/controller/AnnotationController.class
 com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/CreatedBy.class
-com/wse/qanaryexplanationservice/pojos/ComponentPojo.class
 com/wse/qanaryexplanationservice/services/ExplanationService$2.class
 com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/Type.class
 com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/AnnotationId.class
