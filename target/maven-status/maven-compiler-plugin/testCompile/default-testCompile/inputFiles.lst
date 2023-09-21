@@ -1,0 +1,10 @@
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/controller/AnnotationControllerTest.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/repositories/AbstractRepositoryTest.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/services/ServiceDataForTests.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/services/ExplanationServiceTest.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/controller/ControllerDataForTests.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/services/LanguageContentProvider.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/QanaryExplanationServiceApplicationTests.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/StringToJsonNode.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/services/GetAnnotationServiceTest.java
+/home/dschiese/wseresearch/qanary-explanation-service/src/test/java/com/wse/qanaryexplanationservice/controller/ExplanationControllerTest.java

@@ -41,9 +41,6 @@ public class ExplanationService {
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
-    private final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
-    private final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
-    private final String OUTER_TEMPLATE_REGEX = "\\&\\{.*\\}\\&";
     // Mappings
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
         put("application/rdf+xml", "RDFXML");
@@ -58,8 +55,8 @@ public class ExplanationService {
         put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql.rq");
         put("annotationofrelation", "/queries/queries_for_annotation_types/annotations_of_relation_query.rq");
         put("annotationofanswerjson", "/queries/queries_for_annotation_types/annotations_of_answer_json_query.rq");
+        put("annotationofquestionlanguage", "/queries/queries_for_annotation_types/annotations_of_question_language_query.rq");
     }};
-
     // Holds explanation templates for the declared annotation types
     private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
         put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
@@ -67,9 +64,12 @@ public class ExplanationService {
         put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
         put("annotationofrelation", "/explanations/annotation_of_relation/");
         put("annotationofanswerjson", "/explanations/annotation_of_answer_json/");
+        put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
     }};
-
     final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
+    private final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
+    private final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
+    private final String OUTER_TEMPLATE_REGEX = "\\&\\{.*\\}\\&";
     private final ObjectMapper objectMapper;
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
 
@@ -437,7 +437,7 @@ public class ExplanationService {
             RDFNode type = result.get("annotationType");
             String typeLocalName = type.asResource().getLocalName();
             logger.info("Annotation-Type found: {}", typeLocalName);
-            if(!Objects.equals(typeLocalName, "AnswerJson"))
+            if (!Objects.equals(typeLocalName, "AnswerJson"))
                 types.add(typeLocalName.toLowerCase());
         }
 
@@ -524,16 +524,15 @@ public class ExplanationService {
         Pattern pattern = Pattern.compile(OUTER_TEMPLATE_REGEX);
         Matcher matcher = pattern.matcher(template);
 
-        while(matcher.find()) {
+        while (matcher.find()) {
             String a = matcher.group();
-            if(a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
+            if (a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
                 template = template.replace(a, "");
-            }
-            else
+            } else
                 template = template.replace(
                         a,
                         a.replace(OUTER_TEMPLATE_PLACEHOLDER_PREFIX, "")
-                         .replace(OUTER_TEMPLATE_PLACEHOLDER_SUFFIX,""));
+                                .replace(OUTER_TEMPLATE_PLACEHOLDER_SUFFIX, ""));
         }
 
         return template;

@@ -255,6 +255,7 @@ public class ExplanationServiceTest {
             put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
             put("annotationofrelation", "/explanations/annotation_of_relation/");
             put("annotationofanswerjson", "/explanations/annotation_of_answer_json/");
+            put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
         }};
         private ServiceDataForTests serviceDataForTests;
         @Autowired
@@ -290,7 +291,15 @@ public class ExplanationServiceTest {
         TODO: adding a test-case with the corresponding template
          */
         @ParameterizedTest
-        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance", "annotationofanswersparql", "annotationofanswerjson", "annotationofrelation"})
+        @ValueSource(
+                strings = {
+                        "annotationofinstance",
+                        "annotationofspotinstance",
+                        "annotationofanswersparql",
+                        "annotationofanswerjson",
+                        "annotationofrelation",
+                        "annotationofquestionlanguage"
+                })
         public void replacePropertiesTest(String type) {
 
             Map<String, String> convertedMap = serviceDataForTests.getConvertedMapWithStringValues();
@@ -317,8 +326,15 @@ public class ExplanationServiceTest {
         // Paramterized ? // Create .ttl-files parse them into a model, set RDFConnection, execute w/ repository
         // just several maps with different values -> increased testability for other tests
         @ParameterizedTest
-        @ValueSource(strings = {"annotationofinstance", "annotationofspotinstance", "annotationofanswersparql", "annotationofanswerjson", "annotationofrelation"})
-
+        @ValueSource(
+                strings = {
+                        "annotationofinstance",
+                        "annotationofspotinstance",
+                        "annotationofanswersparql",
+                        "annotationofanswerjson",
+                        "annotationofrelation",
+                        "annotationofquestionlanguage"
+                })
         public void addingExplanationsTest(String type) throws IOException {
             List<QuerySolutionMap> querySolutionMapList = serviceDataForTests.getQuerySolutionMapList();
             ResultSet resultSet = serviceDataForTests.createResultSet(querySolutionMapList);

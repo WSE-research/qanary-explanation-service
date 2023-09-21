@@ -29,6 +29,7 @@ public class ServiceDataForTests {
         put("start", ResourceFactory.createTypedLiteral("1", XSDDatatype.XSDinteger));
         put("end", ResourceFactory.createTypedLiteral("3", XSDDatatype.XSDinteger));
         put("answerJson", ResourceFactory.createTypedLiteral("{example: {data:json, type:json}}"));
+        put("hasTarget", ResourceFactory.createResource("questionID:981554csdf314kl2"));
     }};
     private final Map<String, String> convertedMapWithStringValues = new HashMap<>() {{
         put("body", "http://dbpedia.org/resource/example");
@@ -38,7 +39,8 @@ public class ServiceDataForTests {
         put("score", "0.33");
         put("start", "1");
         put("end", "3");
-        put("answerJson","{example: {data:json, type:json}}");
+        put("answerJson", "{example: {data:json, type:json}}");
+        put("hasTarget", "questionID:981554csdf314kl2");
     }};
     private Logger logger = LoggerFactory.getLogger(ServiceDataForTests.class);
     private List<QuerySolutionMap> querySolutionMapList;
