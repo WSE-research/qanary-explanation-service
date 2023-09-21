@@ -44,7 +44,7 @@ public class AnnotationController {
             description = "To use that endpoint you have to provide a graphURI from a QA-process "
                     + "and it'll return a distinct list of involved components"
     )
-    public ResponseEntity<List<String>> getComponents(@RequestParam String graphURI) throws IOException {
+    public ResponseEntity<List<String>> getComponents(@RequestParam String graphURI) {
         List<String> result = annotationsService.getUsedComponents(graphURI);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

@@ -2,8 +2,6 @@ package com.wse.qanaryexplanationservice.controller;
 
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +10,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @ControllerAdvice
 public class ExplanationController {
-
-    private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
 
     @Autowired
     private ExplanationService explanationService;
@@ -52,15 +48,6 @@ public class ExplanationController {
             else
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
-    }
-
-    @GetMapping("/explain/{graphURI}/{componentURI}")
-    public ResponseEntity<?> explain(
-            @PathVariable String graphURI,
-            @PathVariable String componentURI,
-            @RequestHeader(value = "accept", required = false) String acceptHeader
-    ) throws Exception {
-        return new ResponseEntity<>(this.explanationService.explainSpecificComponent(graphURI, componentURI, acceptHeader), HttpStatus.OK);
     }
 
 }

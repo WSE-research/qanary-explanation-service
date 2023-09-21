@@ -1,11 +1,8 @@
 package com.wse.qanaryexplanationservice.services;
 
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.controller.ControllerDataForTests;
-import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
@@ -33,6 +30,7 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -43,30 +41,8 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 public class ExplanationServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
-    protected final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     @MockBean
     ExplanationSparqlRepository explanationSparqlRepository;
-
-    @Nested
-    public class ConversionTests {
-
-        private final static Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
-        @Autowired
-        ExplanationService explanationService;
-        ExplanationObject[] explanationObjects;
-        ServiceDataForTests serviceDataForTests;
-
-        @BeforeEach
-        void setup() throws JsonProcessingException {
-            serviceDataForTests = new ServiceDataForTests();
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
-
-            // explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
-        }
-
-    }
-
 
     @Nested
     class ExplanationAsRdfTurtle {
@@ -77,8 +53,6 @@ public class ExplanationServiceTest {
         Model model;
         String sparqlQuery;
         String queryPrefixes = "PREFIX explanation: <" + EXPLANATION_NAMESPACE + ">";
-        ExplanationObject[] explanationObjects;
-        ObjectMapper objectMapper = new ObjectMapper();
         @Autowired
         ExplanationService explanationService;
         ExplanationService explanationServiceMock;
@@ -163,12 +137,9 @@ public class ExplanationServiceTest {
         }
 
         @BeforeEach
-        void setupExplainSpecificComponentTest() throws IOException {
+        void setupExplainSpecificComponentTest() {
             ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
-            JsonNode jsonNode = objectMapper.readValue(serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
-            //  explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
             explanationServiceMock = mock(ExplanationService.class);
-            //  Mockito.when(explanationServiceMock.computeExplanationObjects(any(), any(), any())).thenReturn(explanationObjects);
         }
     }
 
@@ -285,14 +256,14 @@ public class ExplanationServiceTest {
                     () -> {
                         String computedTemplate = explanationService.replaceProperties(convertedMap, explanationService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/de_list_item";
-                        File file = new File(classLoader.getResource(expectedOutcomeFilePath).getFile());
+                        File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
                         assertEquals(expectedOutcome, computedTemplate);
                     },
                     () -> {
                         String computedTemplate = explanationService.replaceProperties(convertedMap, explanationService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/en_list_item";
-                        File file = new File(classLoader.getResource(expectedOutcomeFilePath).getFile());
+                        File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
                         assertEquals(expectedOutcome, computedTemplate);
                     }
