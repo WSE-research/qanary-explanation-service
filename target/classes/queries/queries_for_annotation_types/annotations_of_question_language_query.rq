@@ -1,12 +1,13 @@
 PREFIX qa: <http://www.wdaqua.eu/qa#>
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX questionID: <http://195.90.200.248:8090/question/stored-question__text_>
 
 SELECT *
-FROM ?graph
+FROM ?graphURI
 WHERE {
     ?annotationId a qa:AnnotationOfQuestionLanguage .
     ?annotationId oa:hasTarget ?hasTarget ;
-                  oa:hasBody ?hasBody ;
-                  oa:annotatedBy ?annotatedBy ;
-                  oa:annotatedAt ?annotatedAt .
+                  oa:hasBody ?body ;
+                  oa:annotatedBy ?createdBy ;
+                  oa:annotatedAt ?createdAt .
 }
