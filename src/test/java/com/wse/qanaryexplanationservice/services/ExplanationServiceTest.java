@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,33 +63,9 @@ public class ExplanationServiceTest {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readValue(this.serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
 
-            explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
+            // explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
         }
-
-        @Test
-        void convertJsonNodeToExplanationObjectsTest() {
-
-            assertAll("Correct conversion",
-                    () -> assertEquals(3, explanationObjects.length),
-                    () -> assertEquals("http://dbpedia.org/resource/String_theory", explanationObjects[0].getBody().getValue()),
-                    () -> assertEquals("http://dbpedia.org/resource/Real_number", explanationObjects[1].getBody().getValue()),
-                    () -> assertEquals("http://dbpedia.org/resource/Batman", explanationObjects[2].getBody().getValue())
-            );
-        }
-
-        // That's the test for createEntitiesFromQuestion and that method is equal to the return value of explainComponent
-        @Test
-        void createEntitiesFromQuestionTest() {
-            String question = "What is the real name of Batman?";
-            ExplanationObject[] explanationObjectsWithEntities = explanationService.createEntitiesFromQuestion(explanationObjects, question);
-
-            assertAll("Correct entities",
-                    () -> assertEquals(3, explanationObjectsWithEntities.length),
-                    () -> assertEquals("What", explanationObjectsWithEntities[0].getEntity()),
-                    () -> assertEquals("real", explanationObjectsWithEntities[1].getEntity()),
-                    () -> assertEquals("Batman", explanationObjectsWithEntities[2].getEntity())
-            );
-        }
+        
     }
 
 
@@ -193,9 +167,9 @@ public class ExplanationServiceTest {
         void setupExplainSpecificComponentTest() throws IOException {
             ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
             JsonNode jsonNode = objectMapper.readValue(serviceDataForTests.getJsonForExplanationObjects(), JsonNode.class);
-            explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
+            //  explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
             explanationServiceMock = mock(ExplanationService.class);
-            Mockito.when(explanationServiceMock.computeExplanationObjects(any(), any(), any())).thenReturn(explanationObjects);
+            //  Mockito.when(explanationServiceMock.computeExplanationObjects(any(), any(), any())).thenReturn(explanationObjects);
         }
     }
 

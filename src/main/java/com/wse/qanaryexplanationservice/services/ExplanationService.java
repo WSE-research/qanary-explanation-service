@@ -2,10 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
-import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -41,9 +37,9 @@ public class ExplanationService {
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
-    private final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
-    private final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
-    private final String OUTER_TEMPLATE_REGEX = "\\&\\{.*\\}\\&";
+    private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
+    private static final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
+    private static final String OUTER_TEMPLATE_REGEX = "&\\{.*\\}&";
     // Mappings
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
         put("application/rdf+xml", "RDFXML");
@@ -127,30 +123,6 @@ public class ExplanationService {
         return createModelForSpecificComponent(contentDE, contentEN, componentUri);
     }
 
-    // Creating the query, executing it and transform the response to an array of ExplanationObject objects
-    public ExplanationObject[] computeExplanationObjects(String graphUri, String componentUri, String fetchQueryEmpty) throws IOException {
-        String queryToExecute = buildSparqlQuery(graphUri, componentUri, fetchQueryEmpty);
-        JsonNode explanationObjectsJsonNode = explanationSparqlRepository.executeSparqlQuery(queryToExecute);
-        return convertToExplanationObjects(explanationObjectsJsonNode);
-    }
-
-    /**
-     * Creating the specific query, execute and transform response to array of ExplanationObject objects
-     *
-     * @param graphURI        Given graphURI
-     * @param fetchQueryEmpty specific query which will be executed against the triplestore
-     * @return Array of ExplanationObject objects or null if there are none
-     */
-    public ExplanationObject[] explainComponentDBpediaSpotlight(String graphURI, String fetchQueryEmpty) throws IOException {
-        ExplanationObject[] explanationObjects = computeExplanationObjects(graphURI, null, fetchQueryEmpty);
-        String question;
-        if (explanationObjects != null && explanationObjects.length > 0) {
-            question = getQuestion(explanationObjects[0]); // question uri is saved in every single Object, just take the first one
-            return createEntitiesFromQuestion(explanationObjects, question);
-        } else
-            return null;
-    }
-
     /**
      * Creates an explanation model for a specific componentURI. Further it can be formatted e.g.
      * as RDF-XML, JSONLD, Turtle
@@ -202,49 +174,6 @@ public class ExplanationService {
         return writer.toString();
     }
 
-    // INFO: May be removed since there's a different approach for something like this
-    // e.g. pass the restriction as a parameter to the query
-    public String explainQueryBuilder(String graphURI, String rawQuery) throws IOException {
-        ExplanationObject[] explanationObjects = computeExplanationObjects(graphURI, null, rawQuery);
-
-        // Restriction to QueryBuilder
-        String qb = "QB";
-
-        // filter ExplanationObjects for objects with annotations made by query builder
-        explanationObjects = Arrays.stream(explanationObjects).filter(x -> x.getCreatedBy().getValue().contains(qb)).toArray(ExplanationObject[]::new);
-
-        // create the explanation
-        // adds the sparql-queries if there are any to add, else return null
-        if (explanationObjects.length > 0) {
-            StringBuilder explanation = new StringBuilder("The component created the following SPARQL queries: '");
-            for (ExplanationObject object : explanationObjects
-            ) {
-                explanation.append(object.getBody().getValue()).append("'\n");
-            }
-            return explanation.toString();
-        } else
-            return null;
-    }
-
-    // Computes the entities as real Entities
-    public ExplanationObject[] createEntitiesFromQuestion(ExplanationObject[] explanationObjects, String question) {
-        for (ExplanationObject obj : explanationObjects
-        ) {
-            obj.setEntity(getEntity(obj, question));
-        }
-        return explanationObjects;
-    }
-
-    // get real entity from question with start- and end-value
-    public String getEntity(ExplanationObject obj, String question) {
-        return question.substring(obj.getStart().getValue(), obj.getEnd().getValue());
-    }
-
-    // get raw question from question source
-    public String getQuestion(ExplanationObject firstObject) {
-        return explanationSparqlRepository.fetchQuestion(firstObject.getSource().getValue());
-    }
-
     // building request-query with passed attributes added to rawQuery
     public String buildSparqlQuery(String graphURI, String componentUri, String rawQuery) throws IOException {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
@@ -254,55 +183,6 @@ public class ExplanationService {
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
 
-    }
-
-    // converts JsonNode to array of ExplanationObject
-    public ExplanationObject[] convertToExplanationObjects(JsonNode explanationObjectsJsonNode) {
-        try {
-            // Handle mapping for LocalDateTime
-            objectMapper.registerModule(new JavaTimeModule());
-            // select the bindings-field inside the Json(Node)
-            ArrayNode resultsArraynode = (ArrayNode) explanationObjectsJsonNode.get("bindings");
-            logger.info("ArrayNode: {}", resultsArraynode);
-            return objectMapper.treeToValue(resultsArraynode, ExplanationObject[].class);
-        } catch (Exception e) {
-            logger.error("Error while converting JsonNode to Objects");
-            return null;
-        }
-    }
-
-    /**
-     * Converts all explanations for one component to one explicit textual explanation
-     *
-     * @param lang         desired language, hard coded translation and used attributes from the objects
-     * @param componentURI needed for string
-     * @return textual explanation for the objects
-     */
-    public String convertToTextualExplanation(ExplanationObject[] explanationObjects, String lang, String componentURI) throws Exception {
-        DecimalFormat df = new DecimalFormat("#.####");
-        StringBuilder textualRepresentation;
-        switch (lang) {
-            case "de" -> {
-                textualRepresentation = new StringBuilder("Die Komponente " + componentURI + " hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt: ");
-                for (ExplanationObject obj : explanationObjects
-                ) {
-                    textualRepresentation.append(" Zeitpunkt: '").append(obj.getCreatedAt().getValue().toString()).append("' | Konfidenz: ").append(df.format(obj.getScore().getValue() * 100)).append(" %").append(" | Inhalt: ").append(obj.getBody().getValue());
-                }
-            }
-            case "en" -> {
-                textualRepresentation = new StringBuilder("The component " + componentURI + " has added the following properties to the graph: ");
-                for (ExplanationObject obj : explanationObjects
-                ) {
-                    textualRepresentation.append(" Time: '").append(obj.getCreatedAt().getValue().toString()).append("' | Confidence: ").append(df.format(obj.getScore().getValue() * 100)).append(" %").append(" | Content: ").append(obj.getBody().getValue());
-                }
-            }
-            default -> {
-                String error = "Error while converting to textual Explanation, used default branch";
-                logger.error("{}", error);
-                throw new Exception(error);
-            }
-        }
-        return textualRepresentation.toString().replaceAll("\n", " ").replaceAll("\\\\", "a");
     }
 
     /**
@@ -437,7 +317,7 @@ public class ExplanationService {
             RDFNode type = result.get("annotationType");
             String typeLocalName = type.asResource().getLocalName();
             logger.info("Annotation-Type found: {}", typeLocalName);
-            if(!Objects.equals(typeLocalName, "AnswerJson"))
+            if (!Objects.equals(typeLocalName, "AnswerJson"))
                 types.add(typeLocalName.toLowerCase());
         }
 
@@ -524,16 +404,15 @@ public class ExplanationService {
         Pattern pattern = Pattern.compile(OUTER_TEMPLATE_REGEX);
         Matcher matcher = pattern.matcher(template);
 
-        while(matcher.find()) {
+        while (matcher.find()) {
             String a = matcher.group();
-            if(a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
+            if (a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
                 template = template.replace(a, "");
-            }
-            else
+            } else
                 template = template.replace(
                         a,
                         a.replace(OUTER_TEMPLATE_PLACEHOLDER_PREFIX, "")
-                         .replace(OUTER_TEMPLATE_PLACEHOLDER_SUFFIX,""));
+                                .replace(OUTER_TEMPLATE_PLACEHOLDER_SUFFIX, ""));
         }
 
         return template;
