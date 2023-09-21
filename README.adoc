@@ -32,6 +32,7 @@ The supported ones are the following:
 . AnnotationOfAnswerSPARQL
 . AnnotationOfAnswerJSON
 . AnnotationOfRelation
+. AnnotationOfQuestionLanguage
 
 You can check the output annotation type for existing components in the component's README at https://github.com/WDAqua/Qanary-question-answering-component .
 

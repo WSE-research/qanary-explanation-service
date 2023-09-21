@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.wse.qanaryexplanationservice.controller.ExplanationControllerTest$QueryBuilderTests
--------------------------------------------------------------------------------
-Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.982 s - in com.wse.qanaryexplanationservice.controller.ExplanationControllerTest$QueryBuilderTests

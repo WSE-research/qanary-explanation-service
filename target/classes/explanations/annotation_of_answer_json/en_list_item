@@ -1,1 +1,0 @@
-on ${createdAt} a SPARQL-query was executed and returned the following JSON ' ${answerJson} ' &{with a confidence of ${score}}&
