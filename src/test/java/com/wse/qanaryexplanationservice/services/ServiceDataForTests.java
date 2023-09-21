@@ -31,6 +31,7 @@ public class ServiceDataForTests {
         put("answerJson", ResourceFactory.createTypedLiteral("{example: {data:json, type:json}}"));
         put("question", ResourceFactory.createResource("questionID:123f3rt3jrskdf324f"));
         put("translation", ResourceFactory.createTypedLiteral("What is the real name of Batman?"));
+        put("hasTarget", ResourceFactory.createResource("questionID:981554csdf314kl2"));
     }};
     private final Map<String, String> convertedMapWithStringValues = new HashMap<>() {{
         put("body", "http://dbpedia.org/resource/example");
@@ -43,6 +44,8 @@ public class ServiceDataForTests {
         put("answerJson","{example: {data:json, type:json}}");
         put("question","questionID:123f3rt3jrskdf324f");
         put("translation", "What is the real name of Batman?");
+        put("answerJson", "{example: {data:json, type:json}}");
+        put("hasTarget", "questionID:981554csdf314kl2");
     }};
     private Logger logger = LoggerFactory.getLogger(ServiceDataForTests.class);
     private List<QuerySolutionMap> querySolutionMapList;
