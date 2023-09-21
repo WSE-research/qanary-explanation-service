@@ -1,0 +1,1 @@
+at ${createdAt} the question with the ID '${question}' into "${translation}"

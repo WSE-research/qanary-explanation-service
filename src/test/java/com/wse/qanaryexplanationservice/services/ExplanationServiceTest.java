@@ -229,6 +229,7 @@ public class ExplanationServiceTest {
             put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
             put("annotationofrelation", "/explanations/annotation_of_relation/");
             put("annotationofanswerjson", "/explanations/annotation_of_answer_json/");
+            put("annotationofquestiontranslation", "/explanations/annotation_of_question_translation/");
             put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
         }};
         private ServiceDataForTests serviceDataForTests;
@@ -272,7 +273,8 @@ public class ExplanationServiceTest {
                         "annotationofanswersparql",
                         "annotationofanswerjson",
                         "annotationofrelation",
-                        "annotationofquestionlanguage"
+                        "annotationofquestionlanguage",
+                        "annotationofquestiontranslation"
                 })
         public void replacePropertiesTest(String type) {
 

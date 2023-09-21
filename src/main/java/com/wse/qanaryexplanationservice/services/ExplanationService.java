@@ -53,6 +53,7 @@ public class ExplanationService {
         put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql.rq");
         put("annotationofrelation", "/queries/queries_for_annotation_types/annotations_of_relation_query.rq");
         put("annotationofanswerjson", "/queries/queries_for_annotation_types/annotations_of_answer_json_query.rq");
+        put("annotationofquestiontranslation", "/queries/queries_for_annotation_types/annotations_of_question_translation_query.rq");
         put("annotationofquestionlanguage", "/queries/queries_for_annotation_types/annotations_of_question_language_query.rq");
     }};
 
@@ -63,6 +64,7 @@ public class ExplanationService {
         put("annotationofanswersparql", "/explanations/annotation_of_answer_sparql/");
         put("annotationofrelation", "/explanations/annotation_of_relation/");
         put("annotationofanswerjson", "/explanations/annotation_of_answer_json/");
+        put("annotationofquestiontranslation", "/explanations/annotation_of_question_translation/");
         put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
     }};
 
