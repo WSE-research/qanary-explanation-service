@@ -1,6 +1,6 @@
 package com.wse.qanaryexplanationservice.pojos.ResultObjectDTOs;
 
-public abstract class ExplanationPojosDtosAbstract {
+public abstract class PropertyClassTemplate {
 
     private String type;
     private String value;

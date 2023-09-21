@@ -6,8 +6,8 @@ SELECT *
 FROM ?graphURI
 WHERE {
     ?annotationId a qa:AnnotationOfQuestionTranslation .
-    ?annotationId oa:hasTarget ?hasTarget ;
-                  oa:hasBody ?body ;
+    ?annotationId oa:hasTarget ?question ;
+                  oa:hasBody ?translation ;
                   oa:annotatedBy ?createdBy ;
                   oa:annotatedAt ?createdAt .
 }

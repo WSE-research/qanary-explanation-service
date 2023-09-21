@@ -63,12 +63,10 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         out.flush();
         out.close();
 
-
         // read the response and store it as a JsonNode
         InputStream responseStream = getInputStream(connection);
 
         // get the results-field from json and save it as jsonNode
-
         return objectMapper.readValue(responseStream, JsonNode.class).get("results");
     }
 

@@ -28,13 +28,20 @@ public class AbstractRepositoryTest {
         assertNull(abstractRepository.fetchQuestion(testQuestion));
     }
 
+    @Test
+    public void executeSparqlQueryTestNotNull() {
+
+    }
+
+
+
     private void setup_executeSparqlQueryTest() throws IOException {
         Mockito.when(abstractRepository.getInputStream(any())).thenReturn(null);
     }
 
     // Check for correct sparqlQuery done in service tests
     @Test
-    public void executeSparqlQueryTest() throws IOException {
+    public void executeSparqlQueryTestIsNull() throws IOException {
         setup_executeSparqlQueryTest();
         String sparqlQuery = "";
 

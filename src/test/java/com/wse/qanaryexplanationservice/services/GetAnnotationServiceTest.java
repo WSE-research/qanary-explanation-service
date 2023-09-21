@@ -2,7 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
+import com.wse.qanaryexplanationservice.pojos.ResultObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -34,7 +34,7 @@ public class GetAnnotationServiceTest {
     @Nested
     public class ConversionTests {
 
-        ExplanationObject[] explanationObjects;
+        ResultObject[] explanationObjects;
         ServiceDataForTests serviceDataForTests;
 
         @BeforeEach

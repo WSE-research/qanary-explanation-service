@@ -1,7 +1,7 @@
 package com.wse.qanaryexplanationservice.controller;
 
 
-import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
+import com.wse.qanaryexplanationservice.pojos.ResultObject;
 import com.wse.qanaryexplanationservice.services.AnnotationsService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +29,8 @@ public class AnnotationController {
             description = "This endpoint returns a list of annotations made by the QA-process of the "
                     + "provided graphURI. Requires graphURI."
     )
-    public ResponseEntity<ExplanationObject[]> getAnnotations(@PathVariable String graphURI) throws IOException {
-        ExplanationObject[] explanationObjects = annotationsService.getAnnotations(graphURI);
+    public ResponseEntity<ResultObject[]> getAnnotations(@PathVariable String graphURI) throws IOException {
+        ResultObject[] explanationObjects = annotationsService.getAnnotations(graphURI);
         if (explanationObjects != null)
             return new ResponseEntity<>(explanationObjects, HttpStatus.OK);
         else
