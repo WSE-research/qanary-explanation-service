@@ -2,7 +2,6 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -37,12 +36,17 @@ public class ExplanationService {
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
-    // Mappings
+    private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
+    private static final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
+    private static final String OUTER_TEMPLATE_REGEX = "&\\{.*\\}&";
+
+    // Mappings: Header <-> Model-format
     private static final Map<String, String> headerFormatMap = new HashMap<>() {{
         put("application/rdf+xml", "RDFXML");
         put("application/ld+json", "JSONLD");
         put("text/turtle", "TURTLE");
     }};
+
     // Holds request query for declared annotations types
     private static final Map<String, String> annotationsTypeAndQuery = new HashMap<>() {{
         // AnnotationOfInstance
@@ -53,6 +57,7 @@ public class ExplanationService {
         put("annotationofanswerjson", "/queries/queries_for_annotation_types/annotations_of_answer_json_query.rq");
         put("annotationofquestionlanguage", "/queries/queries_for_annotation_types/annotations_of_question_language_query.rq");
     }};
+
     // Holds explanation templates for the declared annotation types
     private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
         put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
@@ -62,17 +67,10 @@ public class ExplanationService {
         put("annotationofanswerjson", "/explanations/annotation_of_answer_json/");
         put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
     }};
-    private final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
-    private final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
-    private final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
-    private final String OUTER_TEMPLATE_REGEX = "&\\{.*\\}&";
+
+    private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final ObjectMapper objectMapper;
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
-    /*
-    TODO: Is there a smart approach to avoid global changing variable?
-    Key = annotation-type, Value = ResultSet
-    Should avoid multiple execution of same sparql query
-     */
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
@@ -83,6 +81,13 @@ public class ExplanationService {
         objectMapper = new ObjectMapper();
     }
 
+    /**
+     * Collects list of explanations and creates the complete explanation including intro, prefix and items
+     *
+     * @param explanations List of explanations following the used templates
+     * @param prefix       Text phrase between intro and items, can be an empty string
+     * @return Explanation as String
+     */
     private static String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
         String result = null;
         if (Objects.equals(lang, "en")) {
@@ -100,7 +105,7 @@ public class ExplanationService {
      *
      * @param graphUri     specific graphURI
      * @param componentUri specific componentURI
-     * @return explanation as RDF Turtle
+     * @return Explanation in accepted format, default: Turtle
      */
     public String explainSpecificComponent(String graphUri, String componentUri, String header) throws Exception {
         logger.info("Passed header: {}", header);
@@ -109,7 +114,12 @@ public class ExplanationService {
         return convertToDesiredFormat(header, model);
     }
 
-    // Returns a model for a specific component
+    /**
+     * Creates language-specific explanations and computes explanation model
+     *
+     * @return Model including
+     * @throws Exception
+     */
     public Model createModel(String graphUri, String componentUri) throws Exception {
 
         List<String> types = new ArrayList<>();
@@ -123,8 +133,7 @@ public class ExplanationService {
     }
 
     /**
-     * Creates an explanation model for a specific componentURI. Further it can be formatted e.g.
-     * as RDF-XML, JSONLD, Turtle
+     * Creates an explanation model for a specific componentURI.
      *
      * @param contentDe    Textual representation of the explanation in german
      * @param contentEn    Textual representation of the explanation in english
@@ -173,7 +182,10 @@ public class ExplanationService {
         return writer.toString();
     }
 
-    // building request-query with passed attributes added to rawQuery
+    /**
+     * @param rawQuery Query-String without set values
+     * @return Query-String with set values
+     */
     public String buildSparqlQuery(String graphURI, String componentUri, String rawQuery) throws IOException {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphURI));
@@ -194,12 +206,12 @@ public class ExplanationService {
      */
     public String explainQaSystem(String graphURI, String header) throws Exception {
 
-        ComponentPojo[] components = annotationsService.getUsedComponents(graphURI);
+        List<String> components = annotationsService.getUsedComponents(graphURI);
         Map<String, Model> models = new HashMap<>();
-        for (ComponentPojo component : components
+
+        for (String component : components
         ) {
-            models.put(component.getComponent().getValue(), // === componentURI
-                    createModel(graphURI, component.getComponent().getValue())); // create a model for that componentURI
+            models.put(component, createModel(graphURI, component));
         }
 
         String questionURI = fetchQuestionUri(graphURI);
@@ -231,7 +243,7 @@ public class ExplanationService {
      * @param components Array of involved components
      * @return an explanation model for a system explanation
      */
-    public Model createSystemModel(Map<String, Model> models, ComponentPojo[] components, String questionURI, String graphURI) {
+    public Model createSystemModel(Map<String, Model> models, List<String> components, String questionURI, String graphURI) {
 
         Model systemExplanationModel = ModelFactory.createDefaultModel();
 
@@ -258,10 +270,10 @@ public class ExplanationService {
         // Iterates over Models with componentURI as key
         // for every model an inner sequence is created and the statements from the model are transformed to reified statements
         // (to save them as a "resource" in a Sequence)
-        for (int i = 0; i < components.length; i++) {
+        for (int i = 0; i < components.size(); i++) {
             int j = 1;
             // get the model for the component at position "i" in component list // remember: models is Map with componentUri as key
-            Model model = models.get(components[i].getComponent().getValue());
+            Model model = models.get(components.get(i));
             // creating inner Sequence for the reified statements
             Resource innerSequence = systemExplanationModel.createResource();
             // adding the inner Sequence as a property to the outer sequence / the resource questionResource

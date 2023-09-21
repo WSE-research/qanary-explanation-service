@@ -1,15 +1,10 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
-import com.wse.qanaryexplanationservice.pojos.ResultObjectDTOs.Component;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ControllerDataForTests {
 
@@ -17,10 +12,7 @@ public class ControllerDataForTests {
             "qa-system-explanation-models/modelForRandomComponent1.ttl",
             "qa-system-explanation-models/modelForRandomComponent2.ttl"
     };
-    private final ComponentPojo[] components = {
-            new ComponentPojo(new Component("type", "randomComponent1")),
-            new ComponentPojo(new Component("type", "randomComponent2"))
-    };
+    private final List<String> components = Arrays.asList("randomComponent1", "randomComponent2");
 
     private final String EXPECTED_MODEL_FILE = "qa-system-explanation-models/expectedModel.ttl";
 
@@ -59,15 +51,15 @@ public class ControllerDataForTests {
         return createModels();
     }
 
-    public ComponentPojo[] getComponents() {
+    public List<String> getComponents() {
         return components;
     }
 
     public Map<String, Model> getQaSystemExplanationMap() throws FileNotFoundException {
         List<Model> models = getModels();
         return new HashMap<>() {{
-            put(getComponents()[0].getComponent().getValue(), models.get(0));
-            put(getComponents()[1].getComponent().getValue(), models.get(1));
+            put(getComponents().get(0), models.get(0));
+            put(getComponents().get(1), models.get(1));
         }};
     }
 

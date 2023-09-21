@@ -1,0 +1,1 @@
+am ${createdAt} eine SPARQL-query ausgeführt und folgende JSON zurückgegeben ' ${answerJson} ' &{mit einer Konfidenz von ${score}}&

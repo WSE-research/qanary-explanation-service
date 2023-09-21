@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import com.wse.qanaryexplanationservice.repositories.AnnotationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolutionMap;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class AnnotationsService {
@@ -59,13 +61,14 @@ public class AnnotationsService {
             return null;
     }
 
-    public ComponentPojo[] getUsedComponents(String graphID) throws IOException {
+    public List<String> getUsedComponents(String graphID) throws IOException {
         String query = createQuery(COMPONENTS_SPARQL_QUERY, graphID);
-        logger.info("Query: {}", query);
-        JsonNode jsonNode = annotationSparqlRepository.executeSparqlQuery(query);
-        logger.info("JsonNode: {}", jsonNode);
-        ArrayNode resultsArrayNode = (ArrayNode) jsonNode.get("bindings");
-        return objectMapper.treeToValue(resultsArrayNode, ComponentPojo[].class);
+        ResultSet resultSet = annotationSparqlRepository.executeSparqlQueryWithResultSet(query);
+        List<String> components = new ArrayList<>();
+        while (resultSet.hasNext()) {
+            components.add(resultSet.next().get("component").toString());
+        }
+        return components;
     }
 
     public ExplanationObject[] mapResponseToObjectArray(JsonNode sparqlResponse) {

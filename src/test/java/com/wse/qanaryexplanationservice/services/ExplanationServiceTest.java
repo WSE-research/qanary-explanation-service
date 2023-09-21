@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.controller.ControllerDataForTests;
-import com.wse.qanaryexplanationservice.pojos.ComponentPojo;
 import com.wse.qanaryexplanationservice.pojos.ExplanationObject;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import org.apache.jena.query.*;
@@ -65,7 +64,7 @@ public class ExplanationServiceTest {
 
             // explanationObjects = explanationService.convertToExplanationObjects(jsonNode);
         }
-        
+
     }
 
 
@@ -183,7 +182,7 @@ public class ExplanationServiceTest {
         ObjectMapper objectMapper = new ObjectMapper();
         @Autowired
         ExplanationService explanationService;
-        ComponentPojo[] components;
+        List<String> components;
         Map<String, Model> models;
 
         @BeforeEach
@@ -218,6 +217,7 @@ public class ExplanationServiceTest {
 
             assertTrue(expectedModel.isIsomorphicWith(computedModel));
         }
+
     }
 
     @Nested
@@ -324,24 +324,6 @@ public class ExplanationServiceTest {
             }
 
         }
-
-        /*
-        @Test
-        public void createSpecificExplanationTest() {
-
-
-        }
-
-        @Test
-        public void createSpecificExplanationsTest() {
-
-        }
-
-        @Test
-        public void fetchAllAnnotationsTest() {
-
-        }
-        */
 
     }
 
