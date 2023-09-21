@@ -1,1 +1,1 @@
-at ${createdAt}: '${question}' into "${translation}"
+at ${createdAt} the question with the ID '${question}' into "${translation}"

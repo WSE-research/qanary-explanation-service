@@ -1,1 +1,1 @@
-am ${createdAt}: '${question}' in "${translation}"
+am ${createdAt} die Frage mit der ID '${question}' in "${translation}"
