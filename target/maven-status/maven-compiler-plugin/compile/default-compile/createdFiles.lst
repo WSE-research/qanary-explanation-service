@@ -18,5 +18,4 @@ com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/Target.class
 com/wse/qanaryexplanationservice/QanaryExplanationServiceApplication.class
 com/wse/qanaryexplanationservice/services/ExplanationService.class
 com/wse/qanaryexplanationservice/services/ExplanationService$1.class
-com/wse/qanaryexplanationservice/services/ExplanationServiceIF.class
 com/wse/qanaryexplanationservice/repositories/AnnotationSparqlRepository.class

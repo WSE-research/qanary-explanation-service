@@ -10,7 +10,6 @@
 /home/dschiese/wseresearch/qanary-explanation-service/src/main/java/com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/CreatedAt.java
 /home/dschiese/wseresearch/qanary-explanation-service/src/main/java/com/wse/qanaryexplanationservice/repositories/AnnotationSparqlRepository.java
 /home/dschiese/wseresearch/qanary-explanation-service/src/main/java/com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/Target.java
-/home/dschiese/wseresearch/qanary-explanation-service/src/main/java/com/wse/qanaryexplanationservice/services/ExplanationServiceIF.java
 /home/dschiese/wseresearch/qanary-explanation-service/src/main/java/com/wse/qanaryexplanationservice/pojos/ResultObject.java
 /home/dschiese/wseresearch/qanary-explanation-service/src/main/java/com/wse/qanaryexplanationservice/services/ExplanationService.java
 /home/dschiese/wseresearch/qanary-explanation-service/src/main/java/com/wse/qanaryexplanationservice/controller/AnnotationController.java

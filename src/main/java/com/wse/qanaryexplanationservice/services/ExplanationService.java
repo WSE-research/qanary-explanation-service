@@ -1,6 +1,5 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.repositories.AbstractRepository;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -45,12 +44,7 @@ public class ExplanationService {
         put("application/ld+json", "JSONLD");
         put("text/turtle", "TURTLE");
     }};
-
-    protected void setRepository(ExplanationSparqlRepository explanationSparqlRepository) {
-        this.explanationSparqlRepository = explanationSparqlRepository;
-    }
-
-                               // Holds request query for declared annotations types
+    // Holds request query for declared annotations types
     private static final Map<String, String> annotationsTypeAndQuery = new HashMap<>() {{
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
@@ -61,7 +55,6 @@ public class ExplanationService {
         put("annotationofquestiontranslation", "/queries/queries_for_annotation_types/annotations_of_question_translation_query.rq");
         put("annotationofquestionlanguage", "/queries/queries_for_annotation_types/annotations_of_question_language_query.rq");
     }};
-
     // Holds explanation templates for the declared annotation types
     private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
         put("annotationofspotinstance", "/explanations/annotation_of_spot_instance/");
@@ -72,7 +65,6 @@ public class ExplanationService {
         put("annotationofquestiontranslation", "/explanations/annotation_of_question_translation/");
         put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
     }};
-
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
@@ -80,7 +72,6 @@ public class ExplanationService {
     private ExplanationSparqlRepository explanationSparqlRepository;
     @Autowired
     private AnnotationsService annotationsService;
-
     public ExplanationService() {
     }
 
@@ -101,6 +92,10 @@ public class ExplanationService {
                     + prefix + ": " + StringUtils.join(explanations, " ");
         }
         return result;
+    }
+
+    protected void setRepository(ExplanationSparqlRepository explanationSparqlRepository) {
+        this.explanationSparqlRepository = explanationSparqlRepository;
     }
 
     /**

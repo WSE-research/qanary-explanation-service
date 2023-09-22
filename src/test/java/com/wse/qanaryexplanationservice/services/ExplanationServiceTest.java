@@ -1,6 +1,5 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.controller.ControllerDataForTests;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
@@ -15,8 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
-import org.mockito.Spy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +23,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -37,13 +33,13 @@ import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class ExplanationServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+    private final ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
     @MockBean
     ExplanationSparqlRepository explanationSparqlRepository;
     Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
@@ -58,7 +54,6 @@ public class ExplanationServiceTest {
         String queryPrefixes = "PREFIX explanation: <" + EXPLANATION_NAMESPACE + ">";
         @Autowired
         ExplanationService explanationService;
-        Logger logger = LoggerFactory.getLogger(ExplanationAsRdfTurtle.class);
 
         @BeforeEach
         void setup() {
@@ -145,7 +140,6 @@ public class ExplanationServiceTest {
 
         final String graphID = "http://exampleQuestionURI.a/question";
         final String questionURI = "http://question-example.com/123/32a";
-        ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
         ResultSet emptyResultSet = serviceDataForTests.createResultSet(serviceDataForTests.getEmptyQuerySolutionMapList());
         ControllerDataForTests controllerDataForTests;
         ObjectMapper objectMapper = new ObjectMapper();
@@ -155,7 +149,7 @@ public class ExplanationServiceTest {
         Map<String, Model> models;
 
         @BeforeEach
-        void setup() throws IOException {
+        void setup() {
             controllerDataForTests = new ControllerDataForTests();
             when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(emptyResultSet);
         }
@@ -169,7 +163,7 @@ public class ExplanationServiceTest {
 
         // Testing the createSystemModel-method
         @Test
-        void createSystemModelTest() throws IOException {
+        void createSystemModelTest() {
             models = controllerDataForTests.getQaSystemExplanationMap();
             components = controllerDataForTests.getComponents();
             // Get the expected model from the test data
@@ -194,10 +188,9 @@ public class ExplanationServiceTest {
             put("annotationofquestiontranslation", "/explanations/annotation_of_question_translation/");
             put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
         }};
-        private ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
+        private final ResultSet resultSet = serviceDataForTests.createResultSet(serviceDataForTests.getQuerySolutionMapList());
         @SpyBean
         private ExplanationService explanationService;
-        private ResultSet resultSet = serviceDataForTests.createResultSet(serviceDataForTests.getQuerySolutionMapList());
 
         @Test
         public void createTextualExplanationTest() {
@@ -287,11 +280,13 @@ public class ExplanationServiceTest {
             explanationService.setRepository(explanationSparqlRepository);
             when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
 
-            List<String> explanations = explanationService.createSpecificExplanation("annotationofinstance","graphURI","de","componentuRI");
+            List<String> explanations = explanationService.createSpecificExplanation("annotationofinstance", "graphURI", "de", "componentuRI");
 
             verify(explanationSparqlRepository, times(1)).executeSparqlQueryWithResultSet(any());
-            verify(explanationService, times(1)).buildSparqlQuery(any(),any(),any());
-            verify(explanationService, times(1)).addingExplanations(any(),any(),any());
+            verify(explanationService, times(1)).buildSparqlQuery(any(), any(), any());
+            verify(explanationService, times(1)).addingExplanations(any(), any(), any());
+
+            assertNotNull(explanations);
         }
 
     }
