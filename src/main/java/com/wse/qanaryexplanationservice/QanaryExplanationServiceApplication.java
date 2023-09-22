@@ -13,7 +13,7 @@ import org.springframework.core.env.Environment;
 @SpringBootApplication
 public class QanaryExplanationServiceApplication {
 
-    private Environment env;
+    private final Environment env;
 
     public QanaryExplanationServiceApplication(@Autowired Environment env) {
         this.env = env;

@@ -1,56 +1,39 @@
 package com.wse.qanaryexplanationservice.pojos;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.wse.qanaryexplanationservice.pojos.ResultObjectDTOs.*;
 
-/**
- * Represents an entry from the sparql-response === an annotation
- */
-public class ResultObject implements Comparable {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class ResultObject {
 
-    @JsonProperty("annotationId")
     private AnnotationId annotationId;
-    private Type type;
-    private Body body;
-    private Target target;
-    private CreatedBy createdBy;
     private CreatedAt createdAt;
+    private CreatedBy createdBy;
+    private Body body;
+    private Type type;
 
-    // default constructor
     public ResultObject() {
 
     }
 
-    public void setAnnotationID(AnnotationId annotationId) {
-        this.annotationId = annotationId;
-    }
-
-    public void setBody(Body body) {
-        this.body = body;
-    }
-
-    public void setCreatedAt(CreatedAt createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setCreatedBy(CreatedBy createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public void setTarget(Target target) {
-        this.target = target;
+    public Type getType() {
+        return type;
     }
 
     public void setType(Type type) {
         this.type = type;
     }
 
-    public AnnotationId getAnnotationID() {
-        return annotationId;
-    }
-
     public Body getBody() {
         return body;
+    }
+
+    public void setBody(Body body) {
+        this.body = body;
+    }
+
+    public AnnotationId getAnnotationId() {
+        return annotationId;
     }
 
     public CreatedAt getCreatedAt() {
@@ -61,17 +44,15 @@ public class ResultObject implements Comparable {
         return createdBy;
     }
 
-    public Target getTarget() {
-        return target;
+    public void setAnnotationId(AnnotationId annotationId) {
+        this.annotationId = annotationId;
     }
 
-    public Type getType() {
-        return type;
+    public void setCreatedAt(CreatedAt createdAt) {
+        this.createdAt = createdAt;
     }
 
-    @Override
-    public int compareTo(Object o) {
-        ResultObject resultObject = (ResultObject) o;
-        return getCreatedAt().getValue().compareTo(resultObject.createdAt.getValue());
+    public void setCreatedBy(CreatedBy createdBy) {
+        this.createdBy = createdBy;
     }
 }

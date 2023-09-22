@@ -5,10 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.services.ParameterStringBuilder;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdfconnection.RDFConnection;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
@@ -20,7 +18,6 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -66,12 +63,10 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         out.flush();
         out.close();
 
-
         // read the response and store it as a JsonNode
         InputStream responseStream = getInputStream(connection);
 
         // get the results-field from json and save it as jsonNode
-
         return objectMapper.readValue(responseStream, JsonNode.class).get("results");
     }
 

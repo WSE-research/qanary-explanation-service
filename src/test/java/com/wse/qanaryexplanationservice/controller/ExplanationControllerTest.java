@@ -1,17 +1,11 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.wse.qanaryexplanationservice.StringToJsonNode;
-import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,12 +14,15 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,63 +31,71 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class ExplanationControllerTest {
 
-    private final ControllerDataForTests controllerDataForTests = new ControllerDataForTests();
-    private final StringToJsonNode stringToJsonNode = new StringToJsonNode();
-    private Logger logger = LoggerFactory.getLogger(ExplanationControllerTest.class);
     @MockBean
-    private ExplanationSparqlRepository explanationSparqlRepository;
+    private ExplanationService explanationService;
+    @Autowired
+    MockMvc mockMvc;
+    private final String testRdfDataPath = "testRdfData.rdf";
+    String testRdfData;
+    private ClassLoader classLoader = this.getClass().getClassLoader();
 
-    @Nested
-    class QueryBuilderTests {
-        @Autowired
-        private MockMvc mockMvc;
-        @Mock
-        private ExplanationService explanationService;
+    @BeforeEach
+    public void setup() throws IOException {
+        File file = new File(Objects.requireNonNull(classLoader.getResource(testRdfDataPath)).getFile());
+        testRdfData = new String(Files.readAllBytes(file.toPath()));
+    }
 
-        public void setupExplainQueryBuilderTest(boolean withQBValues) throws IOException {
-            String jsonString;
-            if (withQBValues)
-                jsonString = controllerDataForTests.getGivenExplanations();
-            else
-                jsonString = controllerDataForTests.getGivenExplanationsWithoutQbValues();
-            JsonNode toBeTested = stringToJsonNode.convertStingToJsonNode(jsonString);
-            Mockito.when(explanationSparqlRepository.executeSparqlQuery(any())).thenReturn(toBeTested);
-            Mockito.when(explanationService.buildSparqlQuery(any(), any(), any())).thenReturn("example Sparql-query");
-        }
+    @Test
+    public void notFoundWhenNoPathVariables() throws Exception {
+        mockMvc.perform(get("/explanations")).andExpect(status().isNotFound());
+    }
 
+    @Test
+    public void explanationsForComponentResultNotNull() throws Exception {
+        when(explanationService.explainSpecificComponent(any(),any(),any())).thenReturn(testRdfData);
 
-        @Nested
-        class QaSystemExplanationTest {
-
-            private final String testReturn = "randomString";
-            @Autowired
-            MockMvc mockMvc;
-            @MockBean
-            private ExplanationService explanationService;
-
-            @BeforeEach
-            void setup() throws Exception {
-                Mockito.when(explanationService.explainQaSystem(any(), any())).thenReturn(testReturn);
-            }
-
-            @Test
-            public void givenGraphURICallsSystemExplanation() throws Exception {
-
-                MvcResult mvcResult = mockMvc.perform(get("/explanations/{graphURI}", "wewqeewrwe"))
+        MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI/componentURI"))
                         .andReturn();
 
-                assertEquals(200, mvcResult.getResponse().getStatus());
-
-                // check if SystemExplanation method was called once
-                verify(explanationService, times(1)).explainQaSystem(any(),any());
-            }
-
-            @Test
-            public void notFoundWhenNoPathVariables() throws Exception {
-                mockMvc.perform(get("/explanations")).andExpect(status().isNotFound());
-            }
-
-        }
+        assertEquals(200, mvcResult.getResponse().getStatus());
+        assertEquals(testRdfData, mvcResult.getResponse().getContentAsString());
+        verify(explanationService, times(1)).explainSpecificComponent(any(), any(), any());
     }
+
+    @Test
+    public void explanationsForSystemResultNotNull() throws Exception {
+        when(explanationService.explainQaSystem(any(),any())).thenReturn(testRdfData);
+
+        MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI"))
+                .andReturn();
+
+        assertEquals(200, mvcResult.getResponse().getStatus());
+        assertEquals(testRdfData, mvcResult.getResponse().getContentAsString());
+        verify(explanationService, times(1)).explainQaSystem(any(),any());
+    }
+
+    @Test
+    public void explanationsForComponentResultIsNull() throws Exception {
+        when(explanationService.explainSpecificComponent(any(),any(),any())).thenReturn(null);
+
+        MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI/componentURI"))
+                .andReturn();
+
+        assertEquals(400, mvcResult.getResponse().getStatus());
+        assertEquals("",mvcResult.getResponse().getContentAsString());
+    }
+
+    @Test
+    public void explanationsForSystemResultIsNull() throws Exception {
+        when(explanationService.explainQaSystem(any(),any())).thenReturn(null);
+
+        MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI"))
+                .andReturn();
+
+        assertEquals(406, mvcResult.getResponse().getStatus());
+        assertEquals("", mvcResult.getResponse().getContentAsString());
+    }
+
 }
+
 

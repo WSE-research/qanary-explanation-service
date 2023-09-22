@@ -1,6 +1,6 @@
 package com.wse.qanaryexplanationservice.pojos.ResultObjectDTOs;
 
-public class Target extends ExplanationPojosDtosAbstract {
+public class Target extends PropertyClassTemplate {
 
     public Target() {
 

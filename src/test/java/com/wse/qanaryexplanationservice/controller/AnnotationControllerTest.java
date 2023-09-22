@@ -1,13 +1,10 @@
 package com.wse.qanaryexplanationservice.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.StringToJsonNode;
 import com.wse.qanaryexplanationservice.repositories.AnnotationSparqlRepository;
-import com.wse.qanaryexplanationservice.services.AnnotationsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -27,14 +24,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class AnnotationControllerTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final ControllerDataForTests controllerDataForTests = new ControllerDataForTests();
     @Autowired
     private MockMvc mockMvc;
     @MockBean
     private AnnotationSparqlRepository annotationSparqlRepository;
-    @Mock
-    private AnnotationsService annotationsService;
 
     public void setup_givenResults_thenStatus200() throws IOException {
         StringToJsonNode stringToJsonNode = new StringToJsonNode();
