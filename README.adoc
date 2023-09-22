@@ -20,7 +20,9 @@ This webservice provides some functionalities to compute explanations for some Q
 
 toc::[]
 
-== Supported Annotation Types
+== About the Annotation Types
+
+=== Supported types
 
 The explanation's creation follows a rule-based approach, what means that each explanation for a component is created different depending on the annotationType of its written output.
 
@@ -34,6 +36,26 @@ The supported ones are the following:
 . AnnotationOfRelation
 . AnnotationOfQuestionTranslation
 . AnnotationOfQuestionLanguage
+
+=== Adding new types
+
+While the current version covers all - currently - existing Annotation types for the Qanary components you might want to add a new type and furthermore a new explanation as well. 
+
+To achieve this you might follow this straight-forward manual:
+
+. Add a SPARQL query to the `queries/queries_for_annotation_types` folder
+. Add a template for your potential explanation inside `explanations/` - You may follow the naming convention for the existing ones, but it`s up to you
+.. The directory should contain four (4) files - a template for "de" and "en" as well as a prefix for "de" and "en". Please follow the naming conventions here.
+.. Inside the files you can declare two types of placeholders:
+... these for definitely existing values with `${YOUR_VALUE}`
+... and conditional ones, i.e. `&{conditional text ${VALUE}}&` will be evaluated if the value for the inner placeholder exists, otherwise it`s replaced with a empty String
+. Add the paths for your annotation type to the ExplanationService class
+.. firstly to the `annotationsTypeAndQuery`-Map
+.. secondly to the `annotationTypeExplanationTemplate`-Map
+
+=== Editing existing types
+
+
 
 You can check the output annotation type for existing components in the component's README at https://github.com/WDAqua/Qanary-question-answering-component .
 
