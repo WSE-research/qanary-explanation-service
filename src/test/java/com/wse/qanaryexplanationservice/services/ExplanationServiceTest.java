@@ -15,11 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
+import org.mockito.Spy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.File;
@@ -33,9 +36,9 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -43,10 +46,10 @@ public class ExplanationServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
     @MockBean
     ExplanationSparqlRepository explanationSparqlRepository;
+    Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
 
     @Nested
     class ExplanationAsRdfTurtle {
-
 
         static final String componentURI = "urn:qanary:QB-SimpleRealNameOfSuperHero";
         LanguageContentProvider languageContentProvider;
@@ -55,7 +58,6 @@ public class ExplanationServiceTest {
         String queryPrefixes = "PREFIX explanation: <" + EXPLANATION_NAMESPACE + ">";
         @Autowired
         ExplanationService explanationService;
-        ExplanationService explanationServiceMock;
         Logger logger = LoggerFactory.getLogger(ExplanationAsRdfTurtle.class);
 
         @BeforeEach
@@ -136,11 +138,6 @@ public class ExplanationServiceTest {
             );
         }
 
-        @BeforeEach
-        void setupExplainSpecificComponentTest() {
-            ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
-            explanationServiceMock = mock(ExplanationService.class);
-        }
     }
 
     @Nested
@@ -148,7 +145,8 @@ public class ExplanationServiceTest {
 
         final String graphID = "http://exampleQuestionURI.a/question";
         final String questionURI = "http://question-example.com/123/32a";
-        JsonNode jsonNode;
+        ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
+        ResultSet emptyResultSet = serviceDataForTests.createResultSet(serviceDataForTests.getEmptyQuerySolutionMapList());
         ControllerDataForTests controllerDataForTests;
         ObjectMapper objectMapper = new ObjectMapper();
         @Autowired
@@ -159,8 +157,7 @@ public class ExplanationServiceTest {
         @BeforeEach
         void setup() throws IOException {
             controllerDataForTests = new ControllerDataForTests();
-            jsonNode = objectMapper.readTree(controllerDataForTests.getGivenResults());
-            when(explanationSparqlRepository.executeSparqlQuery(anyString())).thenReturn(jsonNode);
+            when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(emptyResultSet);
         }
 
         // Testing if a wrong JsonNode leads to an error
@@ -170,17 +167,11 @@ public class ExplanationServiceTest {
             assertEquals("Couldn't fetch the question!", exception.getMessage());
         }
 
-        // Gets models and components from ControllerDataForTests
-        void setupCreateSystemModelTest() throws FileNotFoundException {
-            models = controllerDataForTests.getQaSystemExplanationMap();
-            components = controllerDataForTests.getComponents();
-        }
-
-
         // Testing the createSystemModel-method
         @Test
         void createSystemModelTest() throws IOException {
-            setupCreateSystemModelTest();
+            models = controllerDataForTests.getQaSystemExplanationMap();
+            components = controllerDataForTests.getComponents();
             // Get the expected model from the test data
             Model expectedModel = controllerDataForTests.getExpectedModelForQaSystemExplanation();
             // call method to create model from Models and components
@@ -203,18 +194,13 @@ public class ExplanationServiceTest {
             put("annotationofquestiontranslation", "/explanations/annotation_of_question_translation/");
             put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
         }};
-        private ServiceDataForTests serviceDataForTests;
-        @Autowired
+        private ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
+        @SpyBean
         private ExplanationService explanationService;
-
-        @BeforeEach
-        public void setup() {
-            serviceDataForTests = new ServiceDataForTests();
-        }
-
+        private ResultSet resultSet = serviceDataForTests.createResultSet(serviceDataForTests.getQuerySolutionMapList());
 
         @Test
-        public void createTextualRepresentationTest() {
+        public void createTextualExplanationTest() {
 
         }
 
@@ -283,8 +269,6 @@ public class ExplanationServiceTest {
                         "annotationofquestionlanguage"
                 })
         public void addingExplanationsTest(String type) throws IOException {
-            List<QuerySolutionMap> querySolutionMapList = serviceDataForTests.getQuerySolutionMapList();
-            ResultSet resultSet = serviceDataForTests.createResultSet(querySolutionMapList);
 
             List<String> computedExplanations = explanationService.addingExplanations(type, "de", resultSet);
 
@@ -296,6 +280,18 @@ public class ExplanationServiceTest {
                 assertFalse(expl.contains("$"));
             }
 
+        }
+
+        @Test
+        public void createSpecificExplanationTest() throws IOException {
+            explanationService.setRepository(explanationSparqlRepository);
+            when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
+
+            List<String> explanations = explanationService.createSpecificExplanation("annotationofinstance","graphURI","de","componentuRI");
+
+            verify(explanationSparqlRepository, times(1)).executeSparqlQueryWithResultSet(any());
+            verify(explanationService, times(1)).buildSparqlQuery(any(),any(),any());
+            verify(explanationService, times(1)).addingExplanations(any(),any(),any());
         }
 
     }

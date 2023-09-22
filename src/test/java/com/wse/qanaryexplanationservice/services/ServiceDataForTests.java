@@ -60,6 +60,14 @@ public class ServiceDataForTests {
         return querySolutionMapArrayList;
     }
 
+    public List<QuerySolutionMap> getEmptyQuerySolutionMapList() {
+        List<QuerySolutionMap> querySolutionMapArrayList = new ArrayList<>();
+        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
+
+        querySolutionMapArrayList.add(querySolutionMap);
+        return querySolutionMapArrayList;
+    }
+
     public Map<String, RDFNode> getMapWithRdfNodeValues() {
         return mapWithRdfNodeValues;
     }

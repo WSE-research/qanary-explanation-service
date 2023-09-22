@@ -15,5 +15,8 @@ public class ExplanationSparqlRepository extends AbstractRepository {
         objectMapper = new ObjectMapper();
         webClient = WebClient.create();
     }
+    public ExplanationSparqlRepository() throws MalformedURLException {
+        super(null);
+    }
 
 }

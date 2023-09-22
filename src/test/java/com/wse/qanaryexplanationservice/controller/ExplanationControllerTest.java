@@ -39,54 +39,39 @@ public class ExplanationControllerTest {
     String testRdfData;
     private ClassLoader classLoader = this.getClass().getClassLoader();
 
-
     @BeforeEach
     public void setup() throws IOException {
         File file = new File(Objects.requireNonNull(classLoader.getResource(testRdfDataPath)).getFile());
         testRdfData = new String(Files.readAllBytes(file.toPath()));
     }
 
-    @Nested
-    class QueryBuilderTests {
-
-        @Nested
-        class QaSystemExplanationTest {
-
-            private final String testReturn = "randomString";
-
-            @BeforeEach
-            void setup() throws Exception {
-                Mockito.when(explanationService.explainQaSystem(any(), any())).thenReturn(testReturn);
-            }
-
-            @Test
-            public void givenGraphURICallsSystemExplanation() throws Exception {
-
-                MvcResult mvcResult = mockMvc.perform(get("/explanations/{graphURI}", "wewqeewrwe"))
-                        .andReturn();
-
-                assertEquals(200, mvcResult.getResponse().getStatus());
-
-                // check if SystemExplanation method was called once
-                verify(explanationService, times(1)).explainQaSystem(any(),any());
-            }
-
-            @Test
-            public void notFoundWhenNoPathVariables() throws Exception {
-                mockMvc.perform(get("/explanations")).andExpect(status().isNotFound());
-            }
-
-        }
+    @Test
+    public void notFoundWhenNoPathVariables() throws Exception {
+        mockMvc.perform(get("/explanations")).andExpect(status().isNotFound());
     }
 
     @Test
     public void explanationsForComponentResultNotNull() throws Exception {
         when(explanationService.explainSpecificComponent(any(),any(),any())).thenReturn(testRdfData);
+
+        MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI/componentURI"))
+                        .andReturn();
+
+        assertEquals(200, mvcResult.getResponse().getStatus());
+        assertEquals(testRdfData, mvcResult.getResponse().getContentAsString());
+        verify(explanationService, times(1)).explainSpecificComponent(any(), any(), any());
     }
 
     @Test
     public void explanationsForSystemResultNotNull() throws Exception {
         when(explanationService.explainQaSystem(any(),any())).thenReturn(testRdfData);
+
+        MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI"))
+                .andReturn();
+
+        assertEquals(200, mvcResult.getResponse().getStatus());
+        assertEquals(testRdfData, mvcResult.getResponse().getContentAsString());
+        verify(explanationService, times(1)).explainQaSystem(any(),any());
     }
 
     @Test

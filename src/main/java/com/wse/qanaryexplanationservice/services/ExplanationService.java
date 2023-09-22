@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.repositories.AbstractRepository;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +46,11 @@ public class ExplanationService {
         put("text/turtle", "TURTLE");
     }};
 
-    // Holds request query for declared annotations types
+    protected void setRepository(ExplanationSparqlRepository explanationSparqlRepository) {
+        this.explanationSparqlRepository = explanationSparqlRepository;
+    }
+
+                               // Holds request query for declared annotations types
     private static final Map<String, String> annotationsTypeAndQuery = new HashMap<>() {{
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
@@ -292,22 +297,6 @@ public class ExplanationService {
     }
 
     /**
-     * Creates a comprehensive explanation in a given language
-     *
-     * @param types Inherits all annotation-types
-     * @param lang  Given language
-     * @return List with explanations for the given language. At the end it includes all explanations for every annotation type
-     */
-    public List<String> createComponentExplanation(String graphURI, String lang, List<String> types, String componentURI) throws IOException {
-        return createSpecificExplanations(
-                types.toArray(String[]::new),
-                graphURI,
-                lang,
-                componentURI
-        );
-    }
-
-    /**
      * Fetching all annotations a component has created.
      *
      * @return A list with all different annotation-types
@@ -469,7 +458,7 @@ public class ExplanationService {
      */
     public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException {
 
-        List<String> createdExplanations = createComponentExplanation(graphURI, lang, types, componentURI);
+        List<String> createdExplanations = createSpecificExplanations(types.toArray(String[]::new), graphURI, lang, componentURI);
 
         AtomicInteger i = new AtomicInteger();
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
