@@ -7,8 +7,8 @@ com/wse/qanaryexplanationservice/services/AnnotationsService.class
 com/wse/qanaryexplanationservice/controller/ExplanationController.class
 com/wse/qanaryexplanationservice/services/ParameterStringBuilder.class
 com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/CreatedAt.class
-com/wse/qanaryexplanationservice/repositories/ExplanationSparqlRepository.class
 com/wse/qanaryexplanationservice/controller/AnnotationController.class
+com/wse/qanaryexplanationservice/repositories/ExplanationSparqlRepository.class
 com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/CreatedBy.class
 com/wse/qanaryexplanationservice/services/ExplanationService$2.class
 com/wse/qanaryexplanationservice/pojos/ResultObjectDTOs/Type.class

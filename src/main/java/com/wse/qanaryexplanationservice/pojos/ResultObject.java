@@ -1,7 +1,9 @@
 package com.wse.qanaryexplanationservice.pojos;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.wse.qanaryexplanationservice.pojos.ResultObjectDTOs.*;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ResultObject {
 
     private AnnotationId annotationId;
@@ -9,6 +11,10 @@ public class ResultObject {
     private CreatedBy createdBy;
     private Body body;
     private Type type;
+
+    public ResultObject() {
+
+    }
 
     public Type getType() {
         return type;

@@ -3,9 +3,7 @@ com/wse/qanaryexplanationservice/controller/ControllerDataForTests.class
 com/wse/qanaryexplanationservice/controller/ExplanationControllerTest.class
 com/wse/qanaryexplanationservice/services/ExplanationServiceTest$ExplanationAsRdfTurtle.class
 com/wse/qanaryexplanationservice/services/ServiceDataForTests$3.class
-com/wse/qanaryexplanationservice/controller/ExplanationControllerTest$QueryBuilderTests$QaSystemExplanationTest.class
 com/wse/qanaryexplanationservice/services/ExplanationServiceTest$ComponentExplanationTests$1.class
-com/wse/qanaryexplanationservice/controller/ExplanationControllerTest$QueryBuilderTests.class
 com/wse/qanaryexplanationservice/services/GetAnnotationServiceTest.class
 com/wse/qanaryexplanationservice/QanaryExplanationServiceApplicationTests.class
 com/wse/qanaryexplanationservice/services/ServiceDataForTests$1.class
