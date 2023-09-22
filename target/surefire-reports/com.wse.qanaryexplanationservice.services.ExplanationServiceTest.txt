@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.wse.qanaryexplanationservice.services.ExplanationServiceTest
--------------------------------------------------------------------------------
-Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.958 s - in com.wse.qanaryexplanationservice.services.ExplanationServiceTest

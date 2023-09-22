@@ -1,1 +1,0 @@
-am ${createdAt} die Frage mit der ID '${question}' in "${translation}"
