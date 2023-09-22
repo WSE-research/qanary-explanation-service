@@ -37,6 +37,8 @@ The supported ones are the following:
 . AnnotationOfQuestionTranslation
 . AnnotationOfQuestionLanguage
 
+You can check the output annotation type for existing components in the component's README at https://github.com/WDAqua/Qanary-question-answering-component .
+
 === Adding new types
 
 While the current version covers all - currently - existing Annotation types for the Qanary components you might want to add a new type and furthermore a new explanation as well. 
@@ -55,9 +57,9 @@ To achieve this you might follow this straight-forward manual:
 
 === Editing existing types
 
+. Simply edit the templates for the explanations inside the `explanations/{desired_type}/..` folder
+. take care for the defined test which have to be adjusted - `src/test/resources/expected_list_explanations`
 
-
-You can check the output annotation type for existing components in the component's README at https://github.com/WDAqua/Qanary-question-answering-component .
 
 == Build and Run
 
