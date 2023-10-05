@@ -1,8 +1,59 @@
 package com.wse.qanaryexplanationservice.repositories;
 
-public class AutomatedTestingRepository {
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wse.qanaryexplanationservice.pojos.QanaryRequestObject;
+import com.wse.qanaryexplanationservice.services.ParameterStringBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Repository;
 
-    public void getDataset() {
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
+@Repository
+public class AutomatedTestingRepository extends AbstractRepository{
+
+    private final URL QANARY_ENDPOINT;
+    private Logger logger = LoggerFactory.getLogger(AutomatedTestingRepository.class);
+
+    public AutomatedTestingRepository(Environment environment) throws MalformedURLException {
+        super(environment);
+        QANARY_ENDPOINT = new URL("http://195.90.200.248:8090/startquestionansweringwithtextquestion?question=What%20is%20the%20capital%20of%20Netherlands%3F&componentlist%5B%5D=NED-DBpediaSpotlight");
+        this.objectMapper = new ObjectMapper();
+    }
+
+    public JsonNode executeQanaryPipeline(QanaryRequestObject qanaryRequestObject) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) QANARY_ENDPOINT.openConnection();
+
+        connection.setRequestMethod("POST");
+
+        /* TODO: Figure out why compoentlist isn't passed correctly (Parameter String Builder?)
+        Map<String,String> parameters = new HashMap<>();
+        parameters.put("question",qanaryRequestObject.getQuestion());
+      //  parameters.put("additionaltriples",qanaryRequestObject.getAdditionaltriples());
+      //  parameters.put("componentfilterinput",qanaryRequestObject.getComponentfilterinput());
+        parameters.put("componentlist",qanaryRequestObject.getComponentlist().toString());
+
+        connection.setDoOutput(true);
+
+        DataOutputStream out = new DataOutputStream(connection.getOutputStream());
+        out.writeBytes(ParameterStringBuilder.getParamsString(parameters));
+        out.flush();
+        logger.info(out.toString());
+        out.close();
+
+         */
+        InputStream responseStream = connection.getInputStream();
+
+        return objectMapper.readValue(responseStream, JsonNode.class);
 
     }
 }
