@@ -31,7 +31,7 @@ public class AutomatedTestController {
                 null,
                 "NED-DBpediaSpotlight"
         );
-        return new ResponseEntity<>(automatedTestingService.fetchTriplesTest(), HttpStatus.OK);
+        return new ResponseEntity<>(automatedTestingService.createDataset(), HttpStatus.OK);
     }
 
     @GetMapping("/dataset")

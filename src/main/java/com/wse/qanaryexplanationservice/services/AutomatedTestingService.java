@@ -12,7 +12,6 @@ import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
-import org.apache.jena.query.ResultSetFormatter;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -28,21 +26,20 @@ import java.util.Random;
 @Service
 public class AutomatedTestingService {
 
-    private Map<String, String[]> typeAndComponents = new HashMap<>() {{
-       put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED"});
-       put(AnnotationType.annotationofspotinstance.name(), new String[]{});
-       put(AnnotationType.annotationofanswerjson.name(), new String[]{});
-       put(AnnotationType.annotationofanswersparql.name(), new String[]{});
-       put(AnnotationType.annotationofquestionlanguage.name(), new String[]{});
-       put(AnnotationType.annotationofquestiontranslation.name(), new String[]{});
-       put(AnnotationType.annotationofrelation.name(), new String[]{});
-    }};
-
-    @Autowired
-    private AutomatedTestingRepository automatedTestingRepository;
+    private final static String DATASET_QUERY = "/queries/evaluation_dataset_query.rq";
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Random random = new Random();
-    private final static String DATASET_QUERY = "/queries/evaluation_dataset_query.rq";
+    private Map<String, String[]> typeAndComponents = new HashMap<>() {{
+        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED"});
+        put(AnnotationType.annotationofspotinstance.name(), new String[]{});
+        put(AnnotationType.annotationofanswerjson.name(), new String[]{});
+        put(AnnotationType.annotationofanswersparql.name(), new String[]{});
+        put(AnnotationType.annotationofquestionlanguage.name(), new String[]{});
+        put(AnnotationType.annotationofquestiontranslation.name(), new String[]{});
+        put(AnnotationType.annotationofrelation.name(), new String[]{});
+    }};
+    @Autowired
+    private AutomatedTestingRepository automatedTestingRepository;
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
 
     // stores the correct template for different x-shot approaches
@@ -67,26 +64,41 @@ public class AutomatedTestingService {
 
         /*
          * REQUEST BODY CONTENT:
-            * annotation type (to be tested)
-            * amount of examples (=x-shot-approach)
-            * (type of examples, not now)
-        */
+         * annotation type (to be tested)
+         * amount of examples (=x-shot-approach)
+         * (type of examples, not now)
+         */
 
         // select correct template
         String gptTemplate = exampleCountAndTemplate.get(bodyAsJsonNode.get("exampleAmount"));
-        
+
     }
 
     /**
      * Selects a random question as well as a random component for a given annotation-type
      * All in all that will result in a triple containing the type,question,component
      */
-    public void selectTestingTriple(String annotationType) { // TODO: maybe parallelization possible? Threads?
+    public void selectTestingTriple(String annotationType) throws IOException { // TODO: maybe parallelization possible? Threads?
 
         // TODO: save the index or the concrete component? For triples a number might be better
         String[] componentsList = this.typeAndComponents.get(annotationType);
         Integer selectedComponentAsInt = random.nextInt(componentsList.length);
         String selectedComponent = componentsList[random.nextInt(componentsList.length)];
+
+        // TODO: selectQuestion
+        // TODO: save the concrete question instead of the explicit question ID
+        String question = getRandomQuestion();
+
+        // execute Qanary pipeline
+        String graphURI = executeQanaryPipeline(question, selectedComponent);
+
+        String dataset = createDataset(selectedComponent, question);
+
+        String explanation = getExplanation();
+
+        TestData testData = new TestData(
+                AnnotationType.valueOf(annotationType), selectedComponent, question, "", dataset, graphURI
+        );
 
         // TODO: see todo below, additionally random picking
         // Integer selectedQuestionAsInt = this.qadoDatasetRepository ...
@@ -96,12 +108,42 @@ public class AutomatedTestingService {
     }
 
     /**
+     * Should return the english explanation
+     *
+     * @return
+     */
+    public String getExplanation() {
+
+        // TODO: Use explanationService and just grab the english explanation
+
+        return null;
+    }
+
+    /**
+     * Should return a raw question from the QADO dataset
+     *
+     * @return
+     */
+    public String getRandomQuestion() {
+        return null;
+    }
+
+    /**
+     * Should return a graphURI
+     *
+     * @return
+     */
+    public String executeQanaryPipeline(String question, String selectedComponent) {
+        return null;
+    }
+
+    /**
      * TODO: GER -> EN
      * TODO: Decide if Int or String is provided as componentURI
      * Führt die Qanary pipeline aus und fragt mit der graphID den SPARQL Endpunkt ab um das Datenset zu erhalten
      * Weiterhin wird das datenset angepasst (bspw. das Hinzufügen der Punkte am Ende)
      */
-    public void createDataset(String componentURI, String question) throws IOException {
+    public String createDataset(String componentURI, String question) throws IOException {
 
         QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, componentURI);
         // executes a qanary pipeline and take the graphID from it + questionURI since the question can be fetched via <questionURI>/raw
@@ -115,44 +157,25 @@ public class AutomatedTestingService {
 
         // TODO: triples must follow the pattern "<..> ... <...> ."
         // TODO: with prefixes included
-        StringBuilder result = new StringBuilder();
-        while(triples.hasNext()) {
-            QuerySolution querySolution = triples.nextSolution();
-            // Append them here
+        StringBuilder dataSet = new StringBuilder();
+        while (triples.hasNext()) {
+            QuerySolution querySolution = triples.next();
+            dataSet.append(querySolution.getResource("s")).append(" ").append(querySolution.getResource("p")).append(" ").append(querySolution.get("o")).append(" .\n");
         }
+        // TODO: Is there a solution for prefix resolving??? Otherwise map and replace...
 
+        return dataSet.toString();
 
-    }
-
-    public String fetchTriplesTest() throws IOException {
-
-        QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
-        bindingsForQuery.add("graphURI",ResourceFactory.createResource("urn:graph:4db73854-6919-4e15-bcc7-5b4a04c3363f"));
-        bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:NED-DBpediaSpotlight"));
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
-
-        ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query); // TODO: Add prefixes here;
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        while(resultSet.hasNext()) {
-            QuerySolution querySolution = resultSet.next();
-            stringBuilder.append(querySolution.getResource("s")).append(" ").append(querySolution.getResource("p")).append(" ").append(querySolution.get("o")).append(" .\n");
-            logger.info(stringBuilder.toString());
-        }
-
-        return stringBuilder.toString();
     }
 
     public ResultSet fetchTriples(String graphURI, String componentURI) throws IOException {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
-        bindingsForQuery.add("graphURI",ResourceFactory.createResource(graphURI));
+        bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
         bindingsForQuery.add("componentURI", ResourceFactory.createResource(componentURI));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
 
         return automatedTestingRepository.executeSparqlQueryWithResultSet(query);
     }
-
 
 
 }

@@ -72,6 +72,7 @@ public class ExplanationService {
     private ExplanationSparqlRepository explanationSparqlRepository;
     @Autowired
     private AnnotationsService annotationsService;
+
     public ExplanationService() {
     }
 
