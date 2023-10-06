@@ -29,7 +29,7 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
     protected ObjectMapper objectMapper;
     protected WebClient webClient;
     protected Environment environment;
-    private RDFConnection rdfConnection;
+    protected RDFConnection rdfConnection;
 
     @Autowired
     protected AbstractRepository(Environment environment) throws MalformedURLException {

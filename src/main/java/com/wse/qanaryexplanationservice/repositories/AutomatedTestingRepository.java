@@ -2,8 +2,13 @@ package com.wse.qanaryexplanationservice.repositories;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTestRequestBody;
 import com.wse.qanaryexplanationservice.pojos.QanaryRequestObject;
+import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.services.ParameterStringBuilder;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdfconnection.RDFConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -55,4 +60,12 @@ public class AutomatedTestingRepository extends AbstractRepository {
         return objectMapper.readValue(responseStream, JsonNode.class);
 
     }
+
+    public ResultSet takeRandomQuestion(String query) {
+        RDFConnection rdfConnection1 = RDFConnection.connect("http://localhost:8095/sparql");
+        QueryExecution queryExecution = rdfConnection1.query(query);
+        return queryExecution.execSelect();
+
+    }
+
 }

@@ -457,6 +457,7 @@ public class ExplanationService {
         List<String> createdExplanations = createSpecificExplanations(types.toArray(String[]::new), graphURI, lang, componentURI);
 
         AtomicInteger i = new AtomicInteger();
+        // TODO: Handle 0 annotations !!
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
         String result = getResult(componentURI, lang, explanations, createdExplanations.get(0));
         stringResultSetMap.clear();

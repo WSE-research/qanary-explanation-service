@@ -9,6 +9,8 @@ public abstract class AbstractData {
     private String dataSet;
     private String graphID;
 
+    public AbstractData() {}
+
     public AbstractData(
             AnnotationType annotationType,
             String usedComponent,

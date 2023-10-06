@@ -4,8 +4,8 @@ import java.util.ArrayList;
 
 public class AutomatedTest {
 
-    private TestData testData;
-    private ArrayList<ExampleData> exampleData;
+    private TestDataObject testData;
+    private ArrayList<TestDataObject> exampleData;
     private String gptExplanation;
 
 
@@ -13,19 +13,36 @@ public class AutomatedTest {
         this.exampleData = new ArrayList<>();
     }
 
-    public ArrayList<ExampleData> getExampleData() {
+    public ArrayList<TestDataObject> getExampleData() {
         return exampleData;
     }
 
-    public void setExampleData(ExampleData exampleData) {
+    public void setExampleData(TestDataObject exampleData) {
         this.exampleData.add(exampleData);
     }
 
-    public TestData getTestData() {
+    public TestDataObject getTestData() {
         return testData;
     }
 
-    public void setTestData(TestData testData) {
+    public void setTestData(TestDataObject testData) {
         this.testData = testData;
+    }
+
+    public String getGptExplanation() {
+        return gptExplanation;
+    }
+
+    public void setGptExplanation(String gptExplanation) {
+        this.gptExplanation = gptExplanation;
+    }
+
+    @Override
+    public String toString() {
+        return "AutomatedTest{" +
+                "testData=" + testData +
+                ", exampleData=" + exampleData +
+                ", gptExplanation='" + gptExplanation + '\'' +
+                '}';
     }
 }

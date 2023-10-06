@@ -7,4 +7,7 @@ public class TestData extends AbstractData {
     }
 
 
+    public TestData() {
+        super();
+    }
 }

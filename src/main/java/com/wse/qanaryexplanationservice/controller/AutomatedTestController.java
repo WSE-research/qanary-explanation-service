@@ -1,6 +1,6 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.pojos.QanaryRequestObject;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTestRequestBody;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AnnotationType;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
 import com.wse.qanaryexplanationservice.services.AutomatedTestingService;
@@ -24,14 +24,16 @@ public class AutomatedTestController {
             "application/json"
     })
     public ResponseEntity<?> explanationsTests(@RequestBody String requestBody) throws Exception {
-        QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(
-                "What is the capital of Netherlands?",
-                null,
-                null,
-                "NED-DBpediaSpotlight"
-        );
-        return new ResponseEntity<>(automatedTestingService.selectTestingTriple(AnnotationType.annotationofinstance.name()), HttpStatus.OK);
+        return new ResponseEntity<>(automatedTestingService.selectTestingTriple(AnnotationType.annotationofinstance), HttpStatus.OK);
     }
+
+    @PostMapping(value = "/test", consumes = {
+            "application/json"
+    })
+    public ResponseEntity<?> automatedExplanationTest(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
+        return new ResponseEntity<>(automatedTestingService.setUpTest(requestBody), HttpStatus.OK);
+    }
+
 
     @GetMapping("/dataset")
     public ResponseEntity<?> getDataset() {
