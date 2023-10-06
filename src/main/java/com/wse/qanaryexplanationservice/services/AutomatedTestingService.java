@@ -12,7 +12,10 @@ import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.rdf.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +30,7 @@ import java.util.Random;
 public class AutomatedTestingService {
 
     private final static String DATASET_QUERY = "/queries/evaluation_dataset_query.rq";
+    private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Random random = new Random();
     private Map<String, String[]> typeAndComponents = new HashMap<>() {{
@@ -41,7 +45,8 @@ public class AutomatedTestingService {
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
-
+    @Autowired
+    private ExplanationService explanationService;
     // stores the correct template for different x-shot approaches
     private Map<Integer, String> exampleCountAndTemplate = new HashMap<>() {{
         put(1, "/testtemplates/oneshot");
@@ -78,7 +83,7 @@ public class AutomatedTestingService {
      * Selects a random question as well as a random component for a given annotation-type
      * All in all that will result in a triple containing the type,question,component
      */
-    public void selectTestingTriple(String annotationType) throws IOException { // TODO: maybe parallelization possible? Threads?
+    public String selectTestingTriple(String annotationType) throws Exception { // TODO: maybe parallelization possible? Threads?
 
         // TODO: save the index or the concrete component? For triples a number might be better
         String[] componentsList = this.typeAndComponents.get(annotationType);
@@ -94,29 +99,34 @@ public class AutomatedTestingService {
 
         String dataset = createDataset(selectedComponent, question);
 
-        String explanation = getExplanation();
+        String explanation = getExplanation(graphURI, selectedComponent);
 
         TestData testData = new TestData(
-                AnnotationType.valueOf(annotationType), selectedComponent, question, "", dataset, graphURI
+                AnnotationType.valueOf(annotationType), selectedComponent, question, explanation, dataset, graphURI
         );
 
+        logger.info(testData.toString());
         // TODO: see todo below, additionally random picking
         // Integer selectedQuestionAsInt = this.qadoDatasetRepository ...
         // String selectedQuestion = this.qadoDatasetRepository.getDataset(); // TODO: How to work with that data since it's a huge dataset for parsing w/ JsonNode(s)
 
-        // TODO: return ...?
+        return testData.toString();
     }
 
     /**
-     * Should return the english explanation
+     * Creates the explanation and selects the english'
      *
      * @return
      */
-    public String getExplanation() {
+    public String getExplanation(String graphURI, String componentURI) throws Exception {
 
-        // TODO: Use explanationService and just grab the english explanation
+        Model explanationModel = explanationService.createModel(graphURI, "urn:qanary:" + componentURI);
+        explanationModel.setNsPrefix("explanations", EXPLANATION_NAMESPACE);
+        Property hasExplanationForCreatedDataProperty = explanationModel.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
+        Statement statement = explanationModel.getRequiredProperty(ResourceFactory.createResource("urn:qanary:" + componentURI), ResourceFactory.createProperty("explanations:hasExplanationForCreatedData"), "en");
+        logger.info("Statement: {}", statement.getString());
 
-        return null;
+        return statement.getString();
     }
 
     /**
@@ -125,16 +135,20 @@ public class AutomatedTestingService {
      * @return
      */
     public String getRandomQuestion() {
-        return null;
+        return "What is the real name of Batman?";
     }
 
     /**
      * Should return a graphURI
+     * TODO: Solve problem with String[] as param
      *
      * @return
      */
-    public String executeQanaryPipeline(String question, String selectedComponent) {
-        return null;
+    public String executeQanaryPipeline(String question, String selectedComponent) throws IOException {
+        logger.info("Component QPipeline: {}", selectedComponent);
+        QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, selectedComponent);
+        // executes a qanary pipeline and take the graphID from it + questionURI since the question can be fetched via <questionURI>/raw
+        return automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject).get("outGraph").asText();
     }
 
     /**
@@ -149,11 +163,7 @@ public class AutomatedTestingService {
         // executes a qanary pipeline and take the graphID from it + questionURI since the question can be fetched via <questionURI>/raw
         String graphURI = automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject).get("outGraph").asText();
 
-        // fetch the triples from the SPARQL-endpoint and adjust them
-
-        //TODO: only for now:
-        String componentUri = "NED-DBpediaSpotlight";
-        ResultSet triples = fetchTriples(graphURI, componentUri);
+        ResultSet triples = fetchTriples(graphURI, componentURI);
 
         // TODO: triples must follow the pattern "<..> ... <...> ."
         // TODO: with prefixes included
@@ -171,7 +181,7 @@ public class AutomatedTestingService {
     public ResultSet fetchTriples(String graphURI, String componentURI) throws IOException {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
         bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
-        bindingsForQuery.add("componentURI", ResourceFactory.createResource(componentURI));
+        bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:" + componentURI));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
 
         return automatedTestingRepository.executeSparqlQueryWithResultSet(query);

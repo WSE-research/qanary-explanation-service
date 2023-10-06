@@ -72,5 +72,17 @@ public abstract class AbstractData {
     public void setQuestion(String question) {
         this.question = question;
     }
+
+    @Override
+    public String toString() {
+        return "AbstractData{" +
+                "annotationType=" + annotationType +
+                ", usedComponent='" + usedComponent + '\'' +
+                ", question='" + question + '\'' +
+                ", explanation='" + explanation + '\'' +
+                ", dataSet='" + dataSet + '\'' +
+                ", graphID='" + graphID + '\'' +
+                '}';
+    }
 }
 

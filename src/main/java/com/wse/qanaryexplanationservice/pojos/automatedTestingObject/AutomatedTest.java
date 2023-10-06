@@ -11,11 +11,14 @@ public class AutomatedTest {
 
     public AutomatedTest() {
         this.exampleData = new ArrayList<>();
-        this.testData = new TestData();
     }
 
     public ArrayList<ExampleData> getExampleData() {
         return exampleData;
+    }
+
+    public void setExampleData(ExampleData exampleData) {
+        this.exampleData.add(exampleData);
     }
 
     public TestData getTestData() {
@@ -24,9 +27,5 @@ public class AutomatedTest {
 
     public void setTestData(TestData testData) {
         this.testData = testData;
-    }
-
-    public void setExampleData(ExampleData exampleData) {
-        this.exampleData.add(exampleData);
     }
 }

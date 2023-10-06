@@ -19,14 +19,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Repository
-public class AutomatedTestingRepository extends AbstractRepository{
+public class AutomatedTestingRepository extends AbstractRepository {
 
     private final URL QANARY_ENDPOINT;
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingRepository.class);
 
     public AutomatedTestingRepository(Environment environment) throws MalformedURLException {
         super(environment);
-        QANARY_ENDPOINT = new URL("http://195.90.200.248:8090/startquestionansweringwithtextquestion?question=What%20is%20the%20capital%20of%20Netherlands%3F&componentlist%5B%5D=NED-DBpediaSpotlight");
+        QANARY_ENDPOINT = new URL("http://195.90.200.248:8090/startquestionansweringwithtextquestion");
         this.objectMapper = new ObjectMapper();
     }
 
@@ -35,12 +35,11 @@ public class AutomatedTestingRepository extends AbstractRepository{
 
         connection.setRequestMethod("POST");
 
-        /* TODO: Figure out why compoentlist isn't passed correctly (Parameter String Builder?)
-        Map<String,String> parameters = new HashMap<>();
-        parameters.put("question",qanaryRequestObject.getQuestion());
-      //  parameters.put("additionaltriples",qanaryRequestObject.getAdditionaltriples());
-      //  parameters.put("componentfilterinput",qanaryRequestObject.getComponentfilterinput());
-        parameters.put("componentlist",qanaryRequestObject.getComponentlist().toString());
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("question", qanaryRequestObject.getQuestion());
+        //  parameters.put("additionaltriples",qanaryRequestObject.getAdditionaltriples());
+        //  parameters.put("componentfilterinput",qanaryRequestObject.getComponentfilterinput());
+        parameters.put("componentlist[]", qanaryRequestObject.getComponentlist()[0]);
 
         connection.setDoOutput(true);
 
@@ -50,7 +49,7 @@ public class AutomatedTestingRepository extends AbstractRepository{
         logger.info(out.toString());
         out.close();
 
-         */
+
         InputStream responseStream = connection.getInputStream();
 
         return objectMapper.readValue(responseStream, JsonNode.class);
