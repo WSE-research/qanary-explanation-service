@@ -2,9 +2,7 @@ package com.wse.qanaryexplanationservice.repositories;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTestRequestBody;
 import com.wse.qanaryexplanationservice.pojos.QanaryRequestObject;
-import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.services.ParameterStringBuilder;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.ResultSet;
@@ -66,6 +64,12 @@ public class AutomatedTestingRepository extends AbstractRepository {
         QueryExecution queryExecution = rdfConnection1.query(query);
         return queryExecution.execSelect();
 
+    }
+
+    // Variable as object
+    public String sendGptPrompt(String body) {
+        // TODO: webclient post
+        return "";
     }
 
 }

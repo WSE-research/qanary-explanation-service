@@ -93,7 +93,7 @@ public class AutomatedTestingService {
 
         String graphURI = executeQanaryPipeline(question, selectedComponent);
 
-        String dataset = createDataset(selectedComponent, question);
+        String dataset = createDataset(selectedComponent, question, graphURI);
 
         String explanation = getExplanation(graphURI, selectedComponent);
 
@@ -165,11 +165,7 @@ public class AutomatedTestingService {
      * Führt die Qanary pipeline aus und fragt mit der graphID den SPARQL Endpunkt ab um das Datenset zu erhalten
      * Weiterhin wird das datenset angepasst (bspw. das Hinzufügen der Punkte am Ende)
      */
-    public String createDataset(String componentURI, String question) throws IOException {
-
-        QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, componentURI);
-        // executes a qanary pipeline and take the graphID from it + questionURI since the question can be fetched via <questionURI>/raw
-        String graphURI = automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject).get("outGraph").asText();
+    public String createDataset(String componentURI, String question, String graphURI) throws IOException {
 
         ResultSet triples = fetchTriples(graphURI, componentURI);
 
@@ -208,6 +204,23 @@ public class AutomatedTestingService {
         }
 
         return automatedTest;
+    }
+
+    public String replacePromptPlaceholder(String emptyPrompt) {
+        return "";
+    }
+
+    public String sendPrompt(String emptyPrompt) {
+
+        String prompt = replacePromptPlaceholder(emptyPrompt);
+        String explanation = "";
+
+        // TODO: Send prompt and return explanation
+
+
+        // Explanation
+        return null;
+
     }
 
 
