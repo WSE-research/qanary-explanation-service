@@ -4,9 +4,14 @@ public class AutomatedTestRequestBody {
 
     private String testingType;
     private int examples;
+    private int runs;
 
     public AutomatedTestRequestBody() {
 
+    }
+
+    public int getRuns() {
+        return runs;
     }
 
     public String getTestingType() {
@@ -22,6 +27,7 @@ public class AutomatedTestRequestBody {
         return "AutomatedTestRequestBody{" +
                 "testingType='" + testingType + '\'' +
                 ", examples=" + examples +
+                ", runs=" + runs +
                 '}';
     }
 }

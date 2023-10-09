@@ -118,7 +118,7 @@ public class ExplanationService {
      *
      * @return Model including
      */
-    public Model createModel(String graphUri, String componentUri) throws Exception {
+    public Model createModel(String graphUri, String componentUri) throws IOException {
 
         List<String> types = new ArrayList<>();
         if (stringResultSetMap.isEmpty())
@@ -452,14 +452,14 @@ public class ExplanationService {
      * @param lang Currently supported en_list_item and de_list_item
      * @return Complete explanation for the componentURI including all information to each annotation
      */
-    public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException {
+    public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException, IndexOutOfBoundsException {
 
         List<String> createdExplanations = createSpecificExplanations(types.toArray(String[]::new), graphURI, lang, componentURI);
-
+        String result = "";
         AtomicInteger i = new AtomicInteger();
         // TODO: Handle 0 annotations !!
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
-        String result = getResult(componentURI, lang, explanations, createdExplanations.get(0));
+        result = getResult(componentURI, lang, explanations, createdExplanations.get(0));
         stringResultSetMap.clear();
         return result;
     }

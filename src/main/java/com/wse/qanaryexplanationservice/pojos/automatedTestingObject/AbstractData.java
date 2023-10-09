@@ -8,8 +8,10 @@ public abstract class AbstractData {
     private String explanation;
     private String dataSet;
     private String graphID;
+    private String questionID;
 
-    public AbstractData() {}
+    public AbstractData() {
+    }
 
     public AbstractData(
             AnnotationType annotationType,
@@ -17,7 +19,8 @@ public abstract class AbstractData {
             String question,
             String explanation,
             String dataSet,
-            String graphID
+            String graphID,
+            String questionID
     ) {
         this.annotationType = annotationType;
         this.usedComponent = usedComponent;
@@ -25,6 +28,15 @@ public abstract class AbstractData {
         this.dataSet = dataSet;
         this.question = question;
         this.graphID = graphID;
+        this.questionID = questionID;
+    }
+
+    public String getQuestionID() {
+        return questionID;
+    }
+
+    public void setQuestionID(String questionID) {
+        this.questionID = questionID;
     }
 
     public String getDataSet() {

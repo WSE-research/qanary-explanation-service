@@ -7,10 +7,18 @@ public class AutomatedTest {
     private TestDataObject testData;
     private ArrayList<TestDataObject> exampleData;
     private String gptExplanation;
-
+    private String prompt;
 
     public AutomatedTest() {
         this.exampleData = new ArrayList<>();
+    }
+
+    public String getPrompt() {
+        return prompt;
+    }
+
+    public void setPrompt(String prompt) {
+        this.prompt = prompt;
     }
 
     public ArrayList<TestDataObject> getExampleData() {
@@ -43,6 +51,7 @@ public class AutomatedTest {
                 "testData=" + testData +
                 ", exampleData=" + exampleData +
                 ", gptExplanation='" + gptExplanation + '\'' +
+                ", prompt='" + prompt + '\'' +
                 '}';
     }
 }
