@@ -39,6 +39,13 @@ public class AutomatedTestController {
             return new ResponseEntity<>(automatedTest, HttpStatus.OK);
     }
 
+    @PostMapping(value = "/explanationswithoutgptexplanation", consumes = "application/json")
+    public ResponseEntity<?> getExplanationsWithoutGptExplanation(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
+        JSONObject explanations = automatedTestingService.testWithoutGptExplanation(requestBody);
+        
+        return new ResponseEntity<>(explanations, HttpStatus.OK);
+    }
+
 
     @GetMapping("/dataset")
     public ResponseEntity<?> getDataset() {

@@ -92,7 +92,7 @@ public class AutomatedTestingService {
      * Selects a random question as well as a random component for a given annotation-type
      * All in all that will result in a triple containing the type,question,component
      */
-    public TestDataObject selectTestingTriple(AnnotationType annotationType) throws IndexOutOfBoundsException, IOException { // TODO: maybe parallelization possible? Threads?
+    public TestDataObject selectTestingTriple(AnnotationType annotationType) throws Exception { // TODO: maybe parallelization possible? Threads?
 
         TestDataObject data;
         AnnotationType annotationType_ = annotationType;
@@ -188,7 +188,7 @@ public class AutomatedTestingService {
      * Führt die Qanary pipeline aus und fragt mit der graphID den SPARQL Endpunkt ab um das Datenset zu erhalten
      * Weiterhin wird das datenset angepasst (bspw. das Hinzufügen der Punkte am Ende)
      */
-    public String createDataset(String componentURI, String question, String graphURI) throws IOException {
+    public String createDataset(String componentURI, String question, String graphURI) throws Exception {
 
         ResultSet triples = fetchTriples(graphURI, componentURI);
 
@@ -214,13 +214,16 @@ public class AutomatedTestingService {
 
     }
 
-    public ResultSet fetchTriples(String graphURI, String componentURI) throws IOException {
+    public ResultSet fetchTriples(String graphURI, String componentURI) throws Exception {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
         bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
         bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:" + componentURI));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
 
-        return automatedTestingRepository.executeSparqlQueryWithResultSet(query);
+        ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
+        if (!resultSet.hasNext())
+            throw new Exception("ResultSet is null");
+        return resultSet;
     }
 
     //
@@ -235,7 +238,8 @@ public class AutomatedTestingService {
             for (int i = 0; i < requestBody.getExamples(); i++) {
                 automatedTest.setExampleData(selectTestingTriple(null)); // null since type is not declared
             }
-        } catch (IndexOutOfBoundsException e) {
+        } catch (Exception e) {
+            logger.error("{}", e.getMessage());
             return null;
         }
         try {
@@ -300,6 +304,29 @@ public class AutomatedTestingService {
                     logger.error("Server side error, token max reached.");
                     jsonObject.put("explanations", jsonArray);
                     writeObjectToFile(jsonObject);
+                }
+            }
+        }
+
+        jsonObject.put("explanations", jsonArray);
+        writeObjectToFile(jsonObject);
+
+        return jsonObject;
+    }
+
+    public JSONObject testWithoutGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
+        int runs = requestBody.getRuns();
+        JSONArray jsonArray = new JSONArray();
+        JSONObject jsonObject = new JSONObject();
+
+        for (int i = 0; i < runs; i++) {
+            AutomatedTest automatedTestObject = setUpTest(requestBody);
+            if (automatedTestObject != null) {
+                // send prompt to openai-chatgpt
+                try {
+                    jsonArray.put(new JSONObject(automatedTestObject));
+                } catch (Exception e) {
+                    logger.error("Error while processing gpt explanation, skipped.");
                 }
             }
         }
