@@ -30,9 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @Service
 public class AutomatedTestingService {
@@ -57,12 +55,31 @@ public class AutomatedTestingService {
     private Map<String, String[]> typeAndComponents = new HashMap<>() {{
         put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED"});
         //     put(AnnotationType.annotationofspotinstance.name(), new String[]{});
-        //     put(AnnotationType.annotationofanswerjson.name(), new String[]{});
+        put(AnnotationType.annotationofanswerjson.name(), new String[]{"urn:qanary:SparqlExecuter"});
         //     put(AnnotationType.annotationofanswersparql.name(), new String[]{});
         // put(AnnotationType.annotationofquestionlanguage.name(), new String[]{});
         //put(AnnotationType.annotationofquestiontranslation.name(), new String[]{});
         //put(AnnotationType.annotationofrelation.name(), new String[]{});
     }};
+
+    // Dependency map for annotation types
+    private Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
+        put(AnnotationType.annotationofinstance, null);
+        put(AnnotationType.annotationofrelation, null);
+        put(AnnotationType.annotationofspotinstance, null);
+        put(AnnotationType.annotationofquestiontranslation, null);
+        put(AnnotationType.annotationofquestionlanguage, null);
+        put(AnnotationType.annotationofclass, new AnnotationType[]{AnnotationType.annotationofquestionlanguage});
+        put(AnnotationType.annotationofanswersparql, new AnnotationType[]{
+                AnnotationType.annotationofclass,
+                AnnotationType.annotationofinstance,
+                AnnotationType.annotationofrelation,
+                AnnotationType.annotationofspotinstance,
+                AnnotationType.annotationofquestiontranslation
+        });
+        put(AnnotationType.annotationofanswerjson, new AnnotationType[]{AnnotationType.annotationofanswersparql});
+    }};
+
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
@@ -97,17 +114,13 @@ public class AutomatedTestingService {
         TestDataObject data;
         AnnotationType annotationType_ = annotationType;
 
-        if (annotationType == null)
+        if (annotationType_ == null)
             annotationType_ = selectRandomAnnotationType();
 
         // TODO: save the index or the concrete component? For triples to store (persistent) a number might be better
-        String[] componentsList;
-        if (annotationType != null)
-            componentsList = this.typeAndComponents.get(annotationType.name());
-        else
-            componentsList = this.typeAndComponents.get(annotationType_.name());
+        String[] componentsList = this.typeAndComponents.get(annotationType_.name()); // TODO: the ordinal can be saved as well, might be better
         Integer selectedComponentAsInt = random.nextInt(componentsList.length);
-        String selectedComponent = componentsList[random.nextInt(componentsList.length)];
+        String selectedComponent = componentsList[selectedComponentAsInt]; //TODO: selectedComponentList for component dependency tree, see executeQanaryPipeline method
 
         Integer random = this.random.nextInt(394); // Number of question in dataset-1 // TODO: shift const value
         String question = getRandomQuestion(random);
@@ -135,6 +148,33 @@ public class AutomatedTestingService {
         // String selectedQuestion = this.qadoDatasetRepository.getDataset();   // TODO: How to work with that data since it's a huge dataset for parsing w/ JsonNode(s)
         // TODO: Caching? Maybe too large when it comes to thousands of datasets?
         return data;
+    }
+
+    public AnnotationType[] getDependencies(AnnotationType annotationType) {
+
+        List<AnnotationType> list = Arrays.asList(dependencyMapForAnnotationTypes.get(annotationType));
+        HashSet<AnnotationType> hashSet = new HashSet<>(list);
+
+        for (AnnotationType annType : hashSet
+        ) {
+            hashSet.addAll(resolveRecursiveDependencies(dependencyMapForAnnotationTypes.get(annType)));
+        }
+
+        return null;
+    }
+
+    public List<AnnotationType> resolveRecursiveDependencies(AnnotationType[] list) {
+
+        List<AnnotationType> list_ = Arrays.asList(list);
+
+        for (AnnotationType annType : list
+        ) {
+            if (dependencyMapForAnnotationTypes.get(annType) != null) {
+                list_.addAll(resolveRecursiveDependencies(dependencyMapForAnnotationTypes.get(annType)));
+            }
+        }
+
+        return list_;
     }
 
     /**
@@ -175,7 +215,7 @@ public class AutomatedTestingService {
      *
      * @return
      */
-    public QanaryResponseObject executeQanaryPipeline(String question, String selectedComponent) throws IOException {
+    public QanaryResponseObject executeQanaryPipeline(String question, String selectedComponent) throws IOException { // TODO: Respect component-dependency tree !!!
         logger.info("Component QPipeline: {}", selectedComponent);
         QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, selectedComponent);
         // executes a qanary pipeline and take the graphID from it + questionURI since the question can be fetched via <questionURI>/raw

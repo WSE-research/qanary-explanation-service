@@ -6,6 +6,7 @@ public enum AnnotationType {
     annotationofrelation,
     annotationofquestiontranslation,
     annotationofquestionlanguage,
+    annotationofclass,
     annotationofanswersparql,
     annotationofanswerjson
 }
