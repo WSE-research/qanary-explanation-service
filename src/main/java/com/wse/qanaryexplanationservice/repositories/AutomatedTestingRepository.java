@@ -7,6 +7,7 @@ import com.wse.qanaryexplanationservice.services.ParameterStringBuilder;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdfconnection.RDFConnection;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,10 @@ public class AutomatedTestingRepository extends AbstractRepository {
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("question", qanaryRequestObject.getQuestion());
-        parameters.put("componentlist[]", qanaryRequestObject.getComponentlist()[0]);
+        for (String component : qanaryRequestObject.getComponentlist()
+        ) {
+            parameters.put("componentlist[]", component);
+        }
 
         connection.setDoOutput(true);
 
@@ -70,17 +74,14 @@ public class AutomatedTestingRepository extends AbstractRepository {
     }
 
     // Variable as object
-    public String sendGptPrompt(String body) throws URISyntaxException, IOException {
+    public String sendGptPrompt(String body, int examples) throws URISyntaxException, IOException {
 
         HttpURLConnection con = (HttpURLConnection) CHATGPT_ENDPOINT.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Authorization", "Bearer " + chatGptApiKey);
 
-        JSONObject data = new JSONObject();
-        data.put("model", "gpt-3.5-turbo-instruct"); // TODO:
-        data.put("prompt", body);
-        data.put("max_tokens", 400);
+        JSONObject data = examples == 1 ? createRequestFor4kModel(body) : createRequestFor16kModel(body);
 
         logger.info("Json Request: {}", data);
 
@@ -91,9 +92,29 @@ public class AutomatedTestingRepository extends AbstractRepository {
         String output = new BufferedReader(new InputStreamReader(con.getInputStream())).lines()
                 .reduce((a, b) -> a + b).get();
 
-        return new JSONObject(output).getJSONArray("choices").getJSONObject(0).getString("text");
+        return new JSONObject(output).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+    }
 
+    public JSONObject createRequestFor4kModel(String body) {
+        JSONObject data = new JSONObject();
+        data.put("model", "gpt-3.5-turbo-instruct"); // TODO:
+        data.put("prompt", body);
+        data.put("max_tokens", 400);
 
+        return data;
+    }
+
+    public JSONObject createRequestFor16kModel(String body) {
+        JSONObject data = new JSONObject();
+        JSONArray jsonArray = new JSONArray();
+        JSONObject arrayEntity = new JSONObject();
+        arrayEntity.put("role", "user");
+        arrayEntity.put("content", body);
+        jsonArray.put(arrayEntity);
+        data.put("model", "gpt-3.5-turbo-16k");
+        data.put("messages", jsonArray);
+
+        return data;
     }
 
 }
