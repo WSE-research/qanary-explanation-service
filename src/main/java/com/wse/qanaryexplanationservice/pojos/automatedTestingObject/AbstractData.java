@@ -3,32 +3,65 @@ package com.wse.qanaryexplanationservice.pojos.automatedTestingObject;
 public abstract class AbstractData {
 
     private AnnotationType annotationType;
+    private Integer annotationTypeAsInt;
     private String usedComponent;
     private String question;
     private String explanation;
     private String dataSet;
     private String graphID;
     private String questionID;
+    private Integer questionNumber;
+    private Integer componentNumber;
 
     public AbstractData() {
     }
 
     public AbstractData(
             AnnotationType annotationType,
+            Integer annotationTypeAsInt,
             String usedComponent,
             String question,
             String explanation,
             String dataSet,
             String graphID,
-            String questionID
+            String questionID,
+            Integer questionNumber,
+            Integer componentNumber
     ) {
         this.annotationType = annotationType;
+        this.annotationTypeAsInt = annotationTypeAsInt;
         this.usedComponent = usedComponent;
         this.explanation = explanation;
         this.dataSet = dataSet;
         this.question = question;
         this.graphID = graphID;
         this.questionID = questionID;
+        this.questionNumber = questionNumber;
+        this.componentNumber = componentNumber;
+    }
+
+    public Integer getAnnotationTypeAsInt() {
+        return annotationTypeAsInt;
+    }
+
+    public void setAnnotationTypeAsInt(Integer annotationTypeAsInt) {
+        this.annotationTypeAsInt = annotationTypeAsInt;
+    }
+
+    public Integer getComponentNumber() {
+        return componentNumber;
+    }
+
+    public void setComponentNumber(Integer componentNumber) {
+        this.componentNumber = componentNumber;
+    }
+
+    public Integer getQuestionNumber() {
+        return questionNumber;
+    }
+
+    public void setQuestionNumber(Integer questionNumber) {
+        this.questionNumber = questionNumber;
     }
 
     public String getQuestionID() {

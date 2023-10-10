@@ -88,28 +88,29 @@ public class AutomatedTestingService {
     }
 
     /**
-     * TODO: Abstraction for return type
+     * TODO: Abstraction for return type // TODO: rename method
      * Selects a random question as well as a random component for a given annotation-type
      * All in all that will result in a triple containing the type,question,component
      */
     public TestDataObject selectTestingTriple(AnnotationType annotationType) throws IndexOutOfBoundsException, IOException { // TODO: maybe parallelization possible? Threads?
 
         TestDataObject data;
-        AnnotationType randomAnnotationType = null;
+        AnnotationType annotationType_ = annotationType;
 
         if (annotationType == null)
-            randomAnnotationType = selectRandomAnnotationType();
+            annotationType_ = selectRandomAnnotationType();
 
         // TODO: save the index or the concrete component? For triples to store (persistent) a number might be better
         String[] componentsList;
         if (annotationType != null)
             componentsList = this.typeAndComponents.get(annotationType.name());
         else
-            componentsList = this.typeAndComponents.get(randomAnnotationType.name());
+            componentsList = this.typeAndComponents.get(annotationType_.name());
         Integer selectedComponentAsInt = random.nextInt(componentsList.length);
         String selectedComponent = componentsList[random.nextInt(componentsList.length)];
 
-        String question = getRandomQuestion();
+        Integer random = this.random.nextInt(394); // Number of question in dataset-1 // TODO: shift const value
+        String question = getRandomQuestion(random);
 
         QanaryResponseObject response = executeQanaryPipeline(question, selectedComponent);
 
@@ -122,11 +123,11 @@ public class AutomatedTestingService {
 
         if (annotationType != null) {
             data = new TestDataObject(
-                    annotationType, selectedComponent, question, explanation, dataset, graphURI, questionID
+                    annotationType, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt
             );
         } else {
             data = new TestDataObject(
-                    randomAnnotationType, selectedComponent, question, explanation, dataset, graphURI, questionID
+                    annotationType_, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt
             );
         }
         // TODO: see todo below, additionally random picking
@@ -157,11 +158,10 @@ public class AutomatedTestingService {
      *
      * @return
      */
-    public String getRandomQuestion() throws IOException {
+    public String getRandomQuestion(Integer questionNumber) throws IOException {
 
-        Integer random = this.random.nextInt(394); // Number of question in dataset-1
         QuerySolutionMap querySolutionMap = new QuerySolutionMap();
-        querySolutionMap.add("id", ResourceFactory.createTypedLiteral(random.toString(), XSDDatatype.XSDnonNegativeInteger));
+        querySolutionMap.add("id", ResourceFactory.createTypedLiteral(questionNumber.toString(), XSDDatatype.XSDnonNegativeInteger));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(QUESTION_QUERY, querySolutionMap);
 
         ResultSet resultSet = this.automatedTestingRepository.takeRandomQuestion(query);
