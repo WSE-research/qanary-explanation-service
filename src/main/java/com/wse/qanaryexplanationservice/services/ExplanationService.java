@@ -49,7 +49,7 @@ public class ExplanationService {
         // AnnotationOfInstance
         put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
         put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
-        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql.rq");
+        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql_query.rq");
         put("annotationofrelation", "/queries/queries_for_annotation_types/annotations_of_relation_query.rq");
         put("annotationofanswerjson", "/queries/queries_for_annotation_types/annotations_of_answer_json_query.rq");
         put("annotationofquestiontranslation", "/queries/queries_for_annotation_types/annotations_of_question_translation_query.rq");

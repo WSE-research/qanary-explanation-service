@@ -53,10 +53,10 @@ public class AutomatedTestingService {
 
     }};
     private Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
-        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED"});
-        put(AnnotationType.annotationofspotinstance.name(), new String[]{"MeaningCloud", "NER-DBpediaSpotlight"});
+        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED",});
+        put(AnnotationType.annotationofspotinstance.name(), new String[]{"MeaningCloud", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
         put(AnnotationType.annotationofanswerjson.name(), new String[]{"urn:qanary:SparqlExecuter"});
-        put(AnnotationType.annotationofanswersparql.name(), new String[]{"abc", "def"});
+        put(AnnotationType.annotationofanswersparql.name(), new String[]{"Monolitic", "QB-SimpleRealNameOfSuperHero"});
         put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
         put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
         put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
@@ -100,9 +100,9 @@ public class AutomatedTestingService {
 
     public AnnotationType selectRandomAnnotationType() {
         AnnotationType[] list = AnnotationType.values();
-//        return list[random.nextInt(list.length)];
+        return list[random.nextInt(list.length)];
         //TODO: insert components to map
-        return AnnotationType.annotationofinstance;
+        // return AnnotationType.annotationofinstance;
     }
 
     /**
@@ -321,7 +321,6 @@ public class AutomatedTestingService {
             }
         } catch (Exception e) {
             logger.error("{}", e.getMessage());
-            logger.error("setUpTest has thrown error: {}", e.getMessage());
             return null;
         }
         try {
