@@ -47,13 +47,13 @@ public class ExplanationService {
     // Holds request query for declared annotations types
     private static final Map<String, String> annotationsTypeAndQuery = new HashMap<>() {{
         // AnnotationOfInstance
-        put("annotationofspotinstance", "/queries/queries_for_annotation_types/annotations_of_spot_intance_query.rq");
-        put("annotationofinstance", "/queries/queries_for_annotation_types/annotations_of_instance_query.rq");
-        put("annotationofanswersparql", "/queries/queries_for_annotation_types/annotations_of_answer_sparql.rq");
-        put("annotationofrelation", "/queries/queries_for_annotation_types/annotations_of_relation_query.rq");
-        put("annotationofanswerjson", "/queries/queries_for_annotation_types/annotations_of_answer_json_query.rq");
-        put("annotationofquestiontranslation", "/queries/queries_for_annotation_types/annotations_of_question_translation_query.rq");
-        put("annotationofquestionlanguage", "/queries/queries_for_annotation_types/annotations_of_question_language_query.rq");
+        put("annotationofspotinstance", "/queries/select_all_AnnotationOfSpotInstance.rq");
+        put("annotationofinstance", "/queries/select_all_AnnotationOfInstance.rq");
+        put("annotationofanswersparql", "/queries/select_all_AnnotationOfAnswerSPARQL.rq");
+        put("annotationofrelation", "/queries/select_all_AnnotationOfRelation.rq");
+        put("annotationofanswerjson", "/queries/select_all_AnnotationOfAnswerJson.rq");
+        put("annotationofquestiontranslation", "/queries/select_all_AnnotationOfQuestionTranslation.rq");
+        put("annotationofquestionlanguage", "/queries/select_all_AnnotationOfQuestionLanguage.rq");
     }};
     // Holds explanation templates for the declared annotation types
     private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
@@ -186,9 +186,9 @@ public class ExplanationService {
      */
     public String buildSparqlQuery(String graphURI, String componentUri, String rawQuery) throws IOException {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
-        bindingsForSparqlQuery.add("graphURI", ResourceFactory.createResource(graphURI));
+        bindingsForSparqlQuery.add("graph", ResourceFactory.createResource(graphURI));
         if (componentUri != null)    // Extension for compatibility w/ explanation for specific component
-            bindingsForSparqlQuery.add("componentURI", ResourceFactory.createResource(componentUri));
+            bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource(componentUri));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
 
