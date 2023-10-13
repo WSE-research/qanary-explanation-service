@@ -21,12 +21,14 @@ public class AutomatedTestController {
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
 
+    /*
     @PostMapping(value = "/automatedtest", consumes = {
             "application/json"
     })
     public ResponseEntity<?> explanationsTests(@RequestBody String requestBody) throws Exception {
         return new ResponseEntity<>(automatedTestingService.selectTestingTriple(AnnotationType.annotationofinstance), HttpStatus.OK);
     }
+    */
 
     @PostMapping(value = "/test", consumes = {
             "application/json"
@@ -43,7 +45,7 @@ public class AutomatedTestController {
             "application/json"
     })
     public ResponseEntity<?> getExplanationsWithoutGptExplanation(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
-        JSONObject explanations = automatedTestingService.testWithoutGptExplanation(requestBody);
+        String explanations = automatedTestingService.testWithoutGptExplanation(requestBody);
 
         return new ResponseEntity<>(explanations, HttpStatus.OK);
     }

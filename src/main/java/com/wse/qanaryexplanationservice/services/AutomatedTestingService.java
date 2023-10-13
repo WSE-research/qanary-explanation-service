@@ -2,6 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTestRequestBody;
+import com.wse.qanaryexplanationservice.pojos.Example;
 import com.wse.qanaryexplanationservice.pojos.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AnnotationType;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AutomatedTest;
@@ -53,14 +54,14 @@ public class AutomatedTestingService {
 
     }};
     private Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
-        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED",});
+        // put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED",});
         put(AnnotationType.annotationofspotinstance.name(), new String[]{"MeaningCloud", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
-        put(AnnotationType.annotationofanswerjson.name(), new String[]{"urn:qanary:SparqlExecuter"});
-        put(AnnotationType.annotationofanswersparql.name(), new String[]{"Monolitic", "QB-SimpleRealNameOfSuperHero"});
-        put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
-        put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
-        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
-        put(AnnotationType.annotationofclass.name(), new String[]{"DiambiguationClass"});
+        // put(AnnotationType.annotationofanswerjson.name(), new String[]{"urn:qanary:SparqlExecuter"});
+        // put(AnnotationType.annotationofanswersparql.name(), new String[]{"Monolitic", "QB-SimpleRealNameOfSuperHero"});
+        // put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
+        // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
+        // put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
+        // put(AnnotationType.annotationofclass.name(), new String[]{"DiambiguationClass"});
     }};
 
     // Dependency map for annotation types
@@ -100,7 +101,9 @@ public class AutomatedTestingService {
 
     public AnnotationType selectRandomAnnotationType() {
         AnnotationType[] list = AnnotationType.values();
-        return list[random.nextInt(list.length)];
+        // return list[random.nextInt(list.length)];
+
+        return AnnotationType.annotationofspotinstance;
         //TODO: insert components to map
         // return AnnotationType.annotationofinstance;
     }
@@ -110,7 +113,7 @@ public class AutomatedTestingService {
      * Selects a random question as well as a random component for a given annotation-type
      * All in all that will result in a triple containing the type,question,component
      */
-    public TestDataObject selectTestingTriple(AnnotationType annotationType) throws Exception { // TODO: maybe parallelization possible? Threads?
+    public TestDataObject selectTestingTriple(AnnotationType annotationType, AutomatedTest automatedTest, Example example) throws Exception { // TODO: maybe parallelization possible? Threads?
 
         TestDataObject data;
         AnnotationType annotationType_ = annotationType;
@@ -118,10 +121,10 @@ public class AutomatedTestingService {
         if (annotationType_ == null)
             annotationType_ = selectRandomAnnotationType();
 
-        // TODO: save the index or the concrete component? For triples to store (persistent) a number might be better
-        String[] componentsList = this.typeAndComponents.get(annotationType_.name()); // TODO: the ordinal can be saved as well, might be better
-        Integer selectedComponentAsInt = random.nextInt(componentsList.length);
-        String selectedComponent = componentsList[selectedComponentAsInt]; //TODO: selectedComponentList for component dependency tree, see executeQanaryPipeline method
+        //TODO: separate Testing and example objects!?
+
+        String selectedComponent = selectComponent(annotationType_, automatedTest, example);
+        int selectedComponentAsInt = Arrays.stream(this.typeAndComponents.get(annotationType_.name())).toList().indexOf(selectedComponent);
 
         Integer random = this.random.nextInt(394); // Number of question in dataset-1 // TODO: shift const value
         String question = getRandomQuestion(random);
@@ -137,20 +140,11 @@ public class AutomatedTestingService {
 
         String explanation = getExplanation(graphURI, selectedComponent);
 
-        if (annotationType != null) {
-            data = new TestDataObject(
-                    annotationType, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt
-            );
-        } else {
-            data = new TestDataObject(
-                    annotationType_, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt
-            );
-        }
         // TODO: see todo below, additionally random picking
         // Integer selectedQuestionAsInt = this.qadoDatasetRepository ...
         // String selectedQuestion = this.qadoDatasetRepository.getDataset();   // TODO: How to work with that data since it's a huge dataset for parsing w/ JsonNode(s)
         // TODO: Caching? Maybe too large when it comes to thousands of datasets?
-        return data;
+        return new TestDataObject(annotationType_, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt);
     }
 
     public ArrayList<AnnotationType> getDependencies(AnnotationType annotationType) {
@@ -165,8 +159,11 @@ public class AutomatedTestingService {
                 hashSet.addAll(resolveRecursiveDependencies(annType));
             }
 //            return hashSet.stream().toList();
-            return new ArrayList<>(hashSet.stream().toList());
+            ArrayList<AnnotationType> resolvedDependenciesList = new ArrayList<>(hashSet.stream().toList());
+            logger.info("Resolved dependencies for component {}: {}", annotationType, resolvedDependenciesList);
+            return resolvedDependenciesList;
         } catch (NullPointerException e) {
+            logger.info("No dependencies need to be resolved for type {}", annotationType);
             return new ArrayList<>() {{
                 add(annotationType);
             }};
@@ -207,14 +204,12 @@ public class AutomatedTestingService {
         ) {
             logger.info("Current anntype: {}", annType);
             String[] componentsList = this.typeAndComponents.get(annType.name());
-            logger.info("Liste: {}", componentsList);
             Integer selectedComponentAsInt = random.nextInt(componentsList.length);
-            logger.info("Components list in selectRandomComponents(): {}", componentsList);
-
+            logger.info("Random chosen component: {}", componentsList[selectedComponentAsInt]);
             componentList.add(componentsList[selectedComponentAsInt]);
         }
 
-        logger.info("Component list: {}", componentList);
+        logger.info("Random selected components: {}", componentList);
         return componentList;
     }
 
@@ -307,30 +302,88 @@ public class AutomatedTestingService {
         return resultSet;
     }
 
-    //
+    public String selectRandomComponentFromGivenList() {
+        return "";
+    }
 
     public AutomatedTest setUpTest(AutomatedTestRequestBody requestBody) throws Exception {
         logger.info("Request Body properties: {}", requestBody.toString());
         AutomatedTest automatedTest = new AutomatedTest();
 
+        // Firstly: creates the test data
+        // Secondly: iterate through the provided example-data and creates examples with either given type or null (== random type will be selected)
         try {
-            automatedTest.setTestData(selectTestingTriple(AnnotationType.valueOf(requestBody.getTestingType())));
+            automatedTest.setTestData(selectTestingTriple(AnnotationType.valueOf(requestBody.getTestingType()), null, null));
 
-            for (int i = 0; i < requestBody.getExamples(); i++) {
-                automatedTest.setExampleData(selectTestingTriple(null)); // null since type is not declared
+            for (int i = 0; i < requestBody.getExamples().length; i++) {
+                logger.info("Current example: {}", requestBody.getExamples()[i]);
+                automatedTest.setExampleData(selectTestingTriple(AnnotationType.valueOf(requestBody.getExamples()[i].getType()), automatedTest, requestBody.getExamples()[i]));
             }
         } catch (Exception e) {
             logger.error("{}", e.getMessage());
             return null;
         }
         try {
-            automatedTest.setPrompt(replacePromptPlaceholder(exampleCountAndTemplate.get(requestBody.getExamples()), automatedTest));
+            automatedTest.setPrompt(replacePromptPlaceholder(exampleCountAndTemplate.get(requestBody.getExamples().length), automatedTest));
         } catch (NullPointerException e) {
             return null;
         }
 
         return automatedTest;
     }
+
+    public String selectComponent(AnnotationType annotationType_, AutomatedTest automatedTest, Example example) {
+
+        String[] componentsList = this.typeAndComponents.get(annotationType_.name());
+
+        if (example == null) {
+            int selectedComponentAsInt = random.nextInt(componentsList.length);
+            return componentsList[selectedComponentAsInt]; //TODO: selectedComponentList for component dependency tree, see executeQanaryPipeline method
+        } else if (example.getUniqueComponent()) {
+            ArrayList<String> usedComponentsInTest = fetchAllUsedComponents(automatedTest);
+            ArrayList<String> componentList = new ArrayList<>(List.of(this.typeAndComponents.get(annotationType_.name())));
+            String component;
+            try {
+                do {
+                    int rnd = this.random.nextInt(componentList.size());
+                    logger.info("Random no: {}", rnd);
+                    logger.info("Liste: {}", componentList);
+                    component = componentList.get(rnd);
+                    componentList.remove(rnd);
+                } while (usedComponentsInTest.contains(component));
+            } catch (Exception e) {
+                throw new RuntimeException("There is no other unique and unused component for type" + annotationType_.name());
+            }
+            return component;
+        }
+
+        /**
+         ArrayList<String> usedComponentsInTest = fetchAllUsedComponents(automatedTest);
+         String[] componentList = this.typeAndComponents.get(annotationType_.name());
+         for (int i = 0; i < componentList.length; i++) {
+         if (usedComponentsInTest.contains(componentList[i]))
+         continue;
+         else
+         return componentsList[i];
+         }
+         */
+        throw new RuntimeException("There is no other unique and unused component for type" + annotationType_.name());
+
+    }
+
+    public ArrayList<String> fetchAllUsedComponents(AutomatedTest automatedTest) {
+        ArrayList<String> list = new ArrayList<>();
+        list.add(automatedTest.getTestData().getUsedComponent());
+        ArrayList<TestDataObject> listExamples = automatedTest.getExampleData();
+
+        for (TestDataObject item : listExamples) {
+            list.add(item.getUsedComponent());
+        }
+
+        return list;
+
+    }
+
 
     public String replacePromptPlaceholder(String emptyPromptPath, AutomatedTest automatedTest) throws IOException {
 
@@ -368,7 +421,7 @@ public class AutomatedTestingService {
     public JSONObject gptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
 
         int runs = requestBody.getRuns();
-        int examples = requestBody.getExamples();
+        int examples = requestBody.getExamples().length;
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
 
@@ -396,7 +449,7 @@ public class AutomatedTestingService {
         return jsonObject;
     }
 
-    public JSONObject testWithoutGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
+    public String testWithoutGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
         int runs = requestBody.getRuns();
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
@@ -416,7 +469,7 @@ public class AutomatedTestingService {
         jsonObject.put("explanations", jsonArray);
         writeObjectToFile(jsonObject);
 
-        return jsonObject;
+        return jsonObject.toString();
     }
 
     public void writeObjectToFile(JSONObject jsonObject) throws IOException {

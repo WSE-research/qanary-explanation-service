@@ -3,7 +3,7 @@ package com.wse.qanaryexplanationservice.pojos;
 public class AutomatedTestRequestBody {
 
     private String testingType;
-    private int examples;
+    private Example[] examples;
     private int runs;
 
     public AutomatedTestRequestBody() {
@@ -18,12 +18,8 @@ public class AutomatedTestRequestBody {
         return testingType;
     }
 
-    public int getExamples() {
+    public Example[] getExamples() {
         return examples;
-    }
-
-    public void incrementExamples() {
-        this.examples += 1;
     }
 
     @Override
