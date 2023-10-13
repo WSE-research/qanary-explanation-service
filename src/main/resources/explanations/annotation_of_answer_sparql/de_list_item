@@ -1,1 +1,1 @@
-am ${createdAt} mit einer Konfidenz von ${score} die SPARQL-query ' ${body} '
+am ${annotatedAt} mit einer Konfidenz von ${score} die SPARQL-query ' ${hasBody} '

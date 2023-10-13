@@ -1,1 +1,1 @@
-at ${createdAt} starting from position ${start} and ending at position ${end}
+at ${annotatedAt} starting from position ${start} and ending at position ${end}
