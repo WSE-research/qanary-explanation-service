@@ -1,4 +1,6 @@
-package com.wse.qanaryexplanationservice.pojos;
+package com.wse.qanaryexplanationservice.pojos.automatedTestingObject;
+
+import com.wse.qanaryexplanationservice.pojos.Example;
 
 public class AutomatedTestRequestBody {
 

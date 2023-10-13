@@ -1,7 +1,7 @@
 package com.wse.qanaryexplanationservice.repositories;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.qanaryexplanationservice.pojos.QanaryRequestObject;
+import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.services.ParameterStringBuilder;
 import org.apache.jena.query.QueryExecution;
@@ -56,7 +56,6 @@ public class AutomatedTestingRepository extends AbstractRepository {
         DataOutputStream out = new DataOutputStream(connection.getOutputStream());
         out.writeBytes(ParameterStringBuilder.getParamsString(parameters));
         out.flush();
-        logger.info(out.toString());
         out.close();
 
 
