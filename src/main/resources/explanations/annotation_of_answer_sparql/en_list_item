@@ -1,1 +1,1 @@
-on ${createdAt} with a confidence of ${score} the SPARQL-query ' ${body} '
+on ${createdAt} with a confidence of ${score} the SPARQL-query ' ${hasBody} '
