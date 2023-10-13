@@ -15,7 +15,7 @@ COPY extract_version.sh /extract_version.sh
 RUN chmod +x /extract_version.sh
 RUN /extract_version.sh
 WORKDIR /app
-RUN cp Qanary/qanary_commons/target/qa.commons-"$JAR_VERSION".jar .
+RUN cp Qanary/qanary_commons/target/qa.commons-$JAR_VERSION.jar .
 
 #RUN wget https://github.com/WDAqua/Qanary/archive/refs/tags/v3.5.2.tar.gz
 #RUN tar -xzvf v3.5.2.tar.gz
@@ -29,9 +29,9 @@ FROM maven:latest AS build
 WORKDIR /app
 COPY ./src ./src
 COPY ./pom.xml ./pom.xml
-COPY --from=qanary_commons /app/qa.commons-"$JAR_VERSION".jar .
+COPY --from=qanary_commons /app/qa.commons-$JAR_VERSION.jar .
 # Installing the qa_commons dependency
-RUN mvn install:install-file -Dfile=qa.commons-"$JAR_VERSION".jar -DgroupId=eu.wdaqua.qanary -DartifactId=qa.commons -Dversion="$JAR_VERSION" -Dpackaging=jar
+RUN mvn install:install-file -Dfile=qa.commons-$JAR_VERSION.jar -DgroupId=eu.wdaqua.qanary -DartifactId=qa.commons -Dversion=$JAR_VERSION -Dpackaging=jar
 # build the app
 RUN mvn clean install
 
