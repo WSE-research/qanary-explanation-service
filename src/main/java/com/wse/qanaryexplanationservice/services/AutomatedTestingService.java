@@ -137,6 +137,8 @@ public class AutomatedTestingService {
         String questionID = response.getQuestion().replace("http://195.90.200.248:8090/question/stored-question__text_", "questionID:");
 
         String dataset = createDataset(selectedComponent, question, graphURI);
+        if (dataset == null)
+            return null;
 
         String explanation = getExplanation(graphURI, selectedComponent);
 
@@ -267,6 +269,8 @@ public class AutomatedTestingService {
     public String createDataset(String componentURI, String question, String graphURI) throws Exception {
 
         ResultSet triples = fetchTriples(graphURI, componentURI);
+        if (triples == null)
+            return null;
 
         // TODO: triples must follow the pattern "<..> ... <...> ."
         // TODO: with prefixes included
@@ -298,8 +302,9 @@ public class AutomatedTestingService {
 
         ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
         if (!resultSet.hasNext())
-            throw new Exception("ResultSet is null");
-        return resultSet;
+            return null;
+        else
+            return resultSet;
     }
 
     public String selectRandomComponentFromGivenList() {
@@ -315,9 +320,13 @@ public class AutomatedTestingService {
         try {
             automatedTest.setTestData(selectTestingTriple(AnnotationType.valueOf(requestBody.getTestingType()), null, null));
 
+            TestDataObject testDataObject;
             for (int i = 0; i < requestBody.getExamples().length; i++) {
-                logger.info("Current example: {}", requestBody.getExamples()[i]);
-                automatedTest.setExampleData(selectTestingTriple(AnnotationType.valueOf(requestBody.getExamples()[i].getType()), automatedTest, requestBody.getExamples()[i]));
+                testDataObject = selectTestingTriple(AnnotationType.valueOf(requestBody.getExamples()[i].getType()), automatedTest, requestBody.getExamples()[i]);
+                if (testDataObject == null)
+                    return null;
+                else
+                    automatedTest.setExampleData(testDataObject);
             }
         } catch (Exception e) {
             logger.error("{}", e.getMessage());
@@ -352,9 +361,13 @@ public class AutomatedTestingService {
                     componentList.remove(rnd);
                 } while (usedComponentsInTest.contains(component));
             } catch (Exception e) {
-                throw new RuntimeException("There is no other unique and unused component for type" + annotationType_.name());
+                throw new RuntimeException("There is no other unique and unused component for type " + annotationType_.name());
             }
             return component;
+        } else {
+            // TODO: !!! Is example-level definition of uniqueness relevant? Handling could be a lot easier somewhere else (Errors and so on)
+            int selectedComponentAsInt = random.nextInt(componentsList.length);
+            return componentsList[selectedComponentAsInt]; //TODO: selectedComponentList for component dependency tree, see executeQanaryPipeline method
         }
 
         /**
@@ -367,8 +380,6 @@ public class AutomatedTestingService {
          return componentsList[i];
          }
          */
-        throw new RuntimeException("There is no other unique and unused component for type" + annotationType_.name());
-
     }
 
     public ArrayList<String> fetchAllUsedComponents(AutomatedTest automatedTest) {
@@ -418,7 +429,7 @@ public class AutomatedTestingService {
     /**
      * Method for whole process
      */
-    public JSONObject gptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
+    public String gptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
 
         int runs = requestBody.getRuns();
         int examples = requestBody.getExamples().length;
@@ -446,7 +457,7 @@ public class AutomatedTestingService {
         jsonObject.put("explanations", jsonArray);
         writeObjectToFile(jsonObject);
 
-        return jsonObject;
+        return jsonObject.toString();
     }
 
     public String testWithoutGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
@@ -457,7 +468,6 @@ public class AutomatedTestingService {
         for (int i = 0; i < runs; i++) {
             AutomatedTest automatedTestObject = setUpTest(requestBody);
             if (automatedTestObject != null) {
-                // send prompt to openai-chatgpt
                 try {
                     jsonArray.put(new JSONObject(automatedTestObject));
                 } catch (Exception e) {
@@ -465,7 +475,6 @@ public class AutomatedTestingService {
                 }
             }
         }
-
         jsonObject.put("explanations", jsonArray);
         writeObjectToFile(jsonObject);
 

@@ -4,7 +4,6 @@ import com.wse.qanaryexplanationservice.pojos.AutomatedTestRequestBody;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AnnotationType;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
 import com.wse.qanaryexplanationservice.services.AutomatedTestingService;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,11 +29,11 @@ public class AutomatedTestController {
     }
     */
 
-    @PostMapping(value = "/test", consumes = {
+    @PostMapping(value = "/automatedtests", consumes = {
             "application/json"
     })
     public ResponseEntity<?> automatedExplanationTest(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
-        JSONObject automatedTest = automatedTestingService.gptExplanation(requestBody);
+        String automatedTest = automatedTestingService.gptExplanation(requestBody);
         if (automatedTest == null)
             return new ResponseEntity<>("Fehler", HttpStatus.BAD_REQUEST);
         else
