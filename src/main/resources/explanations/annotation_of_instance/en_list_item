@@ -1,1 +1,1 @@
-on ${createdAt} &{with a confidence of ${score}}& and the resource ${hasBody}
+on ${annotatedAt} &{with a confidence of ${score}}& and the resource ${hasBody}

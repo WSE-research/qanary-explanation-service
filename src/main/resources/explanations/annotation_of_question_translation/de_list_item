@@ -1,1 +1,1 @@
-am ${createdAt} die Frage mit der ID '${hasTarget}' in "${hasBody}"
+am ${annotatedAt} die Frage mit der ID '${hasTarget}' in "${hasBody}"

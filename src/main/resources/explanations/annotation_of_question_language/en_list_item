@@ -1,1 +1,1 @@
-at ${createdAt} for the question with the URI '${hasTarget}' the language '${hasBody}'
+at ${annotatedAt} for the question with the URI '${hasTarget}' the language '${hasBody}'
