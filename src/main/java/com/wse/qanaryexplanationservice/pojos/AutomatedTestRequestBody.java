@@ -22,6 +22,10 @@ public class AutomatedTestRequestBody {
         return examples;
     }
 
+    public void incrementExamples() {
+        this.examples += 1;
+    }
+
     @Override
     public String toString() {
         return "AutomatedTestRequestBody{" +

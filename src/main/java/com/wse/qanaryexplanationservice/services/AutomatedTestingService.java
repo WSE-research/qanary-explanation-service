@@ -52,14 +52,15 @@ public class AutomatedTestingService {
         put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
 
     }};
-    private Map<String, String[]> typeAndComponents = new HashMap<>() {{
-        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED"});
-        //     put(AnnotationType.annotationofspotinstance.name(), new String[]{});
+    private Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
+        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED",});
+        put(AnnotationType.annotationofspotinstance.name(), new String[]{"MeaningCloud", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
         put(AnnotationType.annotationofanswerjson.name(), new String[]{"urn:qanary:SparqlExecuter"});
-        //     put(AnnotationType.annotationofanswersparql.name(), new String[]{});
-        // put(AnnotationType.annotationofquestionlanguage.name(), new String[]{});
-        //put(AnnotationType.annotationofquestiontranslation.name(), new String[]{});
-        //put(AnnotationType.annotationofrelation.name(), new String[]{});
+        put(AnnotationType.annotationofanswersparql.name(), new String[]{"Monolitic", "QB-SimpleRealNameOfSuperHero"});
+        put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
+        put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
+        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
+        put(AnnotationType.annotationofclass.name(), new String[]{"DiambiguationClass"});
     }};
 
     // Dependency map for annotation types
@@ -99,9 +100,9 @@ public class AutomatedTestingService {
 
     public AnnotationType selectRandomAnnotationType() {
         AnnotationType[] list = AnnotationType.values();
-//        return list[random.nextInt(list.length)];
+        return list[random.nextInt(list.length)];
         //TODO: insert components to map
-        return AnnotationType.annotationofinstance;
+        // return AnnotationType.annotationofinstance;
     }
 
     /**
@@ -125,7 +126,9 @@ public class AutomatedTestingService {
         Integer random = this.random.nextInt(394); // Number of question in dataset-1 // TODO: shift const value
         String question = getRandomQuestion(random);
 
-        QanaryResponseObject response = executeQanaryPipeline(question, selectedComponent);
+        List<String> randomComponents = selectRandomComponents(getDependencies(annotationType_));
+        randomComponents.add(selectedComponent);
+        QanaryResponseObject response = executeQanaryPipeline(question, selectedComponent, randomComponents);
 
         String graphURI = response.getOutGraph();
         String questionID = response.getQuestion().replace("http://195.90.200.248:8090/question/stored-question__text_", "questionID:");
@@ -150,31 +153,69 @@ public class AutomatedTestingService {
         return data;
     }
 
-    public AnnotationType[] getDependencies(AnnotationType annotationType) {
+    public ArrayList<AnnotationType> getDependencies(AnnotationType annotationType) {
 
-        List<AnnotationType> list = Arrays.asList(dependencyMapForAnnotationTypes.get(annotationType));
-        HashSet<AnnotationType> hashSet = new HashSet<>(list);
+        logger.info("AnnotationOfInstance: {}", annotationType);
+        try {
+            List<AnnotationType> list = Arrays.asList(dependencyMapForAnnotationTypes.get(annotationType));
+            HashSet<AnnotationType> hashSet = new HashSet<>(list);
 
-        for (AnnotationType annType : hashSet
-        ) {
-            hashSet.addAll(resolveRecursiveDependencies(dependencyMapForAnnotationTypes.get(annType)));
+            for (AnnotationType annType : hashSet
+            ) {
+                hashSet.addAll(resolveRecursiveDependencies(annType));
+            }
+//            return hashSet.stream().toList();
+            return new ArrayList<>(hashSet.stream().toList());
+        } catch (NullPointerException e) {
+            return new ArrayList<>() {{
+                add(annotationType);
+            }};
         }
 
-        return null;
     }
 
-    public List<AnnotationType> resolveRecursiveDependencies(AnnotationType[] list) {
+    public List<String> getcomps(AnnotationType annotationType) {
+        return selectRandomComponents(getDependencies(annotationType));
+    }
 
-        List<AnnotationType> list_ = Arrays.asList(list);
+    public ArrayList<AnnotationType> resolveRecursiveDependencies(AnnotationType annType) { // TODO: Check it !!!
+
+        try {
+            AnnotationType[] list = dependencyMapForAnnotationTypes.get(annType);
+            ArrayList<AnnotationType> list_ = new ArrayList<>(Arrays.asList(list));
+
+            for (AnnotationType annoType : list
+            ) {
+                if (dependencyMapForAnnotationTypes.get(annType) != null) {
+                    list_.addAll(resolveRecursiveDependencies(annoType));
+                }
+            }
+            return list_;
+        } catch (NullPointerException e) {
+            return new ArrayList<>() {{
+                add(annType);
+            }};
+        }
+
+    }
+
+    public List<String> selectRandomComponents(ArrayList<AnnotationType> list) {
+        Collections.sort(list);
+        List<String> componentList = new ArrayList<>();
 
         for (AnnotationType annType : list
         ) {
-            if (dependencyMapForAnnotationTypes.get(annType) != null) {
-                list_.addAll(resolveRecursiveDependencies(dependencyMapForAnnotationTypes.get(annType)));
-            }
+            logger.info("Current anntype: {}", annType);
+            String[] componentsList = this.typeAndComponents.get(annType.name());
+            logger.info("Liste: {}", componentsList);
+            Integer selectedComponentAsInt = random.nextInt(componentsList.length);
+            logger.info("Components list in selectRandomComponents(): {}", componentsList);
+
+            componentList.add(componentsList[selectedComponentAsInt]);
         }
 
-        return list_;
+        logger.info("Component list: {}", componentList);
+        return componentList;
     }
 
     /**
@@ -215,9 +256,9 @@ public class AutomatedTestingService {
      *
      * @return
      */
-    public QanaryResponseObject executeQanaryPipeline(String question, String selectedComponent) throws IOException { // TODO: Respect component-dependency tree !!!
+    public QanaryResponseObject executeQanaryPipeline(String question, String selectedComponent, List<String> randomComponents) throws IOException { // TODO: Respect component-dependency tree !!!
         logger.info("Component QPipeline: {}", selectedComponent);
-        QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, selectedComponent);
+        QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, randomComponents);
         // executes a qanary pipeline and take the graphID from it + questionURI since the question can be fetched via <questionURI>/raw
         return automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject);
     }
@@ -311,8 +352,8 @@ public class AutomatedTestingService {
         return prompt;
     }
 
-    public String sendPrompt(String prompt, AutomatedTest automatedTest) throws IOException, URISyntaxException {
-        return automatedTestingRepository.sendGptPrompt(prompt);
+    public String sendPrompt(String prompt, AutomatedTest automatedTest, int examples) throws IOException, URISyntaxException {
+        return automatedTestingRepository.sendGptPrompt(prompt, examples);
     }
 
     public String getStringFromFile(String path) throws IOException {
@@ -327,6 +368,7 @@ public class AutomatedTestingService {
     public JSONObject gptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
 
         int runs = requestBody.getRuns();
+        int examples = requestBody.getExamples();
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
 
@@ -336,7 +378,7 @@ public class AutomatedTestingService {
             if (automatedTestObject != null) {
                 // send prompt to openai-chatgpt
                 try {
-                    String gptExplanation = sendPrompt(automatedTestObject.getPrompt(), automatedTestObject);
+                    String gptExplanation = sendPrompt(automatedTestObject.getPrompt(), automatedTestObject, examples);
                     automatedTestObject.setGptExplanation(gptExplanation);
                     jsonArray.put(new JSONObject(automatedTestObject));
                     logger.info("Current AutomatedObjectData: {}", jsonArray);
