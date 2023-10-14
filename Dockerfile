@@ -15,7 +15,7 @@ RUN chmod +x /app/extract_commons_version.sh
 RUN /app/extract_commons_version.sh
 
 WORKDIR /app
-COPY Qanary/qa.commons/target/qa.commons.jar .
+COPY Qanary/qa_commons/target/qa.commons.jar .
 
 #Build Stage
 FROM maven:latest AS build
