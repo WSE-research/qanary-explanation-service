@@ -29,6 +29,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
     private final URL QANARY_ENDPOINT;
     private final URL CHATGPT_ENDPOINT = new URL("https://api.openai.com/v1/completions"); // TODO:
     private final String chatGptApiKey = "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"; // TODO: put in applications.settings
+    private final int RESPONSE_TOKEN = 500;
 
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingRepository.class);
 
@@ -73,14 +74,14 @@ public class AutomatedTestingRepository extends AbstractRepository {
     }
 
     // Variable as object
-    public String sendGptPrompt(String body, int examples) throws URISyntaxException, IOException {
+    public String sendGptPrompt(String body, int tokens) throws URISyntaxException, IOException {
 
         HttpURLConnection con = (HttpURLConnection) CHATGPT_ENDPOINT.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Authorization", "Bearer " + chatGptApiKey);
 
-        JSONObject data = examples == 1 ? createRequestFor4kModel(body) : createRequestFor16kModel(body);
+        JSONObject data = tokens < 4096 - RESPONSE_TOKEN ? createRequestFor4kModel(body) : createRequestFor16kModel(body);
 
         logger.info("Json Request: {}", data);
 
@@ -98,7 +99,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
         JSONObject data = new JSONObject();
         data.put("model", "gpt-3.5-turbo-instruct"); // TODO:
         data.put("prompt", body);
-        data.put("max_tokens", 400);
+        data.put("max_tokens", RESPONSE_TOKEN);
 
         return data;
     }

@@ -1,5 +1,9 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.knuddels.jtokkit.Encodings;
+import com.knuddels.jtokkit.api.Encoding;
+import com.knuddels.jtokkit.api.EncodingRegistry;
+import com.knuddels.jtokkit.api.ModelType;
 import com.wse.qanaryexplanationservice.pojos.Example;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.*;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
@@ -34,6 +38,7 @@ public class AutomatedTestingService {
     private final static String QUESTION_QUERY = "/queries/random_question_query.rq";
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final static int QADO_DATASET_QUESTION_COUNT = 394;
+    private final EncodingRegistry encodingRegistry = Encodings.newLazyEncodingRegistry();
     private final Random random = new Random();
     private final Map<String, String> prefixes = new HashMap<>() {{
         put("http://www.w3.org/ns/openannotation/core/", "oa:");
@@ -386,8 +391,11 @@ public class AutomatedTestingService {
         return prompt;
     }
 
-    public String sendPrompt(String prompt, AutomatedTest automatedTest, int examples) throws IOException, URISyntaxException {
-        return automatedTestingRepository.sendGptPrompt(prompt, examples);
+    public String sendPrompt(String prompt, AutomatedTest automatedTest) throws IOException, URISyntaxException {
+        Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
+        int tokens = encoding.countTokens(prompt);
+        logger.info("Calculated Token: {}", tokens);
+        return automatedTestingRepository.sendGptPrompt(prompt, tokens);
     }
 
     public String getStringFromFile(String path) throws IOException {
@@ -412,7 +420,7 @@ public class AutomatedTestingService {
             if (automatedTestObject != null) {
                 // send prompt to openai-chatgpt
                 try {
-                    String gptExplanation = sendPrompt(automatedTestObject.getPrompt(), automatedTestObject, examples);
+                    String gptExplanation = sendPrompt(automatedTestObject.getPrompt(), automatedTestObject);
                     automatedTestObject.setGptExplanation(gptExplanation);
                     jsonArray.put(new JSONObject(automatedTestObject));
                 } catch (IOException e) {
@@ -440,6 +448,11 @@ public class AutomatedTestingService {
             if (automatedTestObject != null) {
                 try {
                     jsonArray.put(new JSONObject(automatedTestObject));
+                    // Token calculation
+                    Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
+                    int tokens = encoding.countTokens(automatedTestObject.getPrompt());
+                    logger.info("Calculated Token: {}", tokens);
+                    //
                     logger.info("Completed run number {}", i);
                 } catch (Exception e) {
                     logger.error("Error while processing gpt explanation, skipped.");
