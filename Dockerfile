@@ -4,34 +4,31 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get install -y maven wget #git #openjdk-17-jre
 RUN apt-get install -y git
-WORKDIR /app
 
+WORKDIR /app
 RUN git clone https://github.com/WDAqua/Qanary.git
+
 WORKDIR /app/Qanary/qanary_commons
 RUN mvn clean install -DskipTests
-COPY extract_version.sh /extract_version.sh
-RUN chmod +x /extract_version.sh
-RUN /extract_version.sh
-# DEFINE ENV FROM FILE
-RUN export JAR_VERSION=$(cat /app/qanaryVersion);
-WORKDIR /app
-RUN cp Qanary/qanary_commons/target/qa.commons-$JAR_VERSION.jar .
+COPY extract_commons_version.sh /app/extract_commons_version.sh
+RUN chmod +x /app/extract_commons_version.sh
+RUN /app/extract_commons_version.sh
 
-#RUN wget https://github.com/WDAqua/Qanary/archive/refs/tags/v3.5.2.tar.gz
-#RUN tar -xzvf v3.5.2.tar.gz
-#WORKDIR /app/Qanary-3.5.2/qanary_commons
-#RUN mvn clean install -DskipTests
-#WORKDIR /app
-#RUN cp Qanary-3.5.2/qanary_commons/target/qa.commons-3.5.4.jar .
+WORKDIR /app
+COPY Qanary/qa.commons/target/qa.commons.jar .
 
 #Build Stage
 FROM maven:latest AS build
 WORKDIR /app
 COPY ./src ./src
 COPY ./pom.xml ./pom.xml
-COPY --from=qanary_commons /app/qa.commons-"$JAR_VERSION".jar .
+COPY --from=qanary_commons /app/qa.commons.jar .
+COPY --from=qanary_commons /app/jar_version .
 # Installing the qa_commons dependency
-RUN mvn install:install-file -Dfile=qa.commons-"$JAR_VERSION".jar -DgroupId=eu.wdaqua.qanary -DartifactId=qa.commons -Dversion="$JAR_VERSION" -Dpackaging=jar
+COPY install_commons_dependency.sh /app/install_commons_dependency.sh
+RUN chmod +x /app/install_commons_dependency.sh
+RUN /app/install_commons_dependency.sh
+RUN mvn install:install-file -Dfile=qa.commons.jar -DgroupId=eu.wdaqua.qanary -DartifactId=qa.commons -Dversion="$JAR_VERSION" -Dpackaging=jar
 # build the app
 RUN mvn clean install
 
