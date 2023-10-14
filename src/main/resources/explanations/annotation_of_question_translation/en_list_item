@@ -1,1 +1,1 @@
-at ${createdAt} the question with the ID '${question}' into "${translation}"
+at ${annotatedAt} the question with the ID '${hasTarget}' into "${hasBody}"
