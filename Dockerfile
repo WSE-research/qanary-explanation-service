@@ -6,14 +6,14 @@ RUN apt-get install -y maven wget #git #openjdk-17-jre
 RUN apt-get install -y git
 WORKDIR /app
 
-ENV JAR_VERSION=""
-
 RUN git clone https://github.com/WDAqua/Qanary.git
 WORKDIR /app/Qanary/qanary_commons
 RUN mvn clean install -DskipTests
 COPY extract_version.sh /extract_version.sh
 RUN chmod +x /extract_version.sh
 RUN /extract_version.sh
+# DEFINE ENV FROM FILE
+RUN export JAR_VERSION=$(cat /app/qanaryVersion);
 WORKDIR /app
 RUN cp Qanary/qanary_commons/target/qa.commons-$JAR_VERSION.jar .
 
@@ -29,9 +29,9 @@ FROM maven:latest AS build
 WORKDIR /app
 COPY ./src ./src
 COPY ./pom.xml ./pom.xml
-COPY --from=qanary_commons /app/qa.commons-$JAR_VERSION.jar .
+COPY --from=qanary_commons /app/qa.commons-"$JAR_VERSION".jar .
 # Installing the qa_commons dependency
-RUN mvn install:install-file -Dfile=qa.commons-$JAR_VERSION.jar -DgroupId=eu.wdaqua.qanary -DartifactId=qa.commons -Dversion=$JAR_VERSION -Dpackaging=jar
+RUN mvn install:install-file -Dfile=qa.commons-"$JAR_VERSION".jar -DgroupId=eu.wdaqua.qanary -DartifactId=qa.commons -Dversion="$JAR_VERSION" -Dpackaging=jar
 # build the app
 RUN mvn clean install
 
