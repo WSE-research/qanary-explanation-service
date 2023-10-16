@@ -81,7 +81,8 @@ public class AutomatedTestingRepository extends AbstractRepository {
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Authorization", "Bearer " + chatGptApiKey);
 
-        JSONObject data = tokens < 4096 - RESPONSE_TOKEN ? createRequestFor4kModel(body) : createRequestFor16kModel(body);
+        boolean isTokenLessThan4k = tokens < (4096 - RESPONSE_TOKEN);
+        JSONObject data = isTokenLessThan4k ? createRequestFor4kModel(body) : createRequestFor16kModel(body);
 
         logger.info("Json Request: {}", data);
 
@@ -92,7 +93,11 @@ public class AutomatedTestingRepository extends AbstractRepository {
         String output = new BufferedReader(new InputStreamReader(con.getInputStream())).lines()
                 .reduce((a, b) -> a + b).get();
 
-        return new JSONObject(output).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+
+        return isTokenLessThan4k ?
+                new JSONObject(output).getJSONArray("choices").getJSONObject(0).getString("text")
+                :
+                new JSONObject(output).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
     }
 
     public JSONObject createRequestFor4kModel(String body) {

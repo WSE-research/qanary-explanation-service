@@ -415,8 +415,8 @@ public class AutomatedTestingService {
         JSONObject jsonObject = new JSONObject();
 
         for (int i = 0; i < runs; i++) {
+            logger.info("Run number {}", i);
             AutomatedTest automatedTestObject = setUpTest(requestBody);
-
             if (automatedTestObject != null) {
                 // send prompt to openai-chatgpt
                 try {
@@ -424,7 +424,7 @@ public class AutomatedTestingService {
                     automatedTestObject.setGptExplanation(gptExplanation);
                     jsonArray.put(new JSONObject(automatedTestObject));
                 } catch (IOException e) {
-                    logger.error("Server side error, token max reached.");
+                    logger.error("{}", e.getMessage());
                     jsonObject.put("explanations", jsonArray);
                     writeObjectToFile(jsonObject);
                 }
