@@ -7,6 +7,7 @@ import {
     Routes,
     R
 } from "react-router-dom";
+import DatasetViewer from './datasetViewer/DatasetViewer';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Router>
             <Routes>
                 <Route exact path="/" element={<Explanation />} />
+                <Route exact path="dataviewer" element={<DatasetViewer />} />
             </Routes>
         </Router>
     </div>
