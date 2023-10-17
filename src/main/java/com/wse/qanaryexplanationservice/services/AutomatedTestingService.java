@@ -54,7 +54,7 @@ public class AutomatedTestingService {
     }};
     private final Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
         // put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED",});
-        put(AnnotationType.annotationofspotinstance.name(), new String[]{"MeaningCloud", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
+        put(AnnotationType.annotationofspotinstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
         // put(AnnotationType.annotationofanswerjson.name(), new String[]{"urn:qanary:SparqlExecuter"});
         // put(AnnotationType.annotationofanswersparql.name(), new String[]{"Monolitic", "QB-SimpleRealNameOfSuperHero"});
         // put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
@@ -413,10 +413,16 @@ public class AutomatedTestingService {
         int examples = requestBody.getExamples().length;
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
+        AutomatedTest automatedTestObject;
 
         for (int i = 0; i < runs; i++) {
             logger.info("Run number {}", i);
-            AutomatedTest automatedTestObject = setUpTest(requestBody);
+            try {
+                automatedTestObject = setUpTest(requestBody);
+            } catch (IOException e) {
+                automatedTestObject = null;
+                wait(1000);
+            }
             if (automatedTestObject != null) {
                 // send prompt to openai-chatgpt
                 try {
@@ -441,10 +447,15 @@ public class AutomatedTestingService {
         int runs = requestBody.getRuns();
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
-
+        AutomatedTest automatedTestObject;
         for (int i = 0; i < runs; i++) {
             logger.info("Run number {}", i);
-            AutomatedTest automatedTestObject = setUpTest(requestBody);
+            try {
+                automatedTestObject = setUpTest(requestBody);
+            } catch (IOException e) { // 500 error from Qanary pipeline
+                automatedTestObject = null;
+                wait(1000);
+            }
             if (automatedTestObject != null) {
                 try {
                     jsonArray.put(new JSONObject(automatedTestObject));

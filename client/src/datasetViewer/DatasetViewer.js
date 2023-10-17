@@ -1,5 +1,5 @@
 import "./DatasetViewer.css";
-import data from "../output.json";
+import data from "../json.json";
 import { useState } from "react";
 
 export default function DatasetViewer() {
@@ -22,7 +22,7 @@ export default function DatasetViewer() {
     }
 
     function increaseCounter() {
-        if(counter < arrayLength-1) {
+        if(counter < arrayLength) {
             setCounter(counter+1)
             console.log(counter)
             setExplanation();
