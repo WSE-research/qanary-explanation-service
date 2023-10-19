@@ -4,16 +4,20 @@ import com.wse.qanaryexplanationservice.pojos.Example;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AnnotationType;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.TestDataObject;
+import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
+import org.apache.jena.query.ResultSet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.Arrays;
@@ -21,10 +25,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static org.mockito.ArgumentMatchers.any;
+
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class AutomatedTestingServiceTest {
 
+    private static ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
     private final Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
         put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
         put(AnnotationType.annotationofspotinstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
@@ -34,23 +41,10 @@ public class AutomatedTestingServiceTest {
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
         put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
     }};
-
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
     @Autowired
     private AutomatedTestingService automatedTestingService;
 
-    @Test
-    public void createDatasetTest() {
-
-    }
-
-    @Test
-    public void selectComponentTest() {
-        // Happy path: 1) example null 2) not uniqueComponent
-
-
-        // Sad path: 1) uniqueComponent and not already existing 2) uniqueComponent and already existing (super sad)
-    }
 
     @Nested
     class selectComponentTests {
@@ -63,7 +57,7 @@ public class AutomatedTestingServiceTest {
         @EnumSource(AnnotationType.class)
         public void selectComponentExampleNullTest(AnnotationType annotationType) {
             example = null;
-            
+
             String component = automatedTestingService.selectComponent(annotationType, automatedTest, example);
             logger.info("Selected component: {}", component);
             Assertions.assertTrue(Arrays.stream(typeAndComponents.get(annotationType.name())).toList().contains(component));
@@ -102,6 +96,46 @@ public class AutomatedTestingServiceTest {
             Exception exception = Assertions.assertThrows(RuntimeException.class, () -> {
                 automatedTestingService.selectComponent(annotationType, automatedTest, example);
             });
+        }
+    }
+
+    @Nested
+    class createDatasetTests {
+
+        /*
+         * Happy path: ResultSet not null
+         * Sad path: ResultSet is null
+         */
+
+        @MockBean
+        private AutomatedTestingRepository automatedTestingRepository;
+
+
+        // Setup fetchTriples handling
+        private void setupTest(ResultSet resultSet) {
+            Mockito.when(automatedTestingRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
+        }
+
+        /*
+        @Test
+        public void createDatasetResultSetNotNullTest() throws Exception {
+            ResultSet resultSet = serviceDataForTests.createResultSet(serviceDataForTests.getQuerySolutionMapList());
+            setupTest(resultSet);
+
+            String resultDataset = automatedTestingService.createDataset("componentURI", "graphURI");
+            Assertions.assertFalse(resultDataset.isEmpty());
+        }
+        */
+
+        @Test
+        public void createDatasetResultSetIsNullTest() throws Exception {
+            setupTest(null);
+
+            Exception exception = Assertions.assertThrows(RuntimeException.class, () -> {
+                automatedTestingService.createDataset("componentURI", "graphURI");
+            });
+
+            Assertions.assertEquals("ResultSet is null", exception.getMessage());
         }
 
     }
