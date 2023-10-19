@@ -58,9 +58,9 @@ public class AutomatedTestingService {
     private final Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
         put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
         put(AnnotationType.annotationofspotinstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
-        // put(AnnotationType.annotationofanswerjson.name(), new String[]{"SINA", "PlatypusQueryBuilder"});
-        put(AnnotationType.annotationofanswersparql.name(), new String[]{"SINA", "PlatypusQueryBuilder", "Monolitic"});
-        // put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
+        put(AnnotationType.annotationofanswerjson.name(), new String[]{"QAnswerQueryBuilderAndExecutor", "SparqlExecuter"});
+        put(AnnotationType.annotationofanswersparql.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndExecutor"});
+        put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
         put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
     }};
@@ -105,8 +105,6 @@ public class AutomatedTestingService {
     public AnnotationType selectRandomAnnotationType() {
         AnnotationType[] list = AnnotationType.values();
         return list[random.nextInt(list.length)];
-
-        // return AnnotationType.annotationofspotinstance;
     }
 
     /**
@@ -114,23 +112,24 @@ public class AutomatedTestingService {
      * Selects a random question as well as a random component for a given annotation-type
      * All in all that will result in a triple containing the type,question,component
      */
-    public TestDataObject selectTestingTriple(AnnotationType annotationType, AutomatedTest automatedTest, Example example) throws Exception { // TODO: maybe parallelization possible? Threads?
+    public TestDataObject selectTriple(AnnotationType annotationType, AutomatedTest automatedTest, Example example) throws Exception { // TODO: maybe parallelization possible? Threads?
 
         AnnotationType annotationType_ = annotationType;
 
+        // Select a random annotationtype if not specified
         if (annotationType_ == null)
             annotationType_ = selectRandomAnnotationType();
 
-        //TODO: separate Testing and example objects!?
-
-        String selectedComponent = selectComponent(annotationType_, automatedTest, example);
-        int selectedComponentAsInt = Arrays.stream(this.typeAndComponents.get(annotationType_.name())).toList().indexOf(selectedComponent);
-
+        // Select random question from the QADO dataset
         Integer random = this.random.nextInt(QADO_DATASET_QUESTION_COUNT);
         String question = getRandomQuestion(random);
 
+        // Select random components for Qanary pipeline execution
+        String selectedComponent = selectComponent(annotationType_, automatedTest, example);
+        int selectedComponentAsInt = Arrays.stream(this.typeAndComponents.get(annotationType_.name())).toList().indexOf(selectedComponent);
         List<String> randomComponents = selectRandomComponents(getDependencies(annotationType_));
         randomComponents.add(selectedComponent);
+
         QanaryResponseObject response = executeQanaryPipeline(question, randomComponents);
 
         String graphURI = response.getOutGraph();
@@ -140,10 +139,6 @@ public class AutomatedTestingService {
 
         String explanation = getExplanation(graphURI, selectedComponent);
 
-        // TODO: see todo below, additionally random picking
-        // Integer selectedQuestionAsInt = this.qadoDatasetRepository ...
-        // String selectedQuestion = this.qadoDatasetRepository.getDataset();   // TODO: How to work with that data since it's a huge dataset for parsing w/ JsonNode(s)
-        // TODO: Caching? Maybe too large when it comes to thousands of datasets?
         return new TestDataObject(annotationType_, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt, randomComponents.toString());
     }
 
@@ -161,9 +156,7 @@ public class AutomatedTestingService {
             return new ArrayList<>(hashSet.stream().toList());
         } catch (NullPointerException e) {
             logger.info("No dependencies need to be resolved for type {}", annotationType);
-            return new ArrayList<>() {{
-                add(annotationType);
-            }};
+            return null;
         }
 
     }
@@ -194,7 +187,10 @@ public class AutomatedTestingService {
      * @return List of components in the order of their annotation type (and therefore their dependencies)
      */
     public List<String> selectRandomComponents(ArrayList<AnnotationType> list) {
-        Collections.sort(list);
+        // Is null when no dependencies were resolved and therefore only one component shall be executed
+        if (list == null)
+            return new ArrayList<>();
+        Collections.sort(list); // sorts them by the enum definition, which equals the dependency tree (the last is the target-component)
         List<String> componentList = new ArrayList<>();
 
         for (AnnotationType annType : list
@@ -259,8 +255,6 @@ public class AutomatedTestingService {
 
         ResultSet triples = fetchTriples(graphURI, componentURI);
 
-        // TODO: triples must follow the pattern "<..> ... <...> ."
-        // TODO: with prefixes included
         StringBuilder dataSet = new StringBuilder();
         while (triples.hasNext()) {
             QuerySolution querySolution = triples.next();
@@ -268,7 +262,7 @@ public class AutomatedTestingService {
         }
         String dataSetAsString = dataSet.toString();
 
-        // Replaces prefixes
+        // Replace prefixes
         for (Map.Entry<String, String> entry : prefixes.entrySet()) {
             dataSetAsString = dataSetAsString.replace(entry.getKey(), entry.getValue());
         }
@@ -306,9 +300,9 @@ public class AutomatedTestingService {
 
         AutomatedTest automatedTest = new AutomatedTest();
         try {
-            automatedTest.setTestData(selectTestingTriple(AnnotationType.valueOf(requestBody.getTestingType()), null, null));
+            automatedTest.setTestData(selectTriple(AnnotationType.valueOf(requestBody.getTestingType()), null, null));
             for (int i = 0; i < requestBody.getExamples().length; i++) {
-                TestDataObject testDataObject = selectTestingTriple(
+                TestDataObject testDataObject = selectTriple(
                         AnnotationType.valueOf(requestBody.getExamples()[i].getType()), // if null, random annotation type will be calculated
                         automatedTest, // pass the current object for further use/comparison
                         requestBody.getExamples()[i] // the current Example-Object inheriting Type and uniqueness properties
@@ -347,7 +341,7 @@ public class AutomatedTestingService {
             ArrayList<String> usedComponentsInTest = fetchAllUsedComponents(automatedTest);
             ArrayList<String> componentList = new ArrayList<>(List.of(this.typeAndComponents.get(annotationType.name())));
             String component;
-            try {
+            try { // infinite loop in some case !?
                 do {
                     int rnd = this.random.nextInt(componentList.size());
                     component = componentList.get(rnd);
@@ -394,7 +388,7 @@ public class AutomatedTestingService {
         return prompt;
     }
 
-    public String sendPrompt(String prompt, AutomatedTest automatedTest) throws IOException, URISyntaxException {
+    public String sendPrompt(String prompt) throws IOException, URISyntaxException {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);
@@ -406,14 +400,12 @@ public class AutomatedTestingService {
         return new String(Files.readAllBytes(file.toPath()));
     }
 
-
     /**
      * Method for whole process
      */
     public String gptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
 
         int runs = requestBody.getRuns();
-        int examples = requestBody.getExamples().length;
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
         AutomatedTest automatedTestObject;
@@ -424,12 +416,11 @@ public class AutomatedTestingService {
                 automatedTestObject = setUpTest(requestBody);
             } catch (IOException e) {
                 automatedTestObject = null;
-                //wait(1000);
             }
             if (automatedTestObject != null) {
                 // send prompt to openai-chatgpt
                 try {
-                    String gptExplanation = sendPrompt(automatedTestObject.getPrompt(), automatedTestObject);
+                    String gptExplanation = sendPrompt(automatedTestObject.getPrompt());
                     automatedTestObject.setGptExplanation(gptExplanation);
                     jsonArray.put(new JSONObject(automatedTestObject));
                 } catch (IOException e) {
