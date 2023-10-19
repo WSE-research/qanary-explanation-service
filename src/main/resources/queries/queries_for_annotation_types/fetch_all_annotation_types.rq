@@ -6,5 +6,14 @@ SELECT DISTINCT ?annotationType
 FROM ?graph
 WHERE {
     ?annotationId rdf:type ?annotationType .
+    FILTER(
+        ?annotationType = qa:AnnotationOfAnswerSPARQL ||
+        ?annotationType = qa:AnnotationOfAnswerJSON ||
+        ?annotationType = qa:AnnotationOfInstance ||
+        ?annotationType = qa:AnnotationOfSpotInstance ||
+        ?annotationType = qa:AnnotationOfRelation ||
+        ?annotationType = qa:AnnotationOfQuestionLanguage
+        )
+
     ?annotationId oa:annotatedBy ?annotatedBy .
 }

@@ -4,9 +4,8 @@ public enum AnnotationType {
     annotationofinstance,
     annotationofspotinstance,
     annotationofrelation,
-    annotationofquestiontranslation,
+    //annotationofquestiontranslation,
     annotationofquestionlanguage,
-    annotationofclass,
     annotationofanswersparql,
     annotationofanswerjson
 }

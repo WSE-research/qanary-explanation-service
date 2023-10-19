@@ -40,6 +40,8 @@ public class AutomatedTestingService {
     private final static int QADO_DATASET_QUESTION_COUNT = 394;
     private final EncodingRegistry encodingRegistry = Encodings.newLazyEncodingRegistry();
     private final Random random = new Random();
+
+    // Prefixes for ResultSets
     private final Map<String, String> prefixes = new HashMap<>() {{
         put("http://www.w3.org/ns/openannotation/core/", "oa:");
         put("http://195.90.200.248:8090/question/stored-question__text_", "questionID:");
@@ -50,37 +52,39 @@ public class AutomatedTestingService {
         put("^^http://www.w3.org/2001/XMLSchema#integer", "");
         put("^^http://www.w3.org/2001/XMLSchema#dateTime", "");
         put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
-
     }};
+
+    // All available annotation types and the components creating these
     private final Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
-        // put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED",});
+        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
         put(AnnotationType.annotationofspotinstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
-        // put(AnnotationType.annotationofanswerjson.name(), new String[]{"urn:qanary:SparqlExecuter"});
-        // put(AnnotationType.annotationofanswersparql.name(), new String[]{"Monolitic", "QB-SimpleRealNameOfSuperHero"});
+        // put(AnnotationType.annotationofanswerjson.name(), new String[]{"SINA", "PlatypusQueryBuilder"});
+        put(AnnotationType.annotationofanswersparql.name(), new String[]{"SINA", "PlatypusQueryBuilder", "Monolitic"});
         // put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
-        // put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
-        // put(AnnotationType.annotationofclass.name(), new String[]{"DiambiguationClass"});
+        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
     }};
 
-    // Dependency map for annotation types
+    /*
+     * Dependency map for annotation types
+     * Used for setting up the Qanary pipeline, so that all relevant annotation are made
+     */
     private final Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
         put(AnnotationType.annotationofinstance, null);
         put(AnnotationType.annotationofrelation, null);
         put(AnnotationType.annotationofspotinstance, null);
-        put(AnnotationType.annotationofquestiontranslation, null);
+        //put(AnnotationType.annotationofquestiontranslation, null);
         put(AnnotationType.annotationofquestionlanguage, null);
-        put(AnnotationType.annotationofclass, new AnnotationType[]{AnnotationType.annotationofquestionlanguage});
         put(AnnotationType.annotationofanswersparql, new AnnotationType[]{
-                AnnotationType.annotationofclass,
                 AnnotationType.annotationofinstance,
                 AnnotationType.annotationofrelation,
                 AnnotationType.annotationofspotinstance,
-                AnnotationType.annotationofquestiontranslation
+                //  AnnotationType.annotationofquestiontranslation
         });
         put(AnnotationType.annotationofanswerjson, new AnnotationType[]{AnnotationType.annotationofanswersparql});
     }};
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
+
     // stores the correct template for different x-shot approaches
     private final Map<Integer, String> exampleCountAndTemplate = new HashMap<>() {{
         put(1, "/testtemplates/oneshot");
@@ -100,9 +104,9 @@ public class AutomatedTestingService {
      */
     public AnnotationType selectRandomAnnotationType() {
         AnnotationType[] list = AnnotationType.values();
-        // return list[random.nextInt(list.length)];
+        return list[random.nextInt(list.length)];
 
-        return AnnotationType.annotationofspotinstance;
+        // return AnnotationType.annotationofspotinstance;
     }
 
     /**
@@ -140,11 +144,12 @@ public class AutomatedTestingService {
         // Integer selectedQuestionAsInt = this.qadoDatasetRepository ...
         // String selectedQuestion = this.qadoDatasetRepository.getDataset();   // TODO: How to work with that data since it's a huge dataset for parsing w/ JsonNode(s)
         // TODO: Caching? Maybe too large when it comes to thousands of datasets?
-        return new TestDataObject(annotationType_, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt);
+        return new TestDataObject(annotationType_, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt, randomComponents.toString());
     }
 
     public ArrayList<AnnotationType> getDependencies(AnnotationType annotationType) {
 
+        logger.info("Get dependencies for {}", annotationType);
         try {
             List<AnnotationType> list = Arrays.asList(dependencyMapForAnnotationTypes.get(annotationType));
             HashSet<AnnotationType> hashSet = new HashSet<>(list);
@@ -153,7 +158,6 @@ public class AutomatedTestingService {
             ) {
                 hashSet.addAll(resolveRecursiveDependencies(annType));
             }
-//            return hashSet.stream().toList();
             return new ArrayList<>(hashSet.stream().toList());
         } catch (NullPointerException e) {
             logger.info("No dependencies need to be resolved for type {}", annotationType);
@@ -313,7 +317,6 @@ public class AutomatedTestingService {
                     return null;
                 else {
                     automatedTest.setExampleData(testDataObject); // If successful, add example to the automatedTest
-                    logger.info("Successfully crated {}. example", i + 1);
                 }
             }
         } catch (RuntimeException e) {
@@ -421,7 +424,7 @@ public class AutomatedTestingService {
                 automatedTestObject = setUpTest(requestBody);
             } catch (IOException e) {
                 automatedTestObject = null;
-                wait(1000);
+                //wait(1000);
             }
             if (automatedTestObject != null) {
                 // send prompt to openai-chatgpt
@@ -454,7 +457,7 @@ public class AutomatedTestingService {
                 automatedTestObject = setUpTest(requestBody);
             } catch (IOException e) { // 500 error from Qanary pipeline
                 automatedTestObject = null;
-                wait(1000);
+                //wait(1000);
             }
             if (automatedTestObject != null) {
                 try {
@@ -464,12 +467,12 @@ public class AutomatedTestingService {
                     int tokens = encoding.countTokens(automatedTestObject.getPrompt());
                     logger.info("Calculated Token: {}", tokens);
                     //
-                    logger.info("Completed run number {}", i);
+                    logger.info("Completed run number {}", i + 1);
                 } catch (Exception e) {
                     logger.error("Error while processing gpt explanation, skipped.");
                 }
             } else
-                logger.info("Skipped run {} due to null-ResultSet", i);
+                logger.info("Skipped run {} due to null-ResultSet", i + 1);
         }
         jsonObject.put("explanations", jsonArray);
         writeObjectToFile(jsonObject);

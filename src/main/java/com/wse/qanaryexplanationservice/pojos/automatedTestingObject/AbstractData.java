@@ -12,6 +12,8 @@ public abstract class AbstractData {
     private String questionID;
     private Integer questionNumber;
     private Integer componentNumber;
+    private String randomComponents;
+
 
     public AbstractData() {
     }
@@ -26,7 +28,8 @@ public abstract class AbstractData {
             String graphID,
             String questionID,
             Integer questionNumber,
-            Integer componentNumber
+            Integer componentNumber,
+            String randomComponents
     ) {
         this.annotationType = annotationType;
         this.annotationTypeAsInt = annotationTypeAsInt;
@@ -38,6 +41,15 @@ public abstract class AbstractData {
         this.questionID = questionID;
         this.questionNumber = questionNumber;
         this.componentNumber = componentNumber;
+        this.randomComponents = randomComponents;
+    }
+
+    public String getRandomComponents() {
+        return randomComponents;
+    }
+
+    public void setRandomComponents(String randomComponents) {
+        this.randomComponents = randomComponents;
     }
 
     public Integer getAnnotationTypeAsInt() {

@@ -18,7 +18,6 @@ public class ParameterStringBuilder {
         StringBuilder result = new StringBuilder();
 
         for (Map.Entry<String, String> entry : params.entrySet()) {
-            logger.info("Entry: {}", entry);
             result.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8));
             result.append("=");
             result.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
@@ -26,7 +25,6 @@ public class ParameterStringBuilder {
         }
 
         String resultString = result.toString();
-        logger.info("REsult: {}", resultString.substring(0, resultString.length() - 1).replace("+", "%20"));
         return !resultString.isEmpty()
                 ? resultString.substring(0, resultString.length() - 1).replace("+", "%20")
                 : resultString;
