@@ -20,10 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 
@@ -47,7 +44,7 @@ public class AutomatedTestingServiceTest {
 
 
     @Nested
-    class selectComponentTests {
+    class SelectComponentTests {
 
         private final Random random = new Random();
         private Example example;
@@ -100,7 +97,7 @@ public class AutomatedTestingServiceTest {
     }
 
     @Nested
-    class createDatasetTests {
+    class CreateDatasetTests {
 
         /*
          * Happy path: ResultSet not null
@@ -136,6 +133,56 @@ public class AutomatedTestingServiceTest {
             });
 
             Assertions.assertEquals("ResultSet is null", exception.getMessage());
+        }
+    }
+
+    @Nested
+    class GetDependenciesTests {
+
+        /*
+         * Happy path: No dependencies
+         * Sad path: Dependencies
+         * Result: List of Dependencies without (!) the origin AnnotationType (else the method would lead to a infinite loop)
+         */
+
+        @ParameterizedTest
+        @EnumSource(AnnotationType.class)
+        public void getDependenciesTest(AnnotationType annotationType) {
+            ArrayList<AnnotationType> listOfDependencies = automatedTestingService.getDependencies(annotationType);
+            if (listOfDependencies != null)
+                Collections.sort(listOfDependencies);
+
+            switch (annotationType) {
+                case annotationofinstance:
+                case annotationofspotinstance:
+                case annotationofrelation:
+                case annotationofquestionlanguage: {
+                    Assertions.assertNull(listOfDependencies);
+                    break;
+                }
+                case annotationofanswersparql: {
+                    ArrayList<AnnotationType> arrayList = new ArrayList<>() {{
+                        add(AnnotationType.annotationofinstance);
+                        add(AnnotationType.annotationofspotinstance);
+                        add(AnnotationType.annotationofrelation);
+                    }};
+                    Assertions.assertEquals(arrayList, listOfDependencies);
+                    break;
+                }
+                case annotationofanswerjson: {
+                    ArrayList<AnnotationType> arrayList = new ArrayList<>() {{
+                        add(AnnotationType.annotationofinstance);
+                        add(AnnotationType.annotationofspotinstance);
+                        add(AnnotationType.annotationofrelation);
+                        add(AnnotationType.annotationofanswersparql);
+                    }};
+                    Assertions.assertEquals(arrayList, listOfDependencies);
+                    break;
+                }
+                default: {
+                    throw new RuntimeException("getDependenciesTest did not succeed");
+                }
+            }
         }
 
     }
