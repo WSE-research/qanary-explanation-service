@@ -9,6 +9,11 @@ public class Example {
 
     }
 
+    public Example(String type, boolean uniqueComponent) {
+        this.type = type;
+        this.uniqueComponent = uniqueComponent;
+    }
+
     public boolean getUniqueComponent() {
         return uniqueComponent;
     }
