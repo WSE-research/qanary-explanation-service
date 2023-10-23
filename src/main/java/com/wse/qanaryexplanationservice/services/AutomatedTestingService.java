@@ -301,11 +301,12 @@ public class AutomatedTestingService {
         AutomatedTest automatedTest = new AutomatedTest();
         try {
             automatedTest.setTestData(selectTriple(AnnotationType.valueOf(requestBody.getTestingType()), null, null));
-            for (int i = 0; i < requestBody.getExamples().length; i++) {
+            while (automatedTest.getExampleData().size() < requestBody.getExamples().length) {
+                int currentValue = automatedTest.getExampleData().size();
                 TestDataObject testDataObject = selectTriple(
-                        AnnotationType.valueOf(requestBody.getExamples()[i].getType()), // if null, random annotation type will be calculated
+                        AnnotationType.valueOf(requestBody.getExamples()[currentValue].getType()), // if null, random annotation type will be calculated
                         automatedTest, // pass the current object for further use/comparison
-                        requestBody.getExamples()[i] // the current Example-Object inheriting Type and uniqueness properties
+                        requestBody.getExamples()[currentValue] // the current Example-Object inheriting Type and uniqueness properties
                 );
                 if (testDataObject == null) // becomes null if no ResultSet is available, then throw away this test-case // TODO: Do better by sorting out
                     return null;
@@ -410,8 +411,7 @@ public class AutomatedTestingService {
         JSONObject jsonObject = new JSONObject();
         AutomatedTest automatedTestObject;
 
-        for (int i = 0; i < runs; i++) {
-            logger.info("Run number {}", i);
+        while (jsonArray.length() < runs) {
             try {
                 automatedTestObject = setUpTest(requestBody);
             } catch (IOException e) {
@@ -442,13 +442,12 @@ public class AutomatedTestingService {
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
         AutomatedTest automatedTestObject;
-        for (int i = 0; i < runs; i++) {
-            logger.info("Run number {}", i);
+        while (jsonArray.length() < runs) {
+
             try {
                 automatedTestObject = setUpTest(requestBody);
             } catch (IOException e) { // 500 error from Qanary pipeline
                 automatedTestObject = null;
-                //wait(1000);
             }
             if (automatedTestObject != null) {
                 try {
@@ -457,13 +456,11 @@ public class AutomatedTestingService {
                     Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
                     int tokens = encoding.countTokens(automatedTestObject.getPrompt());
                     logger.info("Calculated Token: {}", tokens);
-                    //
-                    logger.info("Completed run number {}", i + 1);
                 } catch (Exception e) {
                     logger.error("Error while processing gpt explanation, skipped.");
                 }
             } else
-                logger.info("Skipped run {} due to null-ResultSet", i + 1);
+                logger.info("Skipped run due to null-ResultSet");
         }
         jsonObject.put("explanations", jsonArray);
         writeObjectToFile(jsonObject);
