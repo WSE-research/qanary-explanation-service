@@ -1,0 +1,29 @@
+PREFIX aExp: <http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation>
+
+aExp:Explanations	aExp:testData		automatedExplanation:TestData [
+							a 	aExp:usedComponent	"";
+								aExp:usedComponentAsNum	"";
+								aExp:dataset		"";
+								aExp:questionId		"";
+								aExp:graphId		"";
+								aExp:generatedExplanation	"";
+								aExp:question		"" .
+								aExp:randomSelectedComponents rdf:Seq ;
+									rdf:_1 ""; // Component 1,
+									rdf:_2 ""; // Component 2,
+									rdf:_3 ""; // Component 3
+						] .
+			aExp:exampleData	rdf:Seq [
+								rdf:_1 [ // Example 1
+								... 
+								]
+								rdf:_2 [ // Example 2
+								...
+								]
+							] .
+			aExp:prompt		"" .
+			aExp:gptExplanation	"" .
+			
+							
+								
+								
