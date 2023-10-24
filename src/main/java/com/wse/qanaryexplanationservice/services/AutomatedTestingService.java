@@ -131,6 +131,7 @@ public class AutomatedTestingService {
         randomComponents.add(selectedComponent);
 
         QanaryResponseObject response = executeQanaryPipeline(question, randomComponents);
+        logger.info("GraphID from pipeline execution: {}", response.getOutGraph());
 
         String graphURI = response.getOutGraph();
         String questionID = response.getQuestion().replace("http://195.90.200.248:8090/question/stored-question__text_", "questionID:");
@@ -242,7 +243,9 @@ public class AutomatedTestingService {
      */
     public QanaryResponseObject executeQanaryPipeline(String question, List<String> randomComponents) throws IOException { // TODO: Respect component-dependency tree !!!
         QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, randomComponents);
+        logger.info("++++++++++++++++++++++++++++++++++++++++++++QUESTION: {} RANDOM COMPONENTS: {}", question, randomComponents);
         // executes a qanary pipeline and take the graphID from it + questionURI since the question can be fetched via <questionURI>/raw
+
         return automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject);
     }
 
@@ -441,13 +444,13 @@ public class AutomatedTestingService {
         int runs = requestBody.getRuns();
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
-        AutomatedTest automatedTestObject;
+        AutomatedTest automatedTestObject = null;
         while (jsonArray.length() < runs) {
 
             try {
                 automatedTestObject = setUpTest(requestBody);
             } catch (IOException e) { // 500 error from Qanary pipeline
-                automatedTestObject = null;
+                logger.info("Error while executing pipeline: {}", e.getMessage());
             }
             if (automatedTestObject != null) {
                 try {
@@ -469,10 +472,12 @@ public class AutomatedTestingService {
     }
 
     public void writeObjectToFile(JSONObject jsonObject) throws IOException {
-        FileWriter fileWriter = new FileWriter("output.json");
+        FileWriter fileWriter = new FileWriter("client/src/output.json");
         fileWriter.write(jsonObject.toString());
         fileWriter.flush();
         fileWriter.close();
     }
 
 }
+
+// TODO: dont retry a lready used combinations

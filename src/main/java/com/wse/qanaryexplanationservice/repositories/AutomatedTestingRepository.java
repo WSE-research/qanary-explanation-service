@@ -3,7 +3,6 @@ package com.wse.qanaryexplanationservice.repositories;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.QanaryResponseObject;
-import com.wse.qanaryexplanationservice.services.ParameterStringBuilder;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdfconnection.RDFConnection;
@@ -13,15 +12,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 @Repository
 public class AutomatedTestingRepository extends AbstractRepository {
@@ -41,29 +42,28 @@ public class AutomatedTestingRepository extends AbstractRepository {
     }
 
     public QanaryResponseObject executeQanaryPipeline(QanaryRequestObject qanaryRequestObject) throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) QANARY_ENDPOINT.openConnection();
 
-        connection.setRequestMethod("POST");
+        logger.info("Execute Qanary Pipeline");
 
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("question", qanaryRequestObject.getQuestion());
+        MultiValueMap<String, String> multiValueMap = new LinkedMultiValueMap();
+        multiValueMap.add("question", qanaryRequestObject.getQuestion());
+
         for (String component : qanaryRequestObject.getComponentlist()
         ) {
-            parameters.put("componentlist[]", component);
+            multiValueMap.add("componentlist[]", component);
         }
 
-        connection.setDoOutput(true);
+        QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder
+                        .scheme("http").host("195.90.200.248").port(8090).path("/startquestionansweringwithtextquestion")
+                        .queryParams(multiValueMap)
+                        .build())
+                .retrieve().
+                bodyToMono(QanaryResponseObject.class).
+                block();
 
-        DataOutputStream out = new DataOutputStream(connection.getOutputStream());
-        out.writeBytes(ParameterStringBuilder.getParamsString(parameters));
-        out.flush();
-        out.close();
+        logger.info("Response Object: {}", responseObject);
 
-
-        InputStream responseStream = connection.getInputStream();
-
-        return objectMapper.readValue(responseStream, QanaryResponseObject.class);
-
+        return responseObject;
     }
 
     public ResultSet takeRandomQuestion(String query) {
