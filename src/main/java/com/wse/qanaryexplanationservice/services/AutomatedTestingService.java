@@ -9,6 +9,7 @@ import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.*;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
@@ -16,6 +17,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdfconnection.RDFConnection;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -23,6 +25,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import virtuoso.jena.driver.VirtGraph;
+import virtuoso.jena.driver.VirtuosoUpdateFactory;
+import virtuoso.jena.driver.VirtuosoUpdateRequest;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -40,6 +45,7 @@ public class AutomatedTestingService {
     private final static int QADO_DATASET_QUESTION_COUNT = 394;
     private final EncodingRegistry encodingRegistry = Encodings.newLazyEncodingRegistry();
     private final Random random = new Random();
+    private String INSERT_NEW_GRAPH = "/queries/insertAutomatedTest.rq";
 
     // Prefixes for ResultSets
     private final Map<String, String> prefixes = new HashMap<>() {{
@@ -441,6 +447,7 @@ public class AutomatedTestingService {
     }
 
     public String testWithoutGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
+        insertExplanationToTriplestore(null, requestBody);
         int runs = requestBody.getRuns();
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
@@ -476,6 +483,25 @@ public class AutomatedTestingService {
         fileWriter.write(jsonObject.toString());
         fileWriter.flush();
         fileWriter.close();
+    }
+
+    // TODO: Work in progress
+
+    public String checkForExistingGraphId() {
+
+        return null;
+    }
+
+    public void insertExplanationToTriplestore(String graphId, AutomatedTestRequestBody automatedTestRequestBody) throws IOException {
+        // TODO: Replace graphID => Plus, names graph with metadata concat?
+        QuerySolutionMap bindingsForInsertQuery = new QuerySolutionMap();
+            bindingsForInsertQuery.add("graph", ResourceFactory.createResource("graphId"));
+            bindingsForInsertQuery.add("testType", ResourceFactory.createStringLiteral(automatedTestRequestBody.getTestingType()));
+            bindingsForInsertQuery.add("examples", ResourceFactory.createTypedLiteral(automatedTestRequestBody.getExamples().length));
+
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INSERT_NEW_GRAPH, bindingsForInsertQuery);
+        VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, new VirtGraph("jdbc:virtuoso://localhost:1111", "dba", "dba"));
+        vur.exec();
     }
 
 }
