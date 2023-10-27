@@ -26,10 +26,15 @@ public class AutomatedTestRequestBody {
 
     @Override
     public String toString() {
-        return "AutomatedTestRequestBody{" +
-                "testingType='" + testingType + '\'' +
-                ", examples=" + examples +
-                ", runs=" + runs +
-                '}';
+        return testingType + listToString();
+    }
+
+    public String listToString() {
+        String temp = "";
+        for (Example example : examples
+        ) {
+            temp += "_" + example.getType();
+        }
+        return temp;
     }
 }

@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Repository;
@@ -29,6 +30,7 @@ import java.net.URL;
 import java.time.Duration;
 
 @Repository
+@Configuration
 public class AutomatedTestingRepository extends AbstractRepository {
 
     private final URL CHATGPT_ENDPOINT = new URL("https://api.openai.com/v1/completions"); // TODO:
@@ -36,6 +38,9 @@ public class AutomatedTestingRepository extends AbstractRepository {
     private final int RESPONSE_TOKEN = 500;
     @Value("${virtuoso.triplestore}")
     private String VIRTUOSO_TRIPLESTORE;
+
+    @Value("${sparqlEndpoint}")
+    private String SPAQRL_ENDPOINT;
 
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingRepository.class);
 
@@ -124,6 +129,10 @@ public class AutomatedTestingRepository extends AbstractRepository {
         data.put("messages", jsonArray);
 
         return data;
+    }
+
+    public String test() {
+        return SPAQRL_ENDPOINT;
     }
 
 }

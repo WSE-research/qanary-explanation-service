@@ -1,0 +1,11 @@
+PREFIX : <http://my.domain/meta-data#>
+PREFIX automatedExplanation: <http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX metadataExplanation: <http://www.semanticweb.org>
+
+INSERT DATA{
+    GRAPH ?graph {
+        :1  metadataExplanation:testType ?testType ;
+            metadataExplanation:examples ?examples .
+    }
+}

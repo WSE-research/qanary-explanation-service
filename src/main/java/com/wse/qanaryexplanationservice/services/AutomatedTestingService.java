@@ -23,6 +23,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import virtuoso.jena.driver.VirtGraph;
+import virtuoso.jena.driver.VirtuosoUpdateFactory;
+import virtuoso.jena.driver.VirtuosoUpdateRequest;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -40,7 +43,6 @@ public class AutomatedTestingService {
     private final static int QADO_DATASET_QUESTION_COUNT = 394;
     private final EncodingRegistry encodingRegistry = Encodings.newLazyEncodingRegistry();
     private final Random random = new Random();
-
     // Prefixes for ResultSets
     private final Map<String, String> prefixes = new HashMap<>() {{
         put("http://www.w3.org/ns/openannotation/core/", "oa:");
@@ -53,7 +55,6 @@ public class AutomatedTestingService {
         put("^^http://www.w3.org/2001/XMLSchema#dateTime", "");
         put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
     }};
-
     // All available annotation types and the components creating these
     private final Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
         put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
@@ -64,7 +65,6 @@ public class AutomatedTestingService {
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
         put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia", "DiambiguationProperty"});
     }};
-
     /*
      * Dependency map for annotation types
      * Used for setting up the Qanary pipeline, so that all relevant annotation are made
@@ -86,13 +86,13 @@ public class AutomatedTestingService {
         put(AnnotationType.annotationofanswerjson, new AnnotationType[]{AnnotationType.annotationofanswersparql});
     }};
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
-
     // stores the correct template for different x-shot approaches
     private final Map<Integer, String> exampleCountAndTemplate = new HashMap<>() {{
         put(1, "/testtemplates/oneshot");
         put(2, "/testtemplates/twoshot");
         put(3, "/testtemplates/threeshot");
     }};
+    private String INSERT_NEW_GRAPH = "/queries/insertAutomatedTest.rq";
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
     @Autowired
@@ -114,7 +114,7 @@ public class AutomatedTestingService {
      * Selects a random question as well as a random component for a given annotation-type
      * All in all that will result in a triple containing the type,question,component
      */
-    public TestDataObject selectTriple(AnnotationType annotationType, AutomatedTest automatedTest, Example example) throws Exception { // TODO: maybe parallelization possible? Threads?
+    public TestDataObject createTestDataObject(AnnotationType annotationType, AutomatedTest automatedTest, Example example) throws Exception { // TODO: maybe parallelization possible? Threads?
 
         AnnotationType annotationType_ = annotationType;
 
@@ -129,7 +129,7 @@ public class AutomatedTestingService {
         // Select random components for Qanary pipeline execution
         String selectedComponent = selectComponent(annotationType_, automatedTest, example);
         int selectedComponentAsInt = Arrays.stream(this.typeAndComponents.get(annotationType_.name())).toList().indexOf(selectedComponent);
-        List<String> randomComponents = selectRandomComponents(getDependencies(annotationType_));
+        List<String> randomComponents = selectRandomComponents(fetchDependencies(annotationType_));
         randomComponents.add(selectedComponent);
 
         QanaryResponseObject response = executeQanaryPipeline(question, randomComponents);
@@ -145,7 +145,7 @@ public class AutomatedTestingService {
         return new TestDataObject(annotationType_, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt, randomComponents.toString());
     }
 
-    public ArrayList<AnnotationType> getDependencies(AnnotationType annotationType) {
+    public ArrayList<AnnotationType> fetchDependencies(AnnotationType annotationType) {
 
         logger.info("Get dependencies for {}", annotationType);
         try {
@@ -245,7 +245,6 @@ public class AutomatedTestingService {
      */
     public QanaryResponseObject executeQanaryPipeline(String question, List<String> randomComponents) throws IOException { // TODO: Respect component-dependency tree !!!
         QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, randomComponents);
-        logger.info("++++++++++++++++++++++++++++++++++++++++++++QUESTION: {} RANDOM COMPONENTS: {}", question, randomComponents);
         // executes a qanary pipeline and take the graphID from it + questionURI since the question can be fetched via <questionURI>/raw
 
         return automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject);
@@ -301,14 +300,14 @@ public class AutomatedTestingService {
      * @return AutomatedTest as a complete test-case
      * @throws Exception If ResultSet for one example is null or failures in replacePlaceholder method
      */
-    public AutomatedTest setUpTest(AutomatedTestRequestBody requestBody) throws Exception {
+    public AutomatedTest executeTest(AutomatedTestRequestBody requestBody) throws Exception {
 
         AutomatedTest automatedTest = new AutomatedTest();
         try {
-            automatedTest.setTestData(selectTriple(AnnotationType.valueOf(requestBody.getTestingType()), null, null));
+            automatedTest.setTestData(createTestDataObject(AnnotationType.valueOf(requestBody.getTestingType()), null, null));
             while (automatedTest.getExampleData().size() < requestBody.getExamples().length) {
                 int currentValue = automatedTest.getExampleData().size();
-                TestDataObject testDataObject = selectTriple(
+                TestDataObject testDataObject = createTestDataObject(
                         AnnotationType.valueOf(requestBody.getExamples()[currentValue].getType()), // if null, random annotation type will be calculated
                         automatedTest, // pass the current object for further use/comparison
                         requestBody.getExamples()[currentValue] // the current Example-Object inheriting Type and uniqueness properties
@@ -343,26 +342,24 @@ public class AutomatedTestingService {
             return componentsList[selectedComponentAsInt];
         }
         // Case if component should be unique in the whole test-case
-        else if (example.getUniqueComponent()) {
-            ArrayList<String> usedComponentsInTest = fetchAllUsedComponents(automatedTest);
+        else {
+            ArrayList<String> usedComponentsInTest = fetchUsedComponents(automatedTest);
             ArrayList<String> componentList = new ArrayList<>(List.of(this.typeAndComponents.get(annotationType.name())));
             String component;
-            try { // infinite loop in some case !?
+            try {
                 do {
                     int rnd = this.random.nextInt(componentList.size());
                     component = componentList.get(rnd);
-                    componentList.remove(rnd);
+                    componentList.remove(rnd);  // Remove visited item -> list.size()-1 -> prevent infinite loop
                 } while (usedComponentsInTest.contains(component));
             } catch (Exception e) {
                 throw new RuntimeException("There is no other unique and unused component for type " + annotationType.name());
             }
             return component;
         }
-
-        throw new RuntimeException("Failure in selectComponent method");
     }
 
-    public ArrayList<String> fetchAllUsedComponents(AutomatedTest automatedTest) {
+    public ArrayList<String> fetchUsedComponents(AutomatedTest automatedTest) {
         ArrayList<String> list = new ArrayList<>();
         list.add(automatedTest.getTestData().getUsedComponent()); // Adds test-data component
         ArrayList<TestDataObject> listExamples = automatedTest.getExampleData();
@@ -409,75 +406,96 @@ public class AutomatedTestingService {
     /**
      * Method for whole process
      */
-    public String gptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
+    public String executeTestsWithGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
 
-        int runs = requestBody.getRuns();
-        JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
-        AutomatedTest automatedTestObject;
+        JSONArray jsonArray = new JSONArray();
+        AutomatedTest test = null;
 
-        while (jsonArray.length() < runs) {
+        while (jsonArray.length() < requestBody.getRuns()) {
             try {
-                automatedTestObject = setUpTest(requestBody);
+                test = executeTest(requestBody); // null if not successful
             } catch (IOException e) {
-                automatedTestObject = null;
+                logger.info("Error while executing pipeline: {}", e.getMessage());
             }
-            if (automatedTestObject != null) {
-                // send prompt to openai-chatgpt
+            if (test != null) {
                 try {
-                    String gptExplanation = sendPrompt(automatedTestObject.getPrompt());
-                    automatedTestObject.setGptExplanation(gptExplanation);
-                    jsonArray.put(new JSONObject(automatedTestObject));
-                } catch (IOException e) {
+                    String gptExplanation = sendPrompt(test.getPrompt()); // Send prompt to OpenAI-API
+                    test.setGptExplanation(gptExplanation); // Add the response-explanation
+                    jsonArray.put(new JSONObject(test));
+                } catch (IOException e) {   // Catch IOException from OpenAI-Call
                     logger.error("{}", e.getMessage());
                     jsonObject.put("explanations", jsonArray);
-                    writeObjectToFile(jsonObject);
+                    writeObjectToFile(computeFileName(requestBody), jsonObject);
                 }
             }
         }
 
         jsonObject.put("explanations", jsonArray);
-        writeObjectToFile(jsonObject);
+        writeObjectToFile(computeFileName(requestBody), jsonObject);
 
         return jsonObject.toString();
     }
 
-    public String testWithoutGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
-        int runs = requestBody.getRuns();
-        JSONArray jsonArray = new JSONArray();
-        JSONObject jsonObject = new JSONObject();
-        AutomatedTest automatedTestObject = null;
-        while (jsonArray.length() < runs) {
+    public String executeTestsWithoutGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
 
+        insertExplanationToTriplestore(null, requestBody);
+
+        JSONObject jsonObject = new JSONObject();
+        JSONArray jsonArray = new JSONArray();
+        AutomatedTest test = null;
+
+        while (jsonArray.length() < requestBody.getRuns()) {
             try {
-                automatedTestObject = setUpTest(requestBody);
+                test = executeTest(requestBody); // null if not successful
             } catch (IOException e) { // 500 error from Qanary pipeline
                 logger.info("Error while executing pipeline: {}", e.getMessage());
             }
-            if (automatedTestObject != null) {
-                try {
-                    jsonArray.put(new JSONObject(automatedTestObject));
-                    // Token calculation
-                    Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
-                    int tokens = encoding.countTokens(automatedTestObject.getPrompt());
-                    logger.info("Calculated Token: {}", tokens);
-                } catch (Exception e) {
-                    logger.error("Error while processing gpt explanation, skipped.");
-                }
-            } else
+            if (test != null)
+                jsonArray.put(new JSONObject(test)); // Add test to Json-Array
+            else
                 logger.info("Skipped run due to null-ResultSet");
         }
-        jsonObject.put("explanations", jsonArray);
-        writeObjectToFile(jsonObject);
 
-        return jsonObject.toString();
+        jsonObject.put("explanations", jsonArray); // Add filled-Json Array to Json-Object
+        writeObjectToFile(computeFileName(requestBody), jsonObject); // Write to file
+
+        return jsonObject.toString(); // Return JSON-String
     }
 
-    public void writeObjectToFile(JSONObject jsonObject) throws IOException {
-        FileWriter fileWriter = new FileWriter("client/src/output.json");
-        fileWriter.write(jsonObject.toString());
-        fileWriter.flush();
-        fileWriter.close();
+    public String computeFileName(AutomatedTestRequestBody requestBody) {
+        StringBuilder fileName = new StringBuilder();
+        fileName.append(requestBody.getRuns()).append("_runs_").append(requestBody.getTestingType()).append(requestBody.getExamples().length).append("shot").append(requestBody.listToString());
+        logger.info("Filename: {}", fileName);
+
+        return fileName.toString();
+    }
+
+    public void writeObjectToFile(String filename, JSONObject jsonObject) throws IOException {
+        if (!jsonObject.isEmpty()) {
+            FileWriter fileWriter = new FileWriter("./createdFiles/" + filename + ".json");
+            fileWriter.write(jsonObject.toString());
+            fileWriter.flush();
+            fileWriter.close();
+        }
+    }
+
+    // TODO: Work in progress
+
+    public void insertExplanationToTriplestore(String graphId, AutomatedTestRequestBody automatedTestRequestBody) throws IOException {
+        String graph = automatedTestRequestBody.toString();
+        QuerySolutionMap bindingsForInsertQuery = new QuerySolutionMap();
+        bindingsForInsertQuery.add("graph", ResourceFactory.createResource(graph));
+        bindingsForInsertQuery.add("testType", ResourceFactory.createStringLiteral(automatedTestRequestBody.getTestingType()));
+        bindingsForInsertQuery.add("examples", ResourceFactory.createTypedLiteral(automatedTestRequestBody.getExamples().length));
+
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INSERT_NEW_GRAPH, bindingsForInsertQuery);
+        VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, new VirtGraph("jdbc:virtuoso://localhost:1111", "dba", "dba"));
+        vur.exec();
+    }
+
+    public void insertExplanationToTripleStore(String graph, AutomatedTest automatedTest) {
+        QuerySolutionMap bindingsForInsertQuery = new QuerySolutionMap();
     }
 
 }
