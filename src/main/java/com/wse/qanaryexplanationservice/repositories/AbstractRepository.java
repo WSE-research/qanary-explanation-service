@@ -20,7 +20,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 @Repository
 public abstract class AbstractRepository implements SparqlRepositoryIF {
@@ -34,10 +33,11 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
     @Autowired
     protected AbstractRepository(Environment environment) throws MalformedURLException {
         this.environment = environment;
-        this.sparqlEndpoint = new URL(Objects.requireNonNull(this.environment.getProperty("sparqlEndpoint")));
+        this.sparqlEndpoint = new URL("http://localhost:8080/sparql");
         this.rdfConnection = RDFConnection.connect(sparqlEndpoint.toString());
     }
 
+    // Mostly for testing purposes
     protected void setWebClient(WebClient webClient) {
         this.webClient = webClient;
     }

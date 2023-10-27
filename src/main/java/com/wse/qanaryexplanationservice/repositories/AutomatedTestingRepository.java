@@ -10,11 +10,14 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,22 +26,23 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.Duration;
 
 @Repository
 public class AutomatedTestingRepository extends AbstractRepository {
 
-    private final URL QANARY_ENDPOINT;
     private final URL CHATGPT_ENDPOINT = new URL("https://api.openai.com/v1/completions"); // TODO:
     private final String chatGptApiKey = "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"; // TODO: put in applications.settings
     private final int RESPONSE_TOKEN = 500;
+    @Value("${virtuoso.triplestore}")
+    private String VIRTUOSO_TRIPLESTORE;
 
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingRepository.class);
 
     public AutomatedTestingRepository(Environment environment) throws MalformedURLException {
         super(environment);
-        QANARY_ENDPOINT = new URL("http://195.90.200.248:8090/startquestionansweringwithtextquestion");
         this.objectMapper = new ObjectMapper();
-        this.webClient = WebClient.create();
+        this.webClient = WebClient.builder().clientConnector(new ReactorClientHttpConnector(HttpClient.create().responseTimeout(Duration.ofSeconds(60)))).build();
     }
 
     public QanaryResponseObject executeQanaryPipeline(QanaryRequestObject qanaryRequestObject) throws IOException {
@@ -54,7 +58,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
         }
 
         QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder
-                        .scheme("http").host("195.90.200.248").port(8090).path("/startquestionansweringwithtextquestion")
+                        .scheme("http").host("localhost").port(8080).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
                         .build())
                 .retrieve().
@@ -67,7 +71,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
     }
 
     public ResultSet takeRandomQuestion(String query) {
-        RDFConnection rdfConnection1 = RDFConnection.connect("http://localhost:8890/sparql");
+        RDFConnection rdfConnection1 = RDFConnection.connect(VIRTUOSO_TRIPLESTORE);
         QueryExecution queryExecution = rdfConnection1.query(query);
         return queryExecution.execSelect();
 

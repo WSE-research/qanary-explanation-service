@@ -62,7 +62,7 @@ public class AutomatedTestingService {
         put(AnnotationType.annotationofanswersparql.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndExecutor"});
         put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
-        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
+        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia", "DiambiguationProperty"});
     }};
 
     /*
@@ -71,7 +71,9 @@ public class AutomatedTestingService {
      */
     private final Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
         put(AnnotationType.annotationofinstance, null);
-        put(AnnotationType.annotationofrelation, null);
+        put(AnnotationType.annotationofrelation, new AnnotationType[]{
+                AnnotationType.annotationofquestionlanguage
+        });
         put(AnnotationType.annotationofspotinstance, null);
         //put(AnnotationType.annotationofquestiontranslation, null);
         put(AnnotationType.annotationofquestionlanguage, null);
@@ -318,13 +320,13 @@ public class AutomatedTestingService {
                 }
             }
         } catch (RuntimeException e) {
-            logger.error("Error: {}", e.getMessage());
+            logger.error("Error: {}, Runtime Exception", e.getMessage());
             return null;
         }
         try {
             automatedTest.setPrompt(replacePromptPlaceholder(exampleCountAndTemplate.get(requestBody.getExamples().length), automatedTest));
         } catch (NullPointerException e) {
-            logger.error("Error: {}", e.getMessage());
+            logger.error("Error: {}, Nullpointer Exception", e.getMessage());
             return null;
         }
 
