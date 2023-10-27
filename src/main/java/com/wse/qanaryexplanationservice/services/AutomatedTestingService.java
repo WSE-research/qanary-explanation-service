@@ -13,10 +13,7 @@ import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.ResourceFactory;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdfconnection.RDFConnection;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -487,21 +484,20 @@ public class AutomatedTestingService {
 
     // TODO: Work in progress
 
-    public String checkForExistingGraphId() {
-
-        return null;
-    }
-
     public void insertExplanationToTriplestore(String graphId, AutomatedTestRequestBody automatedTestRequestBody) throws IOException {
-        // TODO: Replace graphID => Plus, names graph with metadata concat?
+        String graph = automatedTestRequestBody.toString();
         QuerySolutionMap bindingsForInsertQuery = new QuerySolutionMap();
-            bindingsForInsertQuery.add("graph", ResourceFactory.createResource("graphId"));
+            bindingsForInsertQuery.add("graph", ResourceFactory.createResource(graph));
             bindingsForInsertQuery.add("testType", ResourceFactory.createStringLiteral(automatedTestRequestBody.getTestingType()));
             bindingsForInsertQuery.add("examples", ResourceFactory.createTypedLiteral(automatedTestRequestBody.getExamples().length));
 
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INSERT_NEW_GRAPH, bindingsForInsertQuery);
         VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, new VirtGraph("jdbc:virtuoso://localhost:1111", "dba", "dba"));
         vur.exec();
+    }
+
+    public void insertExplanationToTripleStore(String graph, AutomatedTest automatedTest) {
+        QuerySolutionMap bindingsForInsertQuery = new QuerySolutionMap();
     }
 
 }
