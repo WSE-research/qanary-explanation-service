@@ -29,4 +29,5 @@ public class Example {
     public void setType(String type) {
         this.type = type;
     }
+    
 }

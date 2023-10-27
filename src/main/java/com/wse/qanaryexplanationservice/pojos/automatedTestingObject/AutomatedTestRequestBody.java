@@ -29,10 +29,10 @@ public class AutomatedTestRequestBody {
         return testingType + listToString();
     }
 
-    private String listToString() {
+    public String listToString() {
         String temp = "";
-        for (Example example: examples
-             ) {
+        for (Example example : examples
+        ) {
             temp += "_" + example.getType();
         }
         return temp;

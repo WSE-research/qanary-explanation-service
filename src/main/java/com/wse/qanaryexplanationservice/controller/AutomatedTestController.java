@@ -22,7 +22,7 @@ public class AutomatedTestController {
             "application/json"
     })
     public ResponseEntity<?> automatedExplanationTest(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
-        String automatedTest = automatedTestingService.gptExplanation(requestBody);
+        String automatedTest = automatedTestingService.executeTestsWithGptExplanation(requestBody);
         if (automatedTest == null)
             return new ResponseEntity<>("Fehler", HttpStatus.BAD_REQUEST);
         else
@@ -33,7 +33,7 @@ public class AutomatedTestController {
             "application/json"
     })
     public ResponseEntity<?> getExplanationsWithoutGptExplanation(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
-        String explanations = automatedTestingService.testWithoutGptExplanation(requestBody);
+        String explanations = automatedTestingService.executeTestsWithoutGptExplanation(requestBody);
 
         return new ResponseEntity<>(explanations, HttpStatus.OK);
     }
