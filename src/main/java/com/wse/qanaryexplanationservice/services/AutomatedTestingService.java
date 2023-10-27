@@ -465,7 +465,7 @@ public class AutomatedTestingService {
 
     public String computeFileName(AutomatedTestRequestBody requestBody) {
         StringBuilder fileName = new StringBuilder();
-        fileName.append(requestBody.getRuns()).append("_runs_").append(requestBody.getTestingType()).append(requestBody.getExamples().length).append("shot").append(requestBody.listToString());
+        fileName.append(requestBody.getRuns()).append("_runs_").append(requestBody.getTestingType()).append("_").append(requestBody.getExamples().length).append("shot").append(requestBody.listToString());
         logger.info("Filename: {}", fileName);
 
         return fileName.toString();
@@ -473,7 +473,7 @@ public class AutomatedTestingService {
 
     public void writeObjectToFile(String filename, JSONObject jsonObject) throws IOException {
         if (!jsonObject.isEmpty()) {
-            FileWriter fileWriter = new FileWriter("./createdFiles/" + filename + ".json");
+            FileWriter fileWriter = new FileWriter("createdFiles/" + filename + ".json");
             fileWriter.write(jsonObject.toString());
             fileWriter.flush();
             fileWriter.close();
