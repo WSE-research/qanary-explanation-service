@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.complexible.common.base.DateTime;
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
@@ -46,7 +47,7 @@ public class AutomatedTestingService {
     // Prefixes for ResultSets
     private final Map<String, String> prefixes = new HashMap<>() {{
         put("http://www.w3.org/ns/openannotation/core/", "oa:");
-        put("http://195.90.200.248:8090/question/stored-question__text_", "questionID:");
+        put("http://localhost:8080/question/stored-question__text_", "questionID:");
         put("http://www.wdaqua.eu/qa#", "qa:");
         put("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:");
         put("http://www.w3.org/2000/01/rdf-schema#", "rdfs:");
@@ -63,7 +64,7 @@ public class AutomatedTestingService {
         put(AnnotationType.annotationofanswersparql.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndExecutor"});
         put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
-        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
+        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia", "DiambiguationProperty"});
     }};
     /*
      * Dependency map for annotation types
@@ -71,7 +72,9 @@ public class AutomatedTestingService {
      */
     private final Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
         put(AnnotationType.annotationofinstance, null);
-        put(AnnotationType.annotationofrelation, null);
+        put(AnnotationType.annotationofrelation, new AnnotationType[]{
+                AnnotationType.annotationofquestionlanguage
+        });
         put(AnnotationType.annotationofspotinstance, null);
         //put(AnnotationType.annotationofquestiontranslation, null);
         put(AnnotationType.annotationofquestionlanguage, null);
@@ -90,7 +93,7 @@ public class AutomatedTestingService {
         put(2, "/testtemplates/twoshot");
         put(3, "/testtemplates/threeshot");
     }};
-    private String INSERT_NEW_GRAPH = "/queries/insertAutomatedTest.rq";
+    private final String INSERT_NEW_GRAPH = "/queries/insertAutomatedTest.rq";
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
     @Autowired
@@ -134,7 +137,7 @@ public class AutomatedTestingService {
         logger.info("GraphID from pipeline execution: {}", response.getOutGraph());
 
         String graphURI = response.getOutGraph();
-        String questionID = response.getQuestion().replace("http://195.90.200.248:8090/question/stored-question__text_", "questionID:");
+        String questionID = response.getQuestion().replace("http://localhost:8080/question/stored-question__text_", "questionID:");
 
         logger.info("Checkpoint 1");
 
@@ -282,7 +285,7 @@ public class AutomatedTestingService {
      * Fetches triples for specific graph + component
      *
      * @return Triples as ResultSet
-     * @throws Exception If a component hasn't made any annotations to the graph the query will result in a empty ResultSet
+     * @throws Exception If a component hasn't made any annotations to the graph the query will result in an empty ResultSet
      */
     public ResultSet fetchTriples(String graphURI, String componentURI) throws Exception {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
@@ -304,12 +307,14 @@ public class AutomatedTestingService {
      * @return AutomatedTest as a complete test-case
      * @throws Exception If ResultSet for one example is null or failures in replacePlaceholder method
      */
-    public AutomatedTest executeTest(AutomatedTestRequestBody requestBody) throws Exception {
+    public AutomatedTest executeTest(AutomatedTestRequestBody requestBody, int currentRun) throws Exception {
 
         AutomatedTest automatedTest = new AutomatedTest();
         try {
+            logger.info("-------------- {}. run, computing test data", currentRun);
             automatedTest.setTestData(createTestDataObject(AnnotationType.valueOf(requestBody.getTestingType()), null, null));
             while (automatedTest.getExampleData().size() < requestBody.getExamples().length) {
+                logger.info("+-+-+-+-+-+-+-+-+-+-+-+-+-+- {}.run, computing example {} out of {}", currentRun, automatedTest.getExampleData().size() + 1, requestBody.getExamples().length);
                 int currentValue = automatedTest.getExampleData().size();
                 TestDataObject testDataObject = createTestDataObject(
                         AnnotationType.valueOf(requestBody.getExamples()[currentValue].getType()), // if null, random annotation type will be calculated
@@ -323,13 +328,13 @@ public class AutomatedTestingService {
                 }
             }
         } catch (RuntimeException e) {
-            logger.error("Error: {}", e.getMessage());
+            logger.error("Error: {}, Runtime Exception", e.getMessage());
             return null;
         }
         try {
             automatedTest.setPrompt(replacePromptPlaceholder(exampleCountAndTemplate.get(requestBody.getExamples().length), automatedTest));
         } catch (NullPointerException e) {
-            logger.error("Error: {}", e.getMessage());
+            logger.error("Error: {}, Nullpointer Exception", e.getMessage());
             return null;
         }
 
@@ -417,8 +422,9 @@ public class AutomatedTestingService {
         AutomatedTest test = null;
 
         while (jsonArray.length() < requestBody.getRuns()) {
+            logger.info("++++++++++++++ {}. run === {}. test is being executed", jsonArray.length() + 1, jsonArray.length() + 1);
             try {
-                test = executeTest(requestBody); // null if not successful
+                test = executeTest(requestBody, jsonArray.length() + 1); // null if not successful
             } catch (IOException e) {
                 logger.info("Error while executing pipeline: {}", e.getMessage());
             }
@@ -450,8 +456,9 @@ public class AutomatedTestingService {
         AutomatedTest test = null;
 
         while (jsonArray.length() < requestBody.getRuns()) {
+            logger.info("++++++++++++++ {}. run === {}. test is being executed", jsonArray.length() + 1, jsonArray.length() + 1);
             try {
-                test = executeTest(requestBody); // null if not successful
+                test = executeTest(requestBody, jsonArray.length() + 1); // null if not successful
             } catch (IOException e) { // 500 error from Qanary pipeline
                 logger.info("Error while executing pipeline: {}", e.getMessage());
             }
@@ -462,14 +469,20 @@ public class AutomatedTestingService {
         }
 
         jsonObject.put("explanations", jsonArray); // Add filled-Json Array to Json-Object
-        writeObjectToFile(computeFileName(requestBody), jsonObject); // Write to file
+        writeObjectToFile(computeFileName(requestBody), jsonObject);
 
         return jsonObject.toString(); // Return JSON-String
     }
 
     public String computeFileName(AutomatedTestRequestBody requestBody) {
         StringBuilder fileName = new StringBuilder();
-        fileName.append(requestBody.getRuns()).append("_runs_").append(requestBody.getTestingType()).append(requestBody.getExamples().length).append("shot").append(requestBody.listToString());
+        fileName.append(requestBody.getRuns())
+                .append("_runs_")
+                .append(requestBody.getTestingType())
+                .append("_").append(requestBody.getExamples().length)
+                .append("shot").append(requestBody.listToString())
+                .append("_").append(DateTime.now())
+                .append(".json");
         logger.info("Filename: {}", fileName);
 
         return fileName.toString();
@@ -477,7 +490,7 @@ public class AutomatedTestingService {
 
     public void writeObjectToFile(String filename, JSONObject jsonObject) throws IOException {
         if (!jsonObject.isEmpty()) {
-            FileWriter fileWriter = new FileWriter("./createdFiles/" + filename + ".json");
+            FileWriter fileWriter = new FileWriter("createdFiles/" + filename);
             fileWriter.write(jsonObject.toString());
             fileWriter.flush();
             fileWriter.close();
@@ -498,10 +511,6 @@ public class AutomatedTestingService {
         vur.exec();
     }
 
-    public void insertExplanationToTripleStore(String graph, AutomatedTest automatedTest) {
-        QuerySolutionMap bindingsForInsertQuery = new QuerySolutionMap();
-    }
-
 }
 
-// TODO: dont retry a lready used combinations
+// TODO: don't retry already used combinations
