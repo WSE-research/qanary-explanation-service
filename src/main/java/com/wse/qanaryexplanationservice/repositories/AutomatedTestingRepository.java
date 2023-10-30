@@ -42,7 +42,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
 
     public AutomatedTestingRepository(Environment environment) throws MalformedURLException {
         super(environment);
-        QANARY_ENDPOINT = new URL("http://195.90.200.248:8090/startquestionansweringwithtextquestion");
+        QANARY_ENDPOINT = new URL("http://195.90.200.248:8080/startquestionansweringwithtextquestion");
         this.objectMapper = new ObjectMapper();
         this.webClient = WebClient.create();
     }
@@ -60,7 +60,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
         }
 
         QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder
-                        .scheme("http").host("localhost").port(8080).path("/startquestionansweringwithtextquestion")
+                        .scheme("http").host("192.168.178.37").port(8080).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
                         .build())
                 .retrieve().
@@ -73,7 +73,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
     }
 
     public ResultSet takeRandomQuestion(String query) {
-        RDFConnection rdfConnection1 = RDFConnection.connect("http://localhost:8890/sparql");
+        RDFConnection rdfConnection1 = RDFConnection.connect("http://192.168.178.37:8890/sparql");
         QueryExecution queryExecution = rdfConnection1.query(query);
         return queryExecution.execSelect();
 

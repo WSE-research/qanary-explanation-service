@@ -83,8 +83,9 @@ public class ExplanationService {
      * @param prefix       Text phrase between intro and items, can be an empty string
      * @return Explanation as String
      */
-    private static String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
+    private String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
         String result = null;
+        logger.info("Explanations {}", explanations.size());
         if (Objects.equals(lang, "en")) {
             result = "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the graph"
                     + prefix + ": " + StringUtils.join(explanations, " ");
@@ -120,13 +121,18 @@ public class ExplanationService {
      */
     public Model createModel(String graphUri, String componentUri) throws IOException {
 
+        logger.info("Create Model");
         List<String> types = new ArrayList<>();
+        logger.info("Is Stringresultmap empty: {}", stringResultSetMap.isEmpty());
         if (stringResultSetMap.isEmpty())
             types = fetchAllAnnotations(graphUri, componentUri);
-
         String contentDE = createTextualExplanation(graphUri, componentUri, "de", types);
         String contentEN = createTextualExplanation(graphUri, componentUri, "en", types);
 
+        logger.info("Explanation for component {} : {}", componentUri, contentEN);
+
+        stringResultSetMap.clear();
+        types.clear();
         return createModelForSpecificComponent(contentDE, contentEN, componentUri);
     }
 
@@ -324,7 +330,6 @@ public class ExplanationService {
      * @return List with explanations. At the end it includes all explanations for every annotation type
      */
     public List<String> createSpecificExplanations(String[] usedTypes, String graphURI, String lang, String componentURI) throws IOException {
-
         List<String> explanations = new ArrayList<>();
         for (String type : usedTypes
         ) {

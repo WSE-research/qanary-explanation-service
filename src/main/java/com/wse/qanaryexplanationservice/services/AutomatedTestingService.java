@@ -136,9 +136,15 @@ public class AutomatedTestingService {
         String graphURI = response.getOutGraph();
         String questionID = response.getQuestion().replace("http://195.90.200.248:8090/question/stored-question__text_", "questionID:");
 
+        logger.info("Checkpoint 1");
+
         String dataset = createDataset(selectedComponent, graphURI);
 
+        logger.info("Checkpoint 2");
+
         String explanation = getExplanation(graphURI, selectedComponent);
+
+        logger.info("Checkpoint 3");
 
         return new TestDataObject(annotationType_, annotationType_.ordinal(), selectedComponent, question, explanation, dataset, graphURI, questionID, random, selectedComponentAsInt, randomComponents.toString());
     }
@@ -209,7 +215,7 @@ public class AutomatedTestingService {
      * @return The explanation for given graphURI and componentURI
      */
     public String getExplanation(String graphURI, String componentURI) throws IOException, IndexOutOfBoundsException {
-
+        
         Model explanationModel = explanationService.createModel(graphURI, "urn:qanary:" + componentURI);
         explanationModel.setNsPrefix("explanations", EXPLANATION_NAMESPACE);
         Property hasExplanationForCreatedDataProperty = explanationModel.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
@@ -437,7 +443,7 @@ public class AutomatedTestingService {
 
     public String executeTestsWithoutGptExplanation(AutomatedTestRequestBody requestBody) throws Exception {
 
-        insertExplanationToTriplestore(null, requestBody);
+        // insertExplanationToTriplestore(null, requestBody);
 
         JSONObject jsonObject = new JSONObject();
         JSONArray jsonArray = new JSONArray();
@@ -488,7 +494,7 @@ public class AutomatedTestingService {
         bindingsForInsertQuery.add("examples", ResourceFactory.createTypedLiteral(automatedTestRequestBody.getExamples().length));
 
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INSERT_NEW_GRAPH, bindingsForInsertQuery);
-        VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, new VirtGraph("jdbc:virtuoso://localhost:1111", "dba", "dba"));
+        VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, new VirtGraph("jdbc:virtuoso://192.168.178.37:1111", "dba", "dba"));
         vur.exec();
     }
 
