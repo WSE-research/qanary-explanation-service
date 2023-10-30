@@ -33,7 +33,7 @@ public class AutomatedTestController {
             "application/json"
     })
     public ResponseEntity<?> getExplanationsWithoutGptExplanation(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
-        String explanations = automatedTestingService.executeTestsWithoutGptExplanation(requestBody);
+        String explanations = automatedTestingService.createTestWorkflow(requestBody);
 
         return new ResponseEntity<>(explanations, HttpStatus.OK);
     }

@@ -10,7 +10,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -36,11 +35,6 @@ public class AutomatedTestingRepository extends AbstractRepository {
     private final URL CHATGPT_ENDPOINT = new URL("https://api.openai.com/v1/completions"); // TODO:
     private final String chatGptApiKey = "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"; // TODO: put in applications.settings
     private final int RESPONSE_TOKEN = 500;
-    @Value("${virtuoso.triplestore}")
-    private String VIRTUOSO_TRIPLESTORE;
-
-    @Value("${sparqlEndpoint}")
-    private String SPAQRL_ENDPOINT;
 
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingRepository.class);
 
@@ -50,15 +44,14 @@ public class AutomatedTestingRepository extends AbstractRepository {
         this.webClient = WebClient.builder().clientConnector(new ReactorClientHttpConnector(HttpClient.create().responseTimeout(Duration.ofSeconds(60)))).build();
     }
 
-    public QanaryResponseObject executeQanaryPipeline(QanaryRequestObject qanaryRequestObject) throws IOException {
-
-        logger.info("Execute Qanary Pipeline");
+    public QanaryResponseObject executeQanaryPipeline(QanaryRequestObject qanaryRequestObject) {
 
         MultiValueMap<String, String> multiValueMap = new LinkedMultiValueMap();
         multiValueMap.add("question", qanaryRequestObject.getQuestion());
 
         for (String component : qanaryRequestObject.getComponentlist()
         ) {
+            logger.info(component);
             multiValueMap.add("componentlist[]", component);
         }
 
@@ -66,9 +59,19 @@ public class AutomatedTestingRepository extends AbstractRepository {
                         .scheme("http").host("192.168.178.37").port(8080).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
                         .build())
-                .retrieve().
-                bodyToMono(QanaryResponseObject.class).
-                block();
+                .retrieve()
+                .bodyToMono(QanaryResponseObject.class)
+                .block();
+
+        /*
+        Mono<QanaryResponseObject> response = webClient.post().uri(uriBuilder -> uriBuilder
+                        .scheme("http").host("192.168.178.37").port(8080).path("/startquestionansweringwithtextquestion")
+                        .queryParams(multiValueMap)
+                        .build())
+                .retrieve()
+                .bodyToMono(QanaryResponseObject.class)
+                .onErrorResume(WebClientResponseException.class, ex -> ex.getStatusCode().value() == 500 ? Mono.error(ex) : Mono.empty());
+        */
 
         logger.info("Response Object: {}", responseObject);
 
@@ -129,10 +132,6 @@ public class AutomatedTestingRepository extends AbstractRepository {
         data.put("messages", jsonArray);
 
         return data;
-    }
-
-    public String test() {
-        return SPAQRL_ENDPOINT;
     }
 
 }
