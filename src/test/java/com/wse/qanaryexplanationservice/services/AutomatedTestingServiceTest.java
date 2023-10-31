@@ -1,9 +1,9 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.pojos.Example;
-import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AnnotationType;
-import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AutomatedTest;
-import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.TestDataObject;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.Example;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AnnotationType;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTest;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.TestDataObject;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
 import org.apache.jena.query.ResultSet;
 import org.junit.jupiter.api.Assertions;

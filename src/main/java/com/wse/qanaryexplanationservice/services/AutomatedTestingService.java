@@ -5,8 +5,9 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
-import com.wse.qanaryexplanationservice.pojos.Example;
-import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.*;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryRequestObject;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryResponseObject;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.*;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
@@ -536,7 +537,7 @@ public class AutomatedTestingService {
         bindingsForInsertQuery.add("examples", ResourceFactory.createTypedLiteral(automatedTestRequestBody.getExamples().length));
 
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INSERT_NEW_GRAPH, bindingsForInsertQuery);
-        VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, new VirtGraph("jdbc:virtuoso://192.168.178.37:1111", "dba", "dba"));
+        VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, new VirtGraph("jdbc:virtuoso://localhost:1111", "dba", "dba"));
         vur.exec();
     }
 
@@ -577,7 +578,7 @@ public class AutomatedTestingService {
             logger.info("Execute Qanary pipeline");
             QanaryResponseObject qanaryResponse = executeQanaryPipeline(question, componentListForQanaryPipeline);
             String graphURI = qanaryResponse.getOutGraph();
-            String questionID = qanaryResponse.getQuestion();
+            String questionID = qanaryResponse.getQuestion().replace("http://localhost:8080/question/stored-question__text_", "questionID:");
 
             // Create dataset
             logger.info("Create dataset");

@@ -1,4 +1,4 @@
-package com.wse.qanaryexplanationservice.pojos;
+package com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject;
 
 public class Example {
 

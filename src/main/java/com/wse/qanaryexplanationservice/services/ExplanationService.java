@@ -121,18 +121,12 @@ public class ExplanationService {
      */
     public Model createModel(String graphUri, String componentUri) throws IOException {
 
-        logger.info("Create Model");
         List<String> types = new ArrayList<>();
-        logger.info("Is Stringresultmap empty: {}", stringResultSetMap.isEmpty());
         if (stringResultSetMap.isEmpty())
             types = fetchAllAnnotations(graphUri, componentUri);
         String contentDE = createTextualExplanation(graphUri, componentUri, "de", types);
         String contentEN = createTextualExplanation(graphUri, componentUri, "en", types);
 
-        logger.info("Explanation for component {} : {}", componentUri, contentEN);
-
-        stringResultSetMap.clear();
-        types.clear();
         return createModelForSpecificComponent(contentDE, contentEN, componentUri);
     }
 

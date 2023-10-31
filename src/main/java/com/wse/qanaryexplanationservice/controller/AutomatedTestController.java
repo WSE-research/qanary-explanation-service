@@ -1,6 +1,6 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.AutomatedTestRequestBody;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTestRequestBody;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
 import com.wse.qanaryexplanationservice.services.AutomatedTestingService;
 import org.springframework.beans.factory.annotation.Autowired;

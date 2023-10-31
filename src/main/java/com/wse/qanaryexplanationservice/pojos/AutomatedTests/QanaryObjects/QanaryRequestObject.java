@@ -1,4 +1,4 @@
-package com.wse.qanaryexplanationservice.pojos.automatedTestingObject;
+package com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects;
 
 import java.util.List;
 

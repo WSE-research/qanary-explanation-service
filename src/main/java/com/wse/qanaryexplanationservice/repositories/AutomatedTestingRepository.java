@@ -1,8 +1,8 @@
 package com.wse.qanaryexplanationservice.repositories;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.QanaryRequestObject;
-import com.wse.qanaryexplanationservice.pojos.automatedTestingObject.QanaryResponseObject;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryRequestObject;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryResponseObject;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdfconnection.RDFConnection;
@@ -56,7 +56,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
         }
 
         QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder
-                        .scheme("http").host("192.168.178.37").port(8080).path("/startquestionansweringwithtextquestion")
+                        .scheme("http").host("localhost").port(8080).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
                         .build())
                 .retrieve()
@@ -65,7 +65,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
 
         /*
         Mono<QanaryResponseObject> response = webClient.post().uri(uriBuilder -> uriBuilder
-                        .scheme("http").host("192.168.178.37").port(8080).path("/startquestionansweringwithtextquestion")
+                        .scheme("http").host("localhost").port(8080).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
                         .build())
                 .retrieve()
@@ -78,11 +78,10 @@ public class AutomatedTestingRepository extends AbstractRepository {
         return responseObject;
     }
 
-    public ResultSet takeRandomQuestion(String query) {
-        RDFConnection rdfConnection1 = RDFConnection.connect("http://192.168.178.37:8890/sparql");
-        QueryExecution queryExecution = rdfConnection1.query(query);
-        return queryExecution.execSelect();
-
+    public ResultSet takeRandomQuestion(String query) throws RuntimeException{
+            RDFConnection rdfConnection1 = RDFConnection.connect("http://localhost:8890/sparql");
+            QueryExecution queryExecution = rdfConnection1.query(query);
+            return queryExecution.execSelect();
     }
 
     // Variable as object
