@@ -72,13 +72,13 @@ public class AutomatedTestingService {
      * Used for setting up the Qanary pipeline, so that all relevant annotation are made
      */
     private final Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
-        put(AnnotationType.annotationofinstance, null);
+        put(AnnotationType.annotationofinstance, new AnnotationType[]{});
         put(AnnotationType.annotationofrelation, new AnnotationType[]{
                 AnnotationType.annotationofquestionlanguage
         });
-        put(AnnotationType.annotationofspotinstance, null);
+        put(AnnotationType.annotationofspotinstance, new AnnotationType[]{});
         //put(AnnotationType.annotationofquestiontranslation, null);
-        put(AnnotationType.annotationofquestionlanguage, null);
+        put(AnnotationType.annotationofquestionlanguage, new AnnotationType[]{});
         put(AnnotationType.annotationofanswersparql, new AnnotationType[]{
                 AnnotationType.annotationofinstance,
                 AnnotationType.annotationofrelation,
@@ -569,7 +569,8 @@ public class AutomatedTestingService {
 
             // Resolve dependencies and select random components
             logger.info("Resolve dependencies and select components");
-            List<String> componentListForQanaryPipeline = selectRandomComponents(new ArrayList<>(Arrays.asList(dependencyMapForAnnotationTypes.get(givenAnnotationType))));
+            ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(dependencyMapForAnnotationTypes.get(givenAnnotationType)));
+            List<String> componentListForQanaryPipeline = selectRandomComponents(annotationTypes);
             componentListForQanaryPipeline.add(selectedComponent); // Seperation of concerns, add this to the selectRandomComps method
 
             // Execute Qanary pipeline and store graphURI + questionID

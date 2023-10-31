@@ -33,7 +33,7 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
     @Autowired
     protected AbstractRepository(Environment environment) throws MalformedURLException {
         this.environment = environment;
-        this.sparqlEndpoint = new URL("http://localhost:8080/sparql");
+        this.sparqlEndpoint = new URL("http://192.168.178.37:8080/sparql");
         this.rdfConnection = RDFConnection.connect(sparqlEndpoint.toString());
     }
 
