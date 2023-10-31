@@ -83,9 +83,15 @@ public class AutomatedTestingService {
                 AnnotationType.annotationofinstance,
                 AnnotationType.annotationofrelation,
                 AnnotationType.annotationofspotinstance,
-                //  AnnotationType.annotationofquestiontranslation
+                AnnotationType.annotationofquestionlanguage
         });
-        put(AnnotationType.annotationofanswerjson, new AnnotationType[]{AnnotationType.annotationofanswersparql});
+        put(AnnotationType.annotationofanswerjson, new AnnotationType[]{
+                AnnotationType.annotationofanswersparql,
+                AnnotationType.annotationofinstance,
+                AnnotationType.annotationofrelation,
+                AnnotationType.annotationofspotinstance,
+                AnnotationType.annotationofquestionlanguage
+        });
     }};
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
     // stores the correct template for different x-shot approaches
@@ -159,7 +165,6 @@ public class AutomatedTestingService {
         try {
             List<AnnotationType> list = Arrays.asList(dependencyMapForAnnotationTypes.get(annotationType));
             HashSet<AnnotationType> hashSet = new HashSet<>(list);
-
             for (AnnotationType annType : hashSet
             ) {
                 hashSet.addAll(resolveRecursiveDependencies(annType));
@@ -174,23 +179,21 @@ public class AutomatedTestingService {
 
     public ArrayList<AnnotationType> resolveRecursiveDependencies(AnnotationType annType) { // TODO: Check it !!!
 
-        try {
-            AnnotationType[] list = dependencyMapForAnnotationTypes.get(annType);
-            ArrayList<AnnotationType> list_ = new ArrayList<>(Arrays.asList(list));
+        AnnotationType[] list = dependencyMapForAnnotationTypes.get(annType);
+        ArrayList<AnnotationType> list_ = new ArrayList<>(Arrays.asList(list));
 
-            for (AnnotationType annoType : list
-            ) {
-                if (dependencyMapForAnnotationTypes.get(annType) != null) {
-                    list_.addAll(resolveRecursiveDependencies(annoType));
-                }
-            }
+        if (list == null) {
+            list_.add(annType);
             return list_;
-        } catch (NullPointerException e) {
-            return new ArrayList<>() {{
-                add(annType);
-            }};
         }
 
+        for (AnnotationType annoType : list
+        ) {
+            if (dependencyMapForAnnotationTypes.get(annType) != null) {
+                list_.addAll(resolveRecursiveDependencies(annoType));
+            }
+        }
+        return list_;
     }
 
     /**
@@ -201,6 +204,7 @@ public class AutomatedTestingService {
         // Is null when no dependencies were resolved and therefore only one component shall be executed
         if (list == null)
             return new ArrayList<>();
+
         Collections.sort(list); // sorts them by the enum definition, which equals the dependency tree (the last is the target-component)
         List<String> componentList = new ArrayList<>();
 
@@ -310,7 +314,6 @@ public class AutomatedTestingService {
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
 
-            logger.info("GraphID: {}", graphURI);
             ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
 
             if (!resultSet.hasNext())
@@ -566,7 +569,7 @@ public class AutomatedTestingService {
 
             // Resolve dependencies and select random components
             logger.info("Resolve dependencies and select components");
-            List<String> componentListForQanaryPipeline = selectRandomComponents(fetchDependencies(givenAnnotationType));
+            List<String> componentListForQanaryPipeline = selectRandomComponents(new ArrayList<>(Arrays.asList(dependencyMapForAnnotationTypes.get(givenAnnotationType))));
             componentListForQanaryPipeline.add(selectedComponent); // Seperation of concerns, add this to the selectRandomComps method
 
             // Execute Qanary pipeline and store graphURI + questionID
@@ -597,7 +600,7 @@ public class AutomatedTestingService {
             // Compute Test data
             do {
                 automatedTest.setTestData(computeSingleTestObject(AnnotationType.valueOf(requestBody.getTestingType())));
-            } while (automatedTest.getTestData() != null);
+            } while (automatedTest.getTestData() == null);
 
             // Compute example data
             while (automatedTest.getExampleData().size() < requestBody.getExamples().length) {
@@ -611,9 +614,12 @@ public class AutomatedTestingService {
                         automatedTest.setExampleData(testDataObject); // If successful, add example to the automatedTest
                 } while (testDataObject == null);
             }
+            automatedTest.setPrompt(replacePromptPlaceholder(exampleCountAndTemplate.get(requestBody.getExamples().length), automatedTest));
         } catch (RuntimeException e) {
             logger.error("{}", e.getMessage());
             return null;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         return automatedTest;
@@ -627,9 +633,10 @@ public class AutomatedTestingService {
 
         while (jsonArray.length() < requestBody.getRuns()) {
             test = createTest(requestBody); // null if not successful
-            if (test != null)
+            if (test != null) {
                 jsonArray.put(new JSONObject(test)); // Add test to Json-Array
-            else
+                logger.info("------------------------- {} --------------------", test);
+            } else
                 logger.info("Skipped run due to null-ResultSet");
         }
 
