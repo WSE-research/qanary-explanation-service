@@ -1,11 +1,20 @@
-PREFIX : <http://my.domain/meta-data#>
-PREFIX automatedExplanation: <http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX metadataExplanation: <http://www.semanticweb.org>
+PREFIX aex: <http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation>
 
-INSERT DATA{
-    GRAPH ?graph {
-        :1  metadataExplanation:testType ?testType ;
-            metadataExplanation:examples ?examples .
+INSERT {
+
+    GRAPH <urn:bulkload:general> {
+
+        ?experimentId   aex:prompt  ?prompt ;
+                        aex:gptExplanation  ?gptExplanation ;
+                        aex:usedComponent   ?usedComponent ;
+                        aex:usedComponentAsNum  ?usedComponentAsNum ;
+                        aex:dataset ?dataset ;
+                        aex:graphId ?graphId ;
+                        aex:explanation ?explanation ;
+                        aex:questionId  ?questionId ;
+                        aex:question    ?question ;
+                        aex:exampleData rdf:Seq ;
+                        ?exampleDataSeq .
     }
+
 }

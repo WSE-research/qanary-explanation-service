@@ -66,7 +66,7 @@ public class AutomatedTestingService {
         put(AnnotationType.annotationofanswersparql.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndExecutor"});
         put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
-        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia", "DiambiguationProperty"});
+        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRelComponent-dbpedia", "DiambiguationProperty"});
     }};
     /*
      * Dependency map for annotation types
@@ -145,7 +145,7 @@ public class AutomatedTestingService {
         logger.info("GraphID from pipeline execution: {}", response.getOutGraph());
 
         String graphURI = response.getOutGraph();
-        String questionID = response.getQuestion().replace("http://localhost:8080/question/stored-question__text_", "questionID:");
+        String questionID = response.getQuestion().replace("http://192.168.178.37:8080/question/stored-question__text_", "questionID:");
 
         logger.info("Checkpoint 1");
 
@@ -568,6 +568,7 @@ public class AutomatedTestingService {
             Integer randomQuestionID = random.nextInt(QADO_DATASET_QUESTION_COUNT);
             String question = getRandomQuestion(randomQuestionID);
 
+
             // Resolve dependencies and select random components
             logger.info("Resolve dependencies and select components");
             ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(dependencyMapForAnnotationTypes.get(givenAnnotationType)));
@@ -636,6 +637,29 @@ public class AutomatedTestingService {
         while (jsonArray.length() < requestBody.getRuns()) {
             test = createTest(requestBody); // null if not successful
             if (test != null) {
+                jsonArray.put(new JSONObject(test)); // Add test to Json-Array
+                logger.info("------------------------- {} --------------------", test);
+            } else
+                logger.info("Skipped run due to null-ResultSet");
+        }
+
+        jsonObject.put("explanations", jsonArray); // Add filled-Json Array to Json-Object
+        writeObjectToFile(computeFileName(requestBody), jsonObject);
+
+        return jsonObject.toString(); // Return JSON-String
+    }
+
+    public String createTestWorkflowWithOpenAiRequest(AutomatedTestRequestBody requestBody) throws Exception {
+
+        JSONObject jsonObject = new JSONObject();
+        JSONArray jsonArray = new JSONArray();
+        AutomatedTest test = null;
+
+        while (jsonArray.length() < requestBody.getRuns()) {
+            test = createTest(requestBody); // null if not successful
+            if (test != null) {
+                String gptExplanation = sendPrompt(test.getPrompt()); // Send prompt to OpenAI-API
+                test.setGptExplanation(gptExplanation); // Add the response-explanation
                 jsonArray.put(new JSONObject(test)); // Add test to Json-Array
                 logger.info("------------------------- {} --------------------", test);
             } else

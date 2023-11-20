@@ -22,7 +22,7 @@ public class AutomatedTestController {
             "application/json"
     })
     public ResponseEntity<?> automatedExplanationTest(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
-        String automatedTest = automatedTestingService.executeTestsWithGptExplanation(requestBody);
+        String automatedTest = automatedTestingService.createTestWorkflowWithOpenAiRequest(requestBody);
         if (automatedTest == null)
             return new ResponseEntity<>("Fehler", HttpStatus.BAD_REQUEST);
         else
