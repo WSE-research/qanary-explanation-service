@@ -1,5 +1,7 @@
 package com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject;
 
+import java.util.Arrays;
+
 public class AutomatedTestRequestBody {
 
     private String testingType;
@@ -24,7 +26,11 @@ public class AutomatedTestRequestBody {
 
     @Override
     public String toString() {
-        return testingType + listToString();
+        return "AutomatedTestRequestBody{" +
+                "testingType='" + testingType + '\'' +
+                ", examples=" + Arrays.toString(examples) +
+                ", runs=" + runs +
+                '}';
     }
 
     public String listToString() {

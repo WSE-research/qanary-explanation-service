@@ -79,6 +79,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
     }
 
     public ResultSet takeRandomQuestion(String query) throws RuntimeException{
+        logger.info("Taking random question");
             RDFConnection rdfConnection1 = RDFConnection.connect("http://localhost:8890/sparql");
             QueryExecution queryExecution = rdfConnection1.query(query);
             return queryExecution.execSelect();
