@@ -35,4 +35,16 @@ public class AutomatedTestRequestBody {
         }
         return temp;
     }
+
+    public void setExamples(Example[] examples) {
+        this.examples = examples;
+    }
+
+    public void setRuns(int runs) {
+        this.runs = runs;
+    }
+
+    public void setTestingType(String testingType) {
+        this.testingType = testingType;
+    }
 }

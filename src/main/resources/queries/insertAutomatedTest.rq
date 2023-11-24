@@ -1,5 +1,4 @@
 PREFIX aex: <http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation>
-<<<<<<< HEAD
 
 INSERT {
 
@@ -7,13 +6,7 @@ INSERT {
 
         ?experimentId   aex:prompt  ?prompt ;
                         aex:gptExplanation  ?gptExplanation ;
-                        aex:usedComponent   ?usedComponent ;
-                        aex:usedComponentAsNum  ?usedComponentAsNum ;
-                        aex:dataset ?dataset ;
-                        aex:graphId ?graphId ;
-                        aex:explanation ?explanation ;
-                        aex:questionId  ?questionId ;
-                        aex:question    ?question ;
+                        aex;testData ?testData ;
                         aex:exampleData rdf:Seq ;
                         ?exampleDataSeq .
     }

@@ -1,0 +1,10 @@
+[
+                        rdf:type ?annotationType
+                        aex:usedComponent   ?usedComponent ;
+                        aex:usedComponentAsNum  ?usedComponentAsNum ;
+                        aex:dataset ?dataset ;
+                        aex:graphId ?graphId ;
+                        aex:explanation ?explanation ;
+                        aex:questionId  ?questionId ;
+                        aex:question    ?question ;
+]

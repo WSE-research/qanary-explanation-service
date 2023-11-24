@@ -1,18 +1,22 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.Example;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AnnotationType;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTest;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.TestDataObject;
+import com.complexible.stardog.plan.filter.functions.numeric.E;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryResponseObject;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.*;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
+import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
+import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.ResourceFactory;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +24,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -110,7 +117,7 @@ public class AutomatedTestingServiceTest {
 
         // Setup fetchTriples handling
         private void setupTest(ResultSet resultSet) {
-            Mockito.when(automatedTestingRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
+            when(automatedTestingRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
         }
 
         /*
@@ -186,4 +193,48 @@ public class AutomatedTestingServiceTest {
         }
 
     }
+
+    @Nested
+    @RunWith(MockitoJUnitRunner.class)
+    class InsertAutomatedTestsTest {
+
+        @Mock
+        private AutomatedTestingRepository automatedTestingRepository;
+        @Mock
+        private ExplanationSparqlRepository explanationSparqlRepository;
+        @Mock
+        private ExplanationService explanationService;
+
+        private AutomatedTestRequestBody automatedTestRequestBody = new AutomatedTestRequestBody();
+        private ArrayList<Example> examples = new ArrayList<>() {{
+            new Example("annotationofinstance", true);
+        }};
+        private ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
+        private List<QuerySolutionMap> liste = new ArrayList<>() {{
+            new QuerySolutionMap().add("hasQuestion", ResourceFactory.createPlainLiteral("Example_Question"));
+        }};
+
+        @BeforeEach
+        public void setup() throws IOException {
+            ResultSet resultSet = serviceDataForTests.createResultSet(liste);
+            QanaryResponseObject qanaryResponseObject = new QanaryResponseObject();
+            qanaryResponseObject.setEndpoint("endpoint"); qanaryResponseObject.setInGraph("ingraph"); qanaryResponseObject.setOutGraph(qanaryResponseObject.getInGraph()); qanaryResponseObject.setQuestion("Example_question");
+            when(automatedTestingRepository.takeRandomQuestion(any())).thenReturn(resultSet);
+            when(automatedTestingRepository.executeQanaryPipeline(any())).thenReturn(qanaryResponseObject);
+            when(automatedTestingRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
+            when(explanationService.createModel(any(), any())).thenReturn(ModelFactory.createDefaultModel());
+        }
+
+        @Test
+        public void insertQueryCorrect() throws Exception {
+            automatedTestRequestBody.setTestingType("annotationofinstance");
+            automatedTestRequestBody.setRuns(1);
+            automatedTestRequestBody.setExamples(examples.toArray(Example[]::new));
+
+            automatedTestingService.createTestWorkflow(automatedTestRequestBody);
+        }
+
+
+    }
+
 }

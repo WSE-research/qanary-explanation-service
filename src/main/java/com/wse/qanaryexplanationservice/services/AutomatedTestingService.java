@@ -106,6 +106,8 @@ public class AutomatedTestingService {
     private AutomatedTestingRepository automatedTestingRepository;
     @Autowired
     private ExplanationService explanationService;
+    @Autowired
+    private ExplanationDataService explanationDataService;
 
     /**
      * TODO: Comment-out when whole map is used
@@ -246,11 +248,11 @@ public class AutomatedTestingService {
 
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(QUESTION_QUERY, querySolutionMap);
-            ResultSet resultSet = this.automatedTestingRepository.takeRandomQuestion(query);
+            ResultSet resultSet = automatedTestingRepository.takeRandomQuestion(query);
             return resultSet.next().get("hasQuestion").asLiteral().getString();
         } catch (IOException e) {
             String errorMessage = "Error while fetching a random question";
-            logger.error("{}", errorMessage);
+            logger.error("Error: {}", errorMessage);
             throw new IOException(errorMessage);
         }
 
@@ -638,6 +640,7 @@ public class AutomatedTestingService {
             test = createTest(requestBody); // null if not successful
             if (test != null) {
                 jsonArray.put(new JSONObject(test)); // Add test to Json-Array
+                explanationDataService.insertDataset(test); // Insert Test to triplestore
                 logger.info("------------------------- {} --------------------", test);
             } else
                 logger.info("Skipped run due to null-ResultSet");
@@ -675,6 +678,10 @@ public class AutomatedTestingService {
 
     public Integer selectComponentAsInt(AnnotationType annotationType) {
         return random.nextInt(typeAndComponents.get(annotationType.name()).length);
+    }
+
+    public String[] getPlainExplanations(String[] array) {
+        return array;
     }
 
 
