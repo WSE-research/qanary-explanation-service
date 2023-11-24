@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import virtuoso.jena.driver.VirtModel;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -113,7 +114,7 @@ public class NewTest {
                     1223,
                     213,
                     "1998231,1232244223"));
-
+            logger.info(String.valueOf(automatedTest.getExampleData().size()));
             explanationDataService.insertDataset(automatedTest);
 
         }
