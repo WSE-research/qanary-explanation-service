@@ -23,6 +23,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -46,6 +47,8 @@ public class AutomatedTestingService {
     private final static int QADO_DATASET_QUESTION_COUNT = 394;
     private final EncodingRegistry encodingRegistry = Encodings.newLazyEncodingRegistry();
     private final Random random = new Random();
+    @Value("${explanations.dataset.limit}")
+    private int EXPLANATIONS_DATASET_LIMIT;
     // Prefixes for ResultSets
     private final Map<String, String> prefixes = new HashMap<>() {{
         put("http://www.w3.org/ns/openannotation/core/", "oa:");
@@ -285,7 +288,7 @@ public class AutomatedTestingService {
             ResultSet triples = fetchTriples(graphURI, componentURI);
 
             StringBuilder dataSet = new StringBuilder();
-            while (triples.hasNext()) {
+            while (triples.hasNext() && triples.getRowNumber() < EXPLANATIONS_DATASET_LIMIT) {
                 QuerySolution querySolution = triples.next();
                 dataSet.append(querySolution.getResource("s")).append(" ").append(querySolution.getResource("p")).append(" ").append(querySolution.get("o")).append(" .\n");
             }
