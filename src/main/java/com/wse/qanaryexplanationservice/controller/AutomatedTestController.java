@@ -20,7 +20,7 @@ public class AutomatedTestController {
     private AutomatedTestingRepository automatedTestingRepository;
 
     // Note: Optional to the Path Variable "authToken", other approaches are possible too (CrossOrigin, Auth, ...)
-    @PostMapping(value = "/automatedtesting", consumes = {
+    @PostMapping(value = "/automatedtesting/{doGptRequest}", consumes = {
             "application/json"
     })
     @Operation(

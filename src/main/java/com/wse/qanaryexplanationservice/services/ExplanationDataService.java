@@ -5,6 +5,7 @@ import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObj
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import virtuoso.jena.driver.VirtModel;
 
@@ -29,6 +30,14 @@ public class ExplanationDataService {
     private final Property explanation;
     private final Property questionId;
     private final Property question;
+
+    @Value("${virtuoso.triplestore.endpoint}")
+    private String VIRTUOSO_TRIPLESTORE_ENDPOINT;
+    @Value("${virtuoso.triplestore.username}")
+    private String VIRTUOSO_TRIPLESTORE_USERNAME;
+    @Value("${virtuoso.triplestore.password}")
+    private String VIRTUOSO_TRIPLESTORE_PASSWORD;
+
 
     public ExplanationDataService() {
         model = ModelFactory.createDefaultModel();
@@ -55,7 +64,7 @@ public class ExplanationDataService {
         List<Statement> statementList = createSpecificStatementList(automatedTest);
         model.add(statementList);
         // TODO: Move connection details (e.g. application.properties / ...)
-        VirtModel virtModel = VirtModel.openDatabaseModel("urn:bulkload:general", "jdbc:virtuoso://localhost:1111", "dba", "dba");
+        VirtModel virtModel = VirtModel.openDatabaseModel("urn:bulkload:general", VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
         virtModel.add(model);
         virtModel.close();
 
