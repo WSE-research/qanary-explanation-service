@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import virtuoso.jena.driver.VirtModel;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,18 +17,18 @@ public class ExplanationDataService {
 
     private final Logger logger = LoggerFactory.getLogger(ExplanationDataService.class);
     private final Model model;
-    Property prompt;
-    Property gptExplanation;
-    Property testData;
-    Property exampleData;
-    Property annotationType;
-    Property usedComponent;
-    Property usedComponentAsNum;
-    Property dataset;
-    Property graphId;
-    Property explanation;
-    Property questionId;
-    Property question;
+    private final Property prompt;
+    private final Property gptExplanation;
+    private final Property testData;
+    private final Property exampleData;
+    private final Property annotationType;
+    private final Property usedComponent;
+    private final Property usedComponentAsNum;
+    private final Property dataset;
+    private final Property graphId;
+    private final Property explanation;
+    private final Property questionId;
+    private final Property question;
 
     public ExplanationDataService() {
         model = ModelFactory.createDefaultModel();
@@ -51,7 +50,7 @@ public class ExplanationDataService {
         exampleData = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#exampleData");
     }
 
-    public void insertDataset(AutomatedTest automatedTest) throws IOException {
+    public void insertDataset(AutomatedTest automatedTest) {
 
         List<Statement> statementList = createSpecificStatementList(automatedTest);
         model.add(statementList);
@@ -64,7 +63,7 @@ public class ExplanationDataService {
         model.remove(statementList);
     }
 
-    public List<Statement> createSpecificStatementList(AutomatedTest automatedTest) throws IOException {
+    public List<Statement> createSpecificStatementList(AutomatedTest automatedTest) {
         List<Statement> statementList = new ArrayList<>();
         Resource experimentId = model.createResource(UUID.randomUUID().toString());
         logger.info("Experiment ID: {}", experimentId);

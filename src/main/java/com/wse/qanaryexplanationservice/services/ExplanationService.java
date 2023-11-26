@@ -90,7 +90,7 @@ public class ExplanationService {
         String result = null;
         logger.info("Explanations {}", explanations.size());
         if (Objects.equals(lang, "en")) {
-            result = "The component " + componentURI + " has added " + (explanations.size() == 10 ? "at least " : "") +  explanations.size() + " annotation(s) to the graph"
+            result = "The component " + componentURI + " has added " + (explanations.size() == 10 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         } else if (Objects.equals(lang, "de")) {
             result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 10 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
@@ -457,13 +457,12 @@ public class ExplanationService {
     public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException, IndexOutOfBoundsException {
 
         List<String> createdExplanations = createSpecificExplanations(types.toArray(String[]::new), graphURI, lang, componentURI);
-        String result = "";
+
         AtomicInteger i = new AtomicInteger();
         // TODO: Handle 0 annotations !!
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
-        result = getResult(componentURI, lang, explanations, createdExplanations.get(0));
         stringResultSetMap.clear();
-        return result;
+        return getResult(componentURI, lang, explanations, createdExplanations.get(0));
     }
 
 }
