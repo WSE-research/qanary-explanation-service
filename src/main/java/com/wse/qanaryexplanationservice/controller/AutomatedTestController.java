@@ -23,19 +23,24 @@ public class AutomatedTestController {
     })
     public ResponseEntity<?> automatedExplanationTest(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
         String automatedTest = automatedTestingService.createTestWorkflowWithOpenAiRequest(requestBody);
-        if (automatedTest == null)
-            return new ResponseEntity<>("Fehler", HttpStatus.BAD_REQUEST);
-        else
+        try {
             return new ResponseEntity<>(automatedTest, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>("Invalid Annotation Type!", HttpStatus.BAD_REQUEST);
+        }
     }
 
     @PostMapping(value = "/explanationswithoutgptexplanation", consumes = {
             "application/json"
     })
     public ResponseEntity<?> getExplanationsWithoutGptExplanation(@RequestBody AutomatedTestRequestBody requestBody) throws Exception {
-        String explanations = automatedTestingService.createTestWorkflow(requestBody);
+        String automatedTest = automatedTestingService.createTestWorkflow(requestBody);
+        try {
+            return new ResponseEntity<>(automatedTest, HttpStatus.OK);
+        } catch(IllegalArgumentException e) {
+            return new ResponseEntity<>("Invalid Annotation Type!", HttpStatus.BAD_REQUEST);
+        }
 
-        return new ResponseEntity<>(explanations, HttpStatus.OK);
     }
 
 }
