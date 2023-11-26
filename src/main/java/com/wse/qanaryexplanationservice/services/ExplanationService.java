@@ -13,6 +13,7 @@ import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -72,6 +73,8 @@ public class ExplanationService {
     private ExplanationSparqlRepository explanationSparqlRepository;
     @Autowired
     private AnnotationsService annotationsService;
+    @Value("${explanations.dataset.limit}")
+    private int EXPLANATIONS_DATASET_LIMIT;
 
     public ExplanationService() {
     }
@@ -87,10 +90,10 @@ public class ExplanationService {
         String result = null;
         logger.info("Explanations {}", explanations.size());
         if (Objects.equals(lang, "en")) {
-            result = "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the graph"
+            result = "The component " + componentURI + " has added " + (explanations.size() == 10 ? "at least " : "") +  explanations.size() + " annotation(s) to the graph"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         } else if (Objects.equals(lang, "de")) {
-            result = "Die Komponente " + componentURI + " hat " + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
+            result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 10 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         }
         return result;
@@ -366,7 +369,7 @@ public class ExplanationService {
         explanationsForCurrentType.add(langExplanationPrefix);
         String template = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
 
-        while (results.hasNext()) {
+        while (results.hasNext() && results.getRowNumber() < EXPLANATIONS_DATASET_LIMIT) {
             QuerySolution querySolution = results.next();
             explanationsForCurrentType.add(replaceProperties(convertQuerySolutionToMap(querySolution), template));
         }
