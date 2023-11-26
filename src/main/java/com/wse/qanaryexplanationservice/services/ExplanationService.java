@@ -90,10 +90,10 @@ public class ExplanationService {
         String result = null;
         logger.info("Explanations {}", explanations.size());
         if (Objects.equals(lang, "en")) {
-            result = "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the graph"
+            result = "The component " + componentURI + " has added " + (explanations.size() == 10 ? "at least " : "") +  explanations.size() + " annotation(s) to the graph"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         } else if (Objects.equals(lang, "de")) {
-            result = "Die Komponente " + componentURI + " hat " + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
+            result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 10 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         }
         return result;
