@@ -1,11 +1,11 @@
 package com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject;
 
 public enum AnnotationType {
-    annotationofinstance,
-    annotationofspotinstance,
-    annotationofrelation,
+    AnnotationOfInstance,
+    AnnotationOfSpotInstance,
+    AnnotationOfRelation,
     //annotationofquestiontranslation,
-    annotationofquestionlanguage,
-    annotationofanswersparql,
-    annotationofanswerjson
+    AnnotationOfQuestionLanguage,
+    AnnotationOfAnswerSPARQL,
+    AnnotationOfAnswerJSON
 }

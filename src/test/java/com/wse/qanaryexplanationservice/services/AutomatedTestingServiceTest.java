@@ -1,14 +1,11 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryResponseObject;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.*;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AnnotationType;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTest;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.Example;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.TestDataObject;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
-import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
-import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.ResourceFactory;
-import org.junit.Before;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,29 +19,22 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class AutomatedTestingServiceTest {
 
 
-
     private static ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
     private final Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
-        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
-        put(AnnotationType.annotationofspotinstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
-        put(AnnotationType.annotationofanswerjson.name(), new String[]{"QAnswerQueryBuilderAndExecutor", "SparqlExecuter"});
-        put(AnnotationType.annotationofanswersparql.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndExecutor"});
-        put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
+        put(AnnotationType.AnnotationOfInstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
+        put(AnnotationType.AnnotationOfSpotInstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
+        put(AnnotationType.AnnotationOfAnswerJSON.name(), new String[]{"QAnswerQueryBuilderAndExecutor", "SparqlExecuter"});
+        put(AnnotationType.AnnotationOfAnswerSPARQL.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndExecutor"});
+        put(AnnotationType.AnnotationOfQuestionLanguage.name(), new String[]{"LD-Shuyo"});
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
-        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
+        put(AnnotationType.AnnotationOfRelation.name(), new String[]{"FalconRELcomponent-dbpedia"});
     }};
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
     @Autowired
@@ -80,7 +70,7 @@ public class AutomatedTestingServiceTest {
 
         @Test
         public void selectComponentUniqueAndNotExisting() {
-            AnnotationType annotationType = AnnotationType.annotationofrelation;
+            AnnotationType annotationType = AnnotationType.AnnotationOfRelation;
 
             // Set up Automated Test without any existing examples
             automatedTest = new AutomatedTest();
@@ -93,7 +83,7 @@ public class AutomatedTestingServiceTest {
 
         @Test
         public void selectComponentUniqueAndExisting() {
-            AnnotationType annotationType = AnnotationType.annotationofquestionlanguage;
+            AnnotationType annotationType = AnnotationType.AnnotationOfQuestionLanguage;
             automatedTest = new AutomatedTest();
             automatedTest.setTestData(new TestDataObject(null, null, "LD-Shuyo", null, null, null, null, null, null, null, null));
             example = new Example(annotationType.name(), true);
@@ -118,7 +108,7 @@ public class AutomatedTestingServiceTest {
 
         // Setup fetchTriples handling
         private void setupTest(ResultSet resultSet) {
-            when(automatedTestingRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
+            //when(automatedTestingRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
         }
 
         /*
@@ -137,7 +127,7 @@ public class AutomatedTestingServiceTest {
             setupTest(null);
 
             Exception exception = Assertions.assertThrows(RuntimeException.class, () -> {
-                automatedTestingService.createDataset("componentURI", "graphURI");
+                automatedTestingService.createDataset("componentURI", "graphURI", "anyAnnotationType");
             });
 
             //Assertions.assertEquals("ResultSet is null", exception.getMessage());
@@ -161,28 +151,28 @@ public class AutomatedTestingServiceTest {
                 Collections.sort(listOfDependencies);
 
             switch (annotationType) {
-                case annotationofinstance:
-                case annotationofspotinstance:
-                case annotationofrelation:
-                case annotationofquestionlanguage: {
+                case AnnotationOfInstance:
+                case AnnotationOfSpotInstance:
+                case AnnotationOfRelation:
+                case AnnotationOfQuestionLanguage: {
                     Assertions.assertNull(listOfDependencies);
                     break;
                 }
-                case annotationofanswersparql: {
+                case AnnotationOfAnswerSPARQL: {
                     ArrayList<AnnotationType> arrayList = new ArrayList<>() {{
-                        add(AnnotationType.annotationofinstance);
-                        add(AnnotationType.annotationofspotinstance);
-                        add(AnnotationType.annotationofrelation);
+                        add(AnnotationType.AnnotationOfInstance);
+                        add(AnnotationType.AnnotationOfSpotInstance);
+                        add(AnnotationType.AnnotationOfRelation);
                     }};
                     Assertions.assertEquals(arrayList, listOfDependencies);
                     break;
                 }
-                case annotationofanswerjson: {
+                case AnnotationOfAnswerJSON: {
                     ArrayList<AnnotationType> arrayList = new ArrayList<>() {{
-                        add(AnnotationType.annotationofinstance);
-                        add(AnnotationType.annotationofspotinstance);
-                        add(AnnotationType.annotationofrelation);
-                        add(AnnotationType.annotationofanswersparql);
+                        add(AnnotationType.AnnotationOfInstance);
+                        add(AnnotationType.AnnotationOfSpotInstance);
+                        add(AnnotationType.AnnotationOfRelation);
+                        add(AnnotationType.AnnotationOfAnswerSPARQL);
                     }};
                     Assertions.assertEquals(arrayList, listOfDependencies);
                     break;
@@ -194,7 +184,6 @@ public class AutomatedTestingServiceTest {
         }
 
     }
-
 
 
 }

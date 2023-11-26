@@ -69,15 +69,15 @@ public class ExplanationDataService {
         Resource experimentId = model.createResource(UUID.randomUUID().toString());
         logger.info("Experiment ID: {}", experimentId);
 
-        statementList.add(ResourceFactory.createStatement(experimentId, prompt, ResourceFactory.createPlainLiteral("ReplacePrompt")));
-        statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral("replaceexplanation")));
+        statementList.add(ResourceFactory.createStatement(experimentId, prompt, ResourceFactory.createPlainLiteral(automatedTest.getPrompt())));
+        statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral(automatedTest.getGptExplanation())));
         statementList.add(ResourceFactory.createStatement(experimentId, testData, setUpTestObject(automatedTest.getTestData())));
         statementList.add(ResourceFactory.createStatement(experimentId, exampleData, setupExampleData(automatedTest.getExampleData())));
 
         return statementList;
     }
 
-    public Resource setUpTestObject(TestDataObject testDataObject) throws IOException {
+    public Resource setUpTestObject(TestDataObject testDataObject) {
 
         Resource resource = model.createResource();
 
@@ -94,13 +94,11 @@ public class ExplanationDataService {
         return resource;
     }
 
-    public RDFNode setupExampleData(ArrayList<TestDataObject> examples) throws IOException {
-
+    public Seq setupExampleData(ArrayList<TestDataObject> examples) {
         Seq seq = model.createSeq();
         for (int i = 0; i < examples.size(); i++) {
             seq.add(i + 1, setUpTestObject(examples.get(i)));
         }
-
         return seq;
     }
 

@@ -1,0 +1,12 @@
+PREFIX aex: <http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+INSERT {
+
+    GRAPH <urn:bulkload:general> {
+
+        ?experimentId   aex:prompt  ?prompt ;
+                        aex:gptExplanation  ?gptExplanation ;
+                        aex:testData ?testData .
+    }
+} WHERE {}

@@ -1,0 +1,1 @@
+am ${annotatedAt} mit einer Konfidenz von ${score} die SPARQL-query ' ${hasBody} '

@@ -8,7 +8,6 @@ import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,21 +18,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import virtuoso.jena.driver.VirtModel;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
-public class NewTest {
+public class ExplanationDataServiceTest {
 
+    private final Logger logger = LoggerFactory.getLogger(ExplanationDataServiceTest.class);
     @MockBean
     AutomatedTestingRepository automatedTestingRepository;
     @MockBean
@@ -41,12 +39,16 @@ public class NewTest {
     @MockBean
     private ExplanationService explanationService;
 
-    private final Logger logger = LoggerFactory.getLogger(NewTest.class);
+    @Test
+    public void setupExampleDataTest() {
+
+    }
 
     @Nested
     class InsertAutomatedTestsTest {
 
-        @Autowired AutomatedTestingService automatedTestingService;
+        @Autowired
+        AutomatedTestingService automatedTestingService;
         private AutomatedTestRequestBody automatedTestRequestBody = new AutomatedTestRequestBody();
         private ArrayList<Example> examples = new ArrayList<Example>();
         private ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
@@ -59,10 +61,10 @@ public class NewTest {
         @BeforeEach
         public void setup() throws IOException {
 
-            examples.add(new Example("annotationofinstance",true));
+            examples.add(new Example("annotationofinstance", true));
             QuerySolutionMap temp = new QuerySolutionMap();
             temp.add("hasQuestion", ResourceFactory.createPlainLiteral("Example_Question"));
-            for(int i = 0; i < 20; i++) {
+            for (int i = 0; i < 20; i++) {
                 liste.add(temp);
             }
             resultSet = serviceDataForTests.createResultSet(liste);
@@ -70,7 +72,10 @@ public class NewTest {
             automatedTestRequestBody.setRuns(1);
             automatedTestRequestBody.setExamples(examples.toArray(Example[]::new));
             QanaryResponseObject qanaryResponseObject = new QanaryResponseObject();
-            qanaryResponseObject.setEndpoint("endpoint"); qanaryResponseObject.setInGraph("ingraph"); qanaryResponseObject.setOutGraph(qanaryResponseObject.getInGraph()); qanaryResponseObject.setQuestion("Example_question");
+            qanaryResponseObject.setEndpoint("endpoint");
+            qanaryResponseObject.setInGraph("ingraph");
+            qanaryResponseObject.setOutGraph(qanaryResponseObject.getInGraph());
+            qanaryResponseObject.setQuestion("Example_question");
             when(automatedTestingRepository.takeRandomQuestion(any())).thenReturn(resultSet);
             when(automatedTestingRepository.executeQanaryPipeline(any())).thenReturn(qanaryResponseObject);
             when(automatedTestingRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
@@ -84,7 +89,7 @@ public class NewTest {
 
         @Test
         public void leer() {
-            assertEquals("Example_Question",resultSet.next().get("hasQuestion").asLiteral().getString());
+            assertEquals("Example_Question", resultSet.next().get("hasQuestion").asLiteral().getString());
         }
 
         @Test
@@ -92,8 +97,8 @@ public class NewTest {
             AutomatedTest automatedTest = new AutomatedTest();
             automatedTest.setPrompt("Example Prompt");
             automatedTest.setGptExplanation("Example Gpt Explanation");
-            automatedTest.setTestData(new TestDataObject(AnnotationType.annotationofrelation,
-                    AnnotationType.annotationofrelation.ordinal(),
+            automatedTest.setTestData(new TestDataObject(AnnotationType.AnnotationOfRelation,
+                    AnnotationType.AnnotationOfRelation.ordinal(),
                     "NED-DBpedia",
                     "exampleQuestion",
                     "exampleExplanation",
@@ -103,8 +108,8 @@ public class NewTest {
                     123,
                     23,
                     "1231,12344223"));
-            automatedTest.setExampleData(new TestDataObject(AnnotationType.annotationofrelation,
-                    AnnotationType.annotationofrelation.ordinal(),
+            automatedTest.setExampleData(new TestDataObject(AnnotationType.AnnotationOfRelation,
+                    AnnotationType.AnnotationOfRelation.ordinal(),
                     "NER-DBpedia",
                     "123qwef",
                     "exampfw4rtzleExplanation",
@@ -119,5 +124,6 @@ public class NewTest {
 
         }
     }
+
 
 }

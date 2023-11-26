@@ -26,9 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import virtuoso.jena.driver.VirtGraph;
-import virtuoso.jena.driver.VirtuosoUpdateFactory;
-import virtuoso.jena.driver.VirtuosoUpdateRequest;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -60,38 +57,38 @@ public class AutomatedTestingService {
     }};
     // All available annotation types and the components creating these
     private final Map<String, String[]> typeAndComponents = new HashMap<>() {{ // TODO: Replace placeholder
-        put(AnnotationType.annotationofinstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
-        put(AnnotationType.annotationofspotinstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
-        put(AnnotationType.annotationofanswerjson.name(), new String[]{"QAnswerQueryBuilderAndExecutor", "SparqlExecuter"});
-        put(AnnotationType.annotationofanswersparql.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndExecutor"});
-        put(AnnotationType.annotationofquestionlanguage.name(), new String[]{"LD-Shuyo"});
+        put(AnnotationType.AnnotationOfInstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
+        put(AnnotationType.AnnotationOfSpotInstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
+        put(AnnotationType.AnnotationOfAnswerJSON.name(), new String[]{"QAnswerQueryBuilderAndExecutor", "SparqlExecuter"});
+        put(AnnotationType.AnnotationOfAnswerSPARQL.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndQueryCandidateFetcher"});
+        put(AnnotationType.AnnotationOfQuestionLanguage.name(), new String[]{"LD-Shuyo"});
         // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
-        put(AnnotationType.annotationofrelation.name(), new String[]{"FalconRelComponent-dbpedia", "DiambiguationProperty"});
+        put(AnnotationType.AnnotationOfRelation.name(), new String[]{"FalconRelComponent-dbpedia", "DiambiguationProperty"});
     }};
     /*
      * Dependency map for annotation types
      * Used for setting up the Qanary pipeline, so that all relevant annotation are made
      */
     private final Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
-        put(AnnotationType.annotationofinstance, new AnnotationType[]{});
-        put(AnnotationType.annotationofrelation, new AnnotationType[]{
-                AnnotationType.annotationofquestionlanguage
+        put(AnnotationType.AnnotationOfInstance, new AnnotationType[]{});
+        put(AnnotationType.AnnotationOfRelation, new AnnotationType[]{
+                AnnotationType.AnnotationOfQuestionLanguage
         });
-        put(AnnotationType.annotationofspotinstance, new AnnotationType[]{});
+        put(AnnotationType.AnnotationOfSpotInstance, new AnnotationType[]{});
         //put(AnnotationType.annotationofquestiontranslation, null);
-        put(AnnotationType.annotationofquestionlanguage, new AnnotationType[]{});
-        put(AnnotationType.annotationofanswersparql, new AnnotationType[]{
-                AnnotationType.annotationofinstance,
-                AnnotationType.annotationofrelation,
-                AnnotationType.annotationofspotinstance,
-                AnnotationType.annotationofquestionlanguage
+        put(AnnotationType.AnnotationOfQuestionLanguage, new AnnotationType[]{});
+        put(AnnotationType.AnnotationOfAnswerSPARQL, new AnnotationType[]{
+                AnnotationType.AnnotationOfInstance,
+                AnnotationType.AnnotationOfRelation,
+                AnnotationType.AnnotationOfSpotInstance,
+                AnnotationType.AnnotationOfQuestionLanguage
         });
-        put(AnnotationType.annotationofanswerjson, new AnnotationType[]{
-                AnnotationType.annotationofanswersparql,
-                AnnotationType.annotationofinstance,
-                AnnotationType.annotationofrelation,
-                AnnotationType.annotationofspotinstance,
-                AnnotationType.annotationofquestionlanguage
+        put(AnnotationType.AnnotationOfAnswerJSON, new AnnotationType[]{
+                AnnotationType.AnnotationOfAnswerSPARQL,
+                AnnotationType.AnnotationOfInstance,
+                AnnotationType.AnnotationOfRelation,
+                AnnotationType.AnnotationOfSpotInstance,
+                AnnotationType.AnnotationOfQuestionLanguage
         });
     }};
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
@@ -101,7 +98,6 @@ public class AutomatedTestingService {
         put(2, "/testtemplates/twoshot");
         put(3, "/testtemplates/threeshot");
     }};
-    private final String INSERT_NEW_GRAPH = "/queries/insertAutomatedTest.rq";
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
     @Autowired
@@ -151,7 +147,7 @@ public class AutomatedTestingService {
 
         logger.info("Checkpoint 1");
 
-        String dataset = createDataset(selectedComponent, graphURI);
+        String dataset = createDataset(selectedComponent, graphURI, annotationType_.name());
 
         logger.info("Checkpoint 2");
 
@@ -281,10 +277,10 @@ public class AutomatedTestingService {
      *
      * @return Dataset as String
      */
-    public String createDataset(String componentURI, String graphURI) throws Exception {
+    public String createDataset(String componentURI, String graphURI, String annotationType) throws Exception {
 
         try {
-            ResultSet triples = fetchTriples(graphURI, componentURI);
+            ResultSet triples = fetchTriples(graphURI, componentURI, annotationType);
 
             StringBuilder dataSet = new StringBuilder();
             while (triples.hasNext()) {
@@ -310,13 +306,17 @@ public class AutomatedTestingService {
      * @return Triples as ResultSet
      * @throws Exception If a component hasn't made any annotations to the graph the query will result in an empty ResultSet
      */
-    public ResultSet fetchTriples(String graphURI, String componentURI) throws Exception {
+    public ResultSet fetchTriples(String graphURI, String componentURI, String annotationType) throws Exception {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
+        String annotationTypeCaseSensitive = replaceEnumWithCaseSensitiveEq(annotationType);
         bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
         bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:" + componentURI));
+        bindingsForQuery.add("annotationType", ResourceFactory.createProperty("qa:" + annotationTypeCaseSensitive));
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
+            query = query.replace("<qa:" + annotationTypeCaseSensitive + ">", "qa:" + annotationTypeCaseSensitive);
 
+            logger.info("Edited query:  {}", query); // TODO: Replace "?annotationType" instead of  adding it to the QuerySolutioinsMap?
             ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
 
             if (!resultSet.hasNext())
@@ -327,6 +327,18 @@ public class AutomatedTestingService {
             logger.error("Error while fetching triples: {}", e);
             throw new Exception(e);
         }
+    }
+
+    public String replaceEnumWithCaseSensitiveEq(String annotationType) {
+        return switch (annotationType) {
+            case ("annotationofinstance") -> "AnnotationOfInstance";
+            case ("annotationofrelation") -> "AnnotationOfRelation";
+            case ("annotationofspotinstance") -> "AnnotationOfSpotInstance";
+            case ("annotationofquestionlanguage") -> "AnnotationOfQuestionLanguage";
+            case ("annotationofanswersparql") -> "AnnotationOfAnswerSPARQL";
+            case ("annotationofanswerjson") -> "AnnotationOfAnswerJSON";
+            default -> null;
+        };
     }
 
     /**
@@ -533,14 +545,8 @@ public class AutomatedTestingService {
 
     public void insertExplanationToTriplestore(String graphId, AutomatedTestRequestBody automatedTestRequestBody) throws IOException {
         String graph = automatedTestRequestBody.toString();
-        QuerySolutionMap bindingsForInsertQuery = new QuerySolutionMap();
-        bindingsForInsertQuery.add("graph", ResourceFactory.createResource(graph));
-        bindingsForInsertQuery.add("testType", ResourceFactory.createStringLiteral(automatedTestRequestBody.getTestingType()));
-        bindingsForInsertQuery.add("examples", ResourceFactory.createTypedLiteral(automatedTestRequestBody.getExamples().length));
 
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INSERT_NEW_GRAPH, bindingsForInsertQuery);
-        VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(query, new VirtGraph("jdbc:virtuoso://localhost:1111", "dba", "dba"));
-        vur.exec();
+        // TODO: Implement insert
     }
 
     ////////// RECREATE AUTOMATED SERVICE WORKFLOW
@@ -585,7 +591,7 @@ public class AutomatedTestingService {
 
             // Create dataset
             logger.info("Create dataset");
-            String dataset = createDataset(selectedComponent, graphURI);
+            String dataset = createDataset(selectedComponent, graphURI, givenAnnotationType.name());
 
             // Create Explanation for selected component
             logger.info("Create explanation");
@@ -680,8 +686,9 @@ public class AutomatedTestingService {
         return random.nextInt(typeAndComponents.get(annotationType.name()).length);
     }
 
-    public String[] getPlainExplanations(String[] array) {
+    public String[] getPlainExplanations(String[] array) throws IOException {
         return array;
+
     }
 
 
