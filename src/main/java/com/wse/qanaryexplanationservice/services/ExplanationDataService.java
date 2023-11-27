@@ -61,10 +61,11 @@ public class ExplanationDataService {
 
     public void insertDataset(AutomatedTest automatedTest) {
 
-        List<Statement> statementList = createSpecificStatementList(automatedTest);
+        String uuid = UUID.randomUUID().toString();
+        List<Statement> statementList = createSpecificStatementList(automatedTest, uuid);
         model.add(statementList);
         // TODO: Move connection details (e.g. application.properties / ...)
-        VirtModel virtModel = VirtModel.openDatabaseModel("urn:bulkload:general", VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
+        VirtModel virtModel = VirtModel.openDatabaseModel("urn:aex:" + uuid, VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
         virtModel.add(model);
         virtModel.close();
 
@@ -72,9 +73,9 @@ public class ExplanationDataService {
         model.remove(statementList);
     }
 
-    public List<Statement> createSpecificStatementList(AutomatedTest automatedTest) {
+    public List<Statement> createSpecificStatementList(AutomatedTest automatedTest, String uuid) {
         List<Statement> statementList = new ArrayList<>();
-        Resource experimentId = model.createResource(UUID.randomUUID().toString());
+        Resource experimentId = model.createResource(uuid);
         logger.info("Experiment ID: {}", experimentId);
 
         statementList.add(ResourceFactory.createStatement(experimentId, prompt, ResourceFactory.createPlainLiteral(automatedTest.getPrompt())));

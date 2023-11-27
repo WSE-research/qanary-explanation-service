@@ -54,6 +54,7 @@ public class AutomatedTestingService {
         put("^^http://www.w3.org/2001/XMLSchema#integer", "");
         put("^^http://www.w3.org/2001/XMLSchema#dateTime", "");
         put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
+        put("^^http://www.w3.org/2001/XMLSchema#float", "");
     }};
 
 
