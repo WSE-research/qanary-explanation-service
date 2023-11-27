@@ -1,0 +1,30 @@
+PREFIX  qa:   <http://www.wdaqua.eu/qa#>
+PREFIX  oa:   <http://www.w3.org/ns/openannotation/core/>
+PREFIX  questionID: <http://195.90.200.248:8090/question/stored-question__text_>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX  owl:  <http://www.w3.org/2002/07/owl#>
+PREFIX  dbpedia: <http://dbpedia.org/resource/>
+PREFIX  annotationID: <tag:stardog:api:>
+PREFIX  wikidata: <http://www.wikidata.org/entity/>
+
+SELECT ?id ?p ?o
+FROM <urn:graph:0dd2b268-5c66-4117-abb3-a5b733c4177a>
+WHERE {
+
+  {
+    SELECT ?id ?p ?o {
+    ?id ?p ?o .
+
+      {
+        SELECT ?id {
+        ?id oa:annotatedBy <urn:qanary:QAnswerQueryBuilderAndQueryCandidateFetcher> ;
+                rdf:type qa:AnnotationOfAnswerSPARQL .
+        } LIMIT 10 // Limit could be set as a variable too!
+      }
+
+     }
+  }
+
+
+
+}

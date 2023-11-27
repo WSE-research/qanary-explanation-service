@@ -199,11 +199,11 @@ public class AutomatedTestingService {
     public String createDataset(String componentURI, String graphURI, String annotationType) throws Exception {
 
         try {
-            ResultSet triples = fetchTriples(graphURI, componentURI, annotationType);
-
+            ResultSet triples = fetchTriplesWithComponentSelectQueries(graphURI, componentURI, annotationType);
             StringBuilder dataSet = new StringBuilder();
             while (triples.hasNext() && triples.getRowNumber() < EXPLANATIONS_DATASET_LIMIT) {
                 QuerySolution querySolution = triples.next();
+                logger.info("Query Solution as String: {}", querySolution.toString());
                 dataSet.append(querySolution.getResource("s")).append(" ").append(querySolution.getResource("p")).append(" ").append(querySolution.get("o")).append(" .\n");
             }
             String dataSetAsString = dataSet.toString();
@@ -236,6 +236,24 @@ public class AutomatedTestingService {
 
             if (!resultSet.hasNext())
                 throw new RuntimeException("ResultSet is null");
+            else
+                return resultSet;
+        } catch (IOException e) {
+            logger.error("Error while fetching triples: {}", e.getMessage());
+            throw new Exception(e);
+        }
+    }
+
+    public ResultSet fetchTriplesWithComponentSelectQueries(String graphURI, String componentURI, String annotationType) throws Exception {
+        QuerySolutionMap bindingsForSelectQuery = new QuerySolutionMap();
+        bindingsForSelectQuery.add("graph", ResourceFactory.createResource(graphURI));
+        bindingsForSelectQuery.add("annotatedBy", ResourceFactory.createResource("urn:qanary:" + componentURI));
+
+        try {
+            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap("/queries/select_all_" + annotationType + ".rq", bindingsForSelectQuery);
+            ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
+            if (!resultSet.hasNext())
+                throw new RuntimeException("Error while fetching Dataset, ResultSet is null");
             else
                 return resultSet;
         } catch (IOException e) {

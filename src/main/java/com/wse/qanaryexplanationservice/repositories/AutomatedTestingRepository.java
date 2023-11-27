@@ -34,7 +34,7 @@ public class AutomatedTestingRepository extends AbstractRepository {
 
     private final URL CHATGPT_ENDPOINT = new URL("https://api.openai.com/v1/completions"); // TODO:
     private final String chatGptApiKey = "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"; // TODO: put in applications.settings
-    private final int RESPONSE_TOKEN = 500;
+    private final int RESPONSE_TOKEN = 1000;
 
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingRepository.class);
 
@@ -78,11 +78,11 @@ public class AutomatedTestingRepository extends AbstractRepository {
         return responseObject;
     }
 
-    public ResultSet takeRandomQuestion(String query) throws RuntimeException{
+    public ResultSet takeRandomQuestion(String query) throws RuntimeException {
         logger.info("Taking random question");
-            RDFConnection rdfConnection1 = RDFConnection.connect("http://localhost:8890/sparql");
-            QueryExecution queryExecution = rdfConnection1.query(query);
-            return queryExecution.execSelect();
+        RDFConnection rdfConnection1 = RDFConnection.connect("http://localhost:8890/sparql");
+        QueryExecution queryExecution = rdfConnection1.query(query);
+        return queryExecution.execSelect();
     }
 
     // Variable as object
