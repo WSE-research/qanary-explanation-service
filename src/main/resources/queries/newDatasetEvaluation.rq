@@ -7,81 +7,28 @@ PREFIX  dbpedia: <http://dbpedia.org/resource/>
 PREFIX  annotationID: <tag:stardog:api:>
 PREFIX  wikidata: <http://www.wikidata.org/entity/>
 
-SELECT ?id ?p ?o
-FROM <urn:graph:0dd2b268-5c66-4117-abb3-a5b733c4177a>
+SELECT DISTINCT ?s ?p ?o
+FROM ?graphURI
 WHERE {
-
-  {
-    SELECT ?id ?p ?o {
-    ?id ?p ?o .
-
-      {
-        SELECT ?id {
-        ?id oa:annotatedBy <urn:qanary:QAnswerQueryBuilderAndQueryCandidateFetcher> ;
-                rdf:type qa:AnnotationOfAnswerSPARQL .
-        } LIMIT 10 // Limit could be set as a variable too!
-      }
-
-     }
-  }
-
-
-
-}
-
-
-//
-
-  {
-    SELECT DISTINCT ?id ?s ?p ?o WHERE {
-       ?id ?p ?o .
-    	?s ?p ?o .
-      		{
-        	SELECT ?id {
-        	?id oa:annotatedBy ?componentURI ;
-                rdf:type ?annotationType .
-        	}LIMIT 10  }
-  UNION
-  {
+  	{
+    	SELECT ?id {
+        	?id oa:annotatedBy ?componentURI .
+    		?id rdf:type ?annotationType .
+    	} LIMIT 5
+  	}
+    {
+   		?id ?p ?o .
+    	BIND(?id AS ?s)
+  	}
+    UNION
+    {
         ?id ?parentPredicate ?s .
         ?s ?p ?o .
-  }
     }
-  }
-
-  //
-
-  //
-
-  PREFIX ex: <http://example.org/>
-  PREFIX  qa:   <http://www.wdaqua.eu/qa#>
-  PREFIX  oa:   <http://www.w3.org/ns/openannotation/core/>
-  PREFIX  questionID: <http://195.90.200.248:8090/question/stored-question__text_>
-  PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-  PREFIX  owl:  <http://www.w3.org/2002/07/owl#>
-  PREFIX  dbpedia: <http://dbpedia.org/resource/>
-  PREFIX  annotationID: <tag:stardog:api:>
-  PREFIX  wikidata: <http://www.wikidata.org/entity/>
-
-  SELECT DISTINCT ?s ?p ?o ?p1 ?o1 ?p2 ?o2
-  FROM <urn:graph:c72264b5-b41b-46f8-84b9-f6d6a4f2902c>
-  WHERE {
-    {
-      	?id ?p ?o .
-        	?s ?p ?o .
-        	{
-          	SELECT DISTINCT ?id {
-          		?id oa:annotatedBy <urn:qanary:NED-DBpediaSpotlight> .
-                  ?id rdf:type qa:AnnotationOfInstance .
-          	}LIMIT 10
-        	}
-        OPTIONAL {
-          	?s ?p ?o .
-          	?o ?p1 ?o1 .
-      	}
-        OPTIONAL {
-          	?o ?p1 ?o1 .
-        		?o1 ?p2 ?o2 .
-      	}
-    }
-  }
+    UNION
+   	{
+    	?id ?parentPredicate2 ?o2 .
+        ?o2 ?p1 ?s .
+        ?s ?p ?o .
+  	}
+}
