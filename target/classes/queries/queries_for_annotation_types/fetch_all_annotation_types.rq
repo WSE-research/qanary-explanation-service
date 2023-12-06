@@ -1,0 +1,19 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+
+SELECT DISTINCT ?annotationType
+FROM ?graph
+WHERE {
+    ?annotationId rdf:type ?annotationType .
+    FILTER(
+        ?annotationType = qa:AnnotationOfAnswerSPARQL ||
+        ?annotationType = qa:AnnotationOfAnswerJSON ||
+        ?annotationType = qa:AnnotationOfInstance ||
+        ?annotationType = qa:AnnotationOfSpotInstance ||
+        ?annotationType = qa:AnnotationOfRelation ||
+        ?annotationType = qa:AnnotationOfQuestionLanguage
+        )
+
+    ?annotationId oa:annotatedBy ?annotatedBy .
+}
