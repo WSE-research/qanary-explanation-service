@@ -1,9 +1,0 @@
-@prefix explanation: <urn:qanary:explanations> .
-@prefix rdfs:        <http://www.w3.org/2000/01/rdf-schema#> .
-
-explanation:hasExplanationForCreatedData
-        rdfs:subPropertyOf  explanation:hasExplanation .
-
-<urn:qanary:NED-DBpediaSpotlight>
-        explanation:hasExplanationForCreatedData
-                "Die Komponente urn:qanary:NED-DBpediaSpotlight hat folgende Ergebnisse berechnet und dem Graphen hinzugefügt:  Zeitpunkt: '2023-08-23T09:15:35.089921' | Konfidenz: 93.4757 % | Inhalt: http://dbpedia.org/resource/String_theory Zeitpunkt: '2023-08-23T09:15:35.102656' | Konfidenz: 97.7748 % | Inhalt: http://dbpedia.org/resource/Real_number Zeitpunkt: '2023-08-23T09:15:35.113834' | Konfidenz: 99.9954 % | Inhalt: http://dbpedia.org/resource/Batman"@de , "The component urn:qanary:NED-DBpediaSpotlight has added the following properties to the graph:  Time: '2023-08-23T09:15:35.089921' | Confidence: 93.4757 % | Content: http://dbpedia.org/resource/String_theory Time: '2023-08-23T09:15:35.102656' | Confidence: 97.7748 % | Content: http://dbpedia.org/resource/Real_number Time: '2023-08-23T09:15:35.113834' | Confidence: 99.9954 % | Content: http://dbpedia.org/resource/Batman"@en .

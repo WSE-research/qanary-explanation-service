@@ -1,1 +1,0 @@
-on ${annotatedAt} &{with a confidence of ${score}}& the SPARQL-query ' ${hasBody} '
