@@ -1,0 +1,55 @@
+RESULT TEMPLATE (as json?, as RDF?)
+
+Test Data:
+Question: "What is the real name of Batman?"
+Golden standard explanation: "bla bla bla explanation1"
+Annotation-Type: AnnotationOfInstance
+Used component: NED-DBpedia-Spotlight
+
+Example Data:
+[
+    {
+        Question: "What is the real name of Hulk?"
+        Golden standard explanation: "bla bla bla explanation2"
+        Annotation-Type: AnnotationOfRelation
+        Used component: REL-...
+    },
+    {
+        Question: "What is the real name of Superman?"
+        Golden standard explanation: "bla bla bla explanation3"
+        Annotation-Type: AnnotationOfSpotInstance
+        Used component: NER-DBpedia-Spotlight
+    }
+]
+
+
+-- INPUT
+- welcher annotation type soll getested werden? -->         annotationType: ...
+- (if examples:1 ??? )                                      annotationTypeExample: ...
+- wie viele beispiele (x-shot learning) -->                 examples: ...
+
+
+
+---------
+
+Required data for prompt:
+
+- test data:
+    - data set
+    - explanation
+- example data:
+    - data set
+    - explanation
+- prompt template
+- result template consisting:
+    - Question
+    - used component
+    - annotation type
+    - explanation
+
+Workflow:
+- Consider which annotation should be tested
+    - select a component producing that annotation type
+- Select a random component for example (x times components for x examples)
+- Question from QADO dataset
+-

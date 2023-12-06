@@ -1,5 +1,8 @@
 package com.wse.qanaryexplanationservice.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -8,6 +11,9 @@ import java.util.Map;
  * Helper class to convert the parameter-map to a string, so it can be passed to an HTTP-Request
  */
 public class ParameterStringBuilder {
+
+    private static final Logger logger = LoggerFactory.getLogger(ParameterStringBuilder.class);
+
     public static String getParamsString(Map<String, String> params) {
         StringBuilder result = new StringBuilder();
 
@@ -20,7 +26,7 @@ public class ParameterStringBuilder {
 
         String resultString = result.toString();
         return !resultString.isEmpty()
-                ? resultString.substring(0, resultString.length() - 1)
+                ? resultString.substring(0, resultString.length() - 1).replace("+", "%20")
                 : resultString;
     }
 }

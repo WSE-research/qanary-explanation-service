@@ -1,0 +1,6 @@
+SELECT ?hasQuestion
+WHERE {
+?s <http://purl.com/qado/ontology.ttl#hasId> ?id ;
+   <http://purl.com/qado/ontology.ttl#hasQuestion> ?hasQuestion .
+   FILTER(lang(?hasQuestion) = "en")
+}

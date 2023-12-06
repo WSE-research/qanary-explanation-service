@@ -40,6 +40,7 @@ public class ServiceDataForTests {
         put("end", "3");
         put("hasTarget", "questionID:123f3rt3jrskdf324f");
     }};
+    
     private Logger logger = LoggerFactory.getLogger(ServiceDataForTests.class);
     private List<QuerySolutionMap> querySolutionMapList;
 

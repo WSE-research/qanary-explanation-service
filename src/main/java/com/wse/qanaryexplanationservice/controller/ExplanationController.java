@@ -14,7 +14,6 @@ public class ExplanationController {
     @Autowired
     private ExplanationService explanationService;
 
-
     @CrossOrigin
     @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{componentURI}"}, produces = {
             "application/rdf+xml",

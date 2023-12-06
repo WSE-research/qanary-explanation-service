@@ -1,0 +1,26 @@
+Given the following context:
+Here, we consider the data of a Question Answering system.
+The data describes the outcome of this system.
+As a user I'd like to understand what happened inside that particular component.
+For this purpose a (text-based) explanation has to be computed.
+
+For example, the following explanation was created for the question "<QUESTION_ID_EXAMPLE_1>" from the given raw data.
+
+The example explanation:
+<EXAMPLE_EXPLANATION_1>
+
+Given raw data:
+<EXAMPLE_RDF_DATA_1>
+
+Another example is the following explanation for the question "<QUESTION_ID_EXAMPLE_2>".
+
+The example explanation:
+<EXAMPLE_EXPLANATION_2>
+
+Given raw data:
+<EXAMPLE_RDF_DATA_2>
+
+Now, create an explanation for the following RDF data:
+<TASK_RDF_DATA_TEST>
+
+Don't introduce your answer and only return the result.

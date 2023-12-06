@@ -13,6 +13,7 @@ import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -72,6 +73,8 @@ public class ExplanationService {
     private ExplanationSparqlRepository explanationSparqlRepository;
     @Autowired
     private AnnotationsService annotationsService;
+    @Value("${explanations.dataset.limit}")
+    private int EXPLANATIONS_DATASET_LIMIT;
 
     public ExplanationService() {
     }
@@ -83,13 +86,14 @@ public class ExplanationService {
      * @param prefix       Text phrase between intro and items, can be an empty string
      * @return Explanation as String
      */
-    private static String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
+    private String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
         String result = null;
+        logger.info("Explanations {}", explanations.size());
         if (Objects.equals(lang, "en")) {
-            result = "The component " + componentURI + " has added " + explanations.size() + " annotation(s) to the graph"
+            result = "The component " + componentURI + " has added " + (explanations.size() == 10 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         } else if (Objects.equals(lang, "de")) {
-            result = "Die Komponente " + componentURI + " hat " + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
+            result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 10 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         }
         return result;
@@ -118,12 +122,11 @@ public class ExplanationService {
      *
      * @return Model including
      */
-    public Model createModel(String graphUri, String componentUri) throws Exception {
+    public Model createModel(String graphUri, String componentUri) throws IOException {
 
         List<String> types = new ArrayList<>();
         if (stringResultSetMap.isEmpty())
             types = fetchAllAnnotations(graphUri, componentUri);
-
         String contentDE = createTextualExplanation(graphUri, componentUri, "de", types);
         String contentEN = createTextualExplanation(graphUri, componentUri, "en", types);
 
@@ -324,7 +327,6 @@ public class ExplanationService {
      * @return List with explanations. At the end it includes all explanations for every annotation type
      */
     public List<String> createSpecificExplanations(String[] usedTypes, String graphURI, String lang, String componentURI) throws IOException {
-
         List<String> explanations = new ArrayList<>();
         for (String type : usedTypes
         ) {
@@ -367,7 +369,7 @@ public class ExplanationService {
         explanationsForCurrentType.add(langExplanationPrefix);
         String template = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
 
-        while (results.hasNext()) {
+        while (results.hasNext() && results.getRowNumber() < EXPLANATIONS_DATASET_LIMIT) {
             QuerySolution querySolution = results.next();
             explanationsForCurrentType.add(replaceProperties(convertQuerySolutionToMap(querySolution), template));
         }
@@ -452,15 +454,15 @@ public class ExplanationService {
      * @param lang Currently supported en_list_item and de_list_item
      * @return Complete explanation for the componentURI including all information to each annotation
      */
-    public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException {
+    public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException, IndexOutOfBoundsException {
 
         List<String> createdExplanations = createSpecificExplanations(types.toArray(String[]::new), graphURI, lang, componentURI);
 
         AtomicInteger i = new AtomicInteger();
+        // TODO: Handle 0 annotations !!
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
-        String result = getResult(componentURI, lang, explanations, createdExplanations.get(0));
         stringResultSetMap.clear();
-        return result;
+        return getResult(componentURI, lang, explanations, createdExplanations.get(0));
     }
 
 }
