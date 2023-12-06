@@ -32,7 +32,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -316,7 +315,7 @@ public class AutomatedTestingService {
         return prompt;
     }
 
-    public String sendPrompt(String prompt) throws IOException, URISyntaxException {
+    public String sendPrompt(String prompt) throws Exception {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO); // TODO: Move to applications.properties
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);

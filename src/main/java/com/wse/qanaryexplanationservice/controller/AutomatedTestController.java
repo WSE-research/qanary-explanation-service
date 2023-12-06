@@ -7,7 +7,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
@@ -40,15 +43,14 @@ public class AutomatedTestController {
     )
     public ResponseEntity<String> automatedExperiments(
             @RequestBody AutomatedTestRequestBody requestBody,
-            @RequestParam String authToken,
             @PathVariable boolean doGptRequest
-    ) throws Exception {
-        if (doGptRequest && !authToken.equals(this.authToken))
-            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
+    ) {
         try {
             return new ResponseEntity<>(automatedTestingService.createTestWorkflow(requestBody, doGptRequest), HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>("Invalid Annotation Type!", HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
         }
     }
 
