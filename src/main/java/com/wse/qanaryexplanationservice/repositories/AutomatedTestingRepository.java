@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -20,11 +21,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Duration;
 
@@ -33,9 +32,9 @@ import java.time.Duration;
 public class AutomatedTestingRepository extends AbstractRepository {
 
     private final URL CHATGPT_ENDPOINT = new URL("https://api.openai.com/v1/completions"); // TODO:
-    private final String chatGptApiKey = "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"; // TODO: put in applications.settings
     private final int RESPONSE_TOKEN = 1000;
-
+    @Value("${chatgpt.api.key}")
+    private String chatGptApiKey;
     private Logger logger = LoggerFactory.getLogger(AutomatedTestingRepository.class);
 
     public AutomatedTestingRepository(Environment environment) throws MalformedURLException {
@@ -86,12 +85,15 @@ public class AutomatedTestingRepository extends AbstractRepository {
     }
 
     // Variable as object
-    public String sendGptPrompt(String body, int tokens) throws URISyntaxException, IOException {
+    public String sendGptPrompt(String body, int tokens) throws Exception {
 
         HttpURLConnection con = (HttpURLConnection) CHATGPT_ENDPOINT.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
-        con.setRequestProperty("Authorization", "Bearer " + chatGptApiKey);
+        if (this.chatGptApiKey != null)
+            con.setRequestProperty("Authorization", "Bearer " + chatGptApiKey);
+        else
+            throw new Exception("Missing API Key");
 
         boolean isTokenLessThan4k = tokens < (4096 - RESPONSE_TOKEN);
         JSONObject data = isTokenLessThan4k ? createRequestFor4kModel(body) : createRequestFor16kModel(body);

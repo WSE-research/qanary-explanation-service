@@ -196,7 +196,7 @@ public class AutomatedTestingService {
         try {
             ResultSet triples = fetchTriples(graphURI, componentURI, annotationType);
             StringBuilder dataSet = new StringBuilder();
-            while (triples.hasNext() && triples.getRowNumber() < EXPLANATIONS_DATASET_LIMIT) {
+            while (triples.hasNext()) {
                 QuerySolution querySolution = triples.next();
                 dataSet.append(querySolution.getResource("s")).append(" ").append(querySolution.getResource("p")).append(" ").append(querySolution.get("o")).append(" .\n");
             }
