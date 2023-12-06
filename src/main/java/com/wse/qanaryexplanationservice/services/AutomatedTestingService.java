@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -55,18 +56,6 @@ public class AutomatedTestingService {
         put("^^http://www.w3.org/2001/XMLSchema#dateTime", "");
         put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
         put("^^http://www.w3.org/2001/XMLSchema#float", "");
-    }};
-
-
-    // All available annotation types and the components which create them
-    private final Map<String, String[]> typeAndComponents = new HashMap<>() {{
-        put(AnnotationType.AnnotationOfInstance.name(), new String[]{"NED-DBpediaSpotlight", "DandelionNED", "OntoTextNED", "MeaningCloudNed", "TagmeNED"});
-        put(AnnotationType.AnnotationOfSpotInstance.name(), new String[]{"TagmeNER", "TextRazor", "NER-DBpediaSpotlight", "DandelionNER"});
-        put(AnnotationType.AnnotationOfAnswerJSON.name(), new String[]{"QAnswerQueryBuilderAndExecutor", "SparqlExecuter"});
-        put(AnnotationType.AnnotationOfAnswerSPARQL.name(), new String[]{"SINA", "PlatypusQueryBuilder", "QAnswerQueryBuilderAndQueryCandidateFetcher"});
-        put(AnnotationType.AnnotationOfQuestionLanguage.name(), new String[]{"LD-Shuyo"});
-        // put(AnnotationType.annotationofquestiontranslation.name(), new String[]{"mno", "pqr"});
-        put(AnnotationType.AnnotationOfRelation.name(), new String[]{"FalconRelComponent-dbpedia", "DiambiguationProperty"});
     }};
     // Dependency map for annotation types, used for setting up the Qanary pipeline, so that all relevant annotation are made
     // Important: Old approach was to resolve deeper dependencies recursively, however, yet they are hard coded in this map due to the little amount of different types
@@ -100,18 +89,29 @@ public class AutomatedTestingService {
         put(3, "/testtemplates/threeshot");
     }};
     private final Random random;
+    // All available annotation types and the components which create them
+    private final Map<String, String[]> typeAndComponents;
+    @Autowired
+    private ExplanationDataService explanationDataService;
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
     @Autowired
     private ExplanationService explanationService;
-    @Autowired
-    private ExplanationDataService explanationDataService;
 
     // CONSTRUCTOR(s)
-    public AutomatedTestingService() {
+    public AutomatedTestingService(Environment environment) {
         this.random = new Random();
+        typeAndComponents = new HashMap<>() {{
+            put(AnnotationType.AnnotationOfInstance.name(), environment.getProperty("qanary.components.annotationofinstance", String[].class));
+            put(AnnotationType.AnnotationOfSpotInstance.name(), environment.getProperty("qanary.components.annotationofspotinstance", String[].class));
+            put(AnnotationType.AnnotationOfAnswerJSON.name(), environment.getProperty("qanary.components.annotationofanswerjson", String[].class));
+            put(AnnotationType.AnnotationOfAnswerSPARQL.name(), environment.getProperty("qanary.components.annotationofanswersparql", String[].class));
+            put(AnnotationType.AnnotationOfQuestionLanguage.name(), environment.getProperty("qanary.components.annotationofquestionlanguage", String[].class));
+            // put(AnnotationType.annotationofquestiontranslation.name(), environment.getProperty("annotationofquestiontranslation", String[].class));
+            put(AnnotationType.AnnotationOfRelation.name(), environment.getProperty("qanary.components.annotationofrelation", String[].class));
+        }};
     }
 
     /**
@@ -214,7 +214,7 @@ public class AutomatedTestingService {
             }
             return dataSetAsString;
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error(String.valueOf(e));
             throw new Exception(e);
         }
     }

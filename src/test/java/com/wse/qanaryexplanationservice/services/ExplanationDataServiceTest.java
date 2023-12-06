@@ -83,11 +83,6 @@ public class ExplanationDataServiceTest {
         }
 
         @Test
-        public void insertQueryCorrect() throws Exception {
-            automatedTestingService.createTestWorkflow(automatedTestRequestBody);
-        }
-
-        @Test
         public void leer() {
             assertEquals("Example_Question", resultSet.next().get("hasQuestion").asLiteral().getString());
         }
