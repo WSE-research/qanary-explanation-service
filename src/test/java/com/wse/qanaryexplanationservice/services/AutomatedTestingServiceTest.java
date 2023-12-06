@@ -23,7 +23,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -32,30 +31,22 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 public class AutomatedTestingServiceTest {
 
-
-    private static ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
-    private final Map<String, String[]> typeAndComponents;
+    private final Map<String, String[]> typeAndComponents = new HashMap<>();
     @Autowired
     private AutomatedTestingService automatedTestingService;
 
     @Autowired
     public AutomatedTestingServiceTest(Environment environment) {
-        typeAndComponents = new HashMap<>() {{
-            put(AnnotationType.AnnotationOfInstance.name(), environment.getProperty("qanary.components.annotationofinstance", String[].class));
-            put(AnnotationType.AnnotationOfSpotInstance.name(), environment.getProperty("qanary.components.annotationofspotinstance", String[].class));
-            put(AnnotationType.AnnotationOfAnswerJSON.name(), environment.getProperty("qanary.components.annotationofanswerjson", String[].class));
-            put(AnnotationType.AnnotationOfAnswerSPARQL.name(), environment.getProperty("qanary.components.annotationofanswersparql", String[].class));
-            put(AnnotationType.AnnotationOfQuestionLanguage.name(), environment.getProperty("qanary.components.annotationofquestionlanguage", String[].class));
-            // put(AnnotationType.annotationofquestiontranslation.name(), environment.getProperty("annotationofquestiontranslation", String[].class));
-            put(AnnotationType.AnnotationOfRelation.name(), environment.getProperty("qanary.components.annotationofrelation", String[].class));
-        }};
+        for (AnnotationType annType : AnnotationType.values()
+        ) {
+            typeAndComponents.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
+        }
     }
 
     @Nested
     class SelectComponentTests {
 
-        private final Random random = new Random();
         private Example example;
         private AutomatedTest automatedTest;
 
@@ -98,9 +89,7 @@ public class AutomatedTestingServiceTest {
             automatedTest.setTestData(new TestDataObject(null, null, "LD-Shuyo", null, null, null, null, null, null, null, null));
             example = new Example(annotationType.name(), true);
 
-            Exception exception = Assertions.assertThrows(RuntimeException.class, () -> {
-                automatedTestingService.selectComponent(annotationType, automatedTest, example);
-            });
+            Assertions.assertThrows(RuntimeException.class, () -> automatedTestingService.selectComponent(annotationType, automatedTest, example));
         }
     }
 
@@ -122,12 +111,10 @@ public class AutomatedTestingServiceTest {
         }
 
         @Test
-        public void createDatasetResultSetIsNullTest() throws Exception {
+        public void createDatasetResultSetIsNullTest() {
             setupTest(null);
 
-            Exception exception = Assertions.assertThrows(Exception.class, () -> {
-                automatedTestingService.createDataset("componentURI", "graphURI", "anyAnnotationType");
-            });
+            Assertions.assertThrows(Exception.class, () -> automatedTestingService.createDataset("componentURI", "graphURI", "anyAnnotationType"));
 
         }
     }

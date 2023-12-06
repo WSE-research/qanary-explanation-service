@@ -90,7 +90,7 @@ public class AutomatedTestingService {
     }};
     private final Random random;
     // All available annotation types and the components which create them
-    private final Map<String, String[]> typeAndComponents;
+    private final Map<String, String[]> typeAndComponents = new HashMap<>();
     @Autowired
     private ExplanationDataService explanationDataService;
     @Value("${explanations.dataset.limit}")
@@ -103,15 +103,10 @@ public class AutomatedTestingService {
     // CONSTRUCTOR(s)
     public AutomatedTestingService(Environment environment) {
         this.random = new Random();
-        typeAndComponents = new HashMap<>() {{
-            put(AnnotationType.AnnotationOfInstance.name(), environment.getProperty("qanary.components.annotationofinstance", String[].class));
-            put(AnnotationType.AnnotationOfSpotInstance.name(), environment.getProperty("qanary.components.annotationofspotinstance", String[].class));
-            put(AnnotationType.AnnotationOfAnswerJSON.name(), environment.getProperty("qanary.components.annotationofanswerjson", String[].class));
-            put(AnnotationType.AnnotationOfAnswerSPARQL.name(), environment.getProperty("qanary.components.annotationofanswersparql", String[].class));
-            put(AnnotationType.AnnotationOfQuestionLanguage.name(), environment.getProperty("qanary.components.annotationofquestionlanguage", String[].class));
-            // put(AnnotationType.annotationofquestiontranslation.name(), environment.getProperty("annotationofquestiontranslation", String[].class));
-            put(AnnotationType.AnnotationOfRelation.name(), environment.getProperty("qanary.components.annotationofrelation", String[].class));
-        }};
+        for (AnnotationType annType : AnnotationType.values()
+        ) {
+            typeAndComponents.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
+        }
     }
 
     /**
@@ -199,11 +194,10 @@ public class AutomatedTestingService {
     public String createDataset(String componentURI, String graphURI, String annotationType) throws Exception {
 
         try {
-            ResultSet triples = fetchTriplesWithComponentSelectQueries(graphURI, componentURI, annotationType);
+            ResultSet triples = fetchTriples(graphURI, componentURI, annotationType);
             StringBuilder dataSet = new StringBuilder();
             while (triples.hasNext() && triples.getRowNumber() < EXPLANATIONS_DATASET_LIMIT) {
                 QuerySolution querySolution = triples.next();
-                logger.info("Query Solution as String: {}", querySolution.toString());
                 dataSet.append(querySolution.getResource("s")).append(" ").append(querySolution.getResource("p")).append(" ").append(querySolution.get("o")).append(" .\n");
             }
             String dataSetAsString = dataSet.toString();
@@ -229,6 +223,7 @@ public class AutomatedTestingService {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
         bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
         bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:" + componentURI));
+        bindingsForQuery.add("annotatedBy", ResourceFactory.createResource("urn:qanary:" + componentURI));
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
             query = query.replace("?annotationType", "qa:" + annotationType);
