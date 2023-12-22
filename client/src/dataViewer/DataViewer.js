@@ -6,14 +6,28 @@ import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import { useState } from 'react';
+import {Button} from "@mui/material";
 
 export default function DataViewer() {
 
-    const annotationTypes:[] = ["Instance", "SpotInstance", "Relation", "QuestionTranslation", "AnswerSPARQL", "AnswerJSON"];
+    const annotationTypes = ["Instance", "SpotInstance", "Relation", "QuestionTranslation", "AnswerSPARQL", "AnswerJSON"];
     const [shotCount, setShotCount] = useState(1);
+    const [annTypes, setAnnTypes] = useState();
 
     const handleChange = (event: SelectChangeEvent) => {
         setShotCount(event.target.value)
+        setAnnTypes(new Array(shotCount));
+    }
+
+    const submitTypes = () => {
+        const allValues = new Array(shotCount+1);
+        allValues[0] = document.getElementById('standard-select-currency').innerHTML;
+        for(let i = 0; i < shotCount; i++) {
+            const selectElement = document.getElementById('standard-select-currency-' + i);
+            allValues[i+1] = selectElement.innerHTML;
+        }
+        console.log(allValues);
+        setShotCount(1);
     }
 
     return(
@@ -30,6 +44,7 @@ export default function DataViewer() {
                     <MenuItem value={2}>2</MenuItem>
                     <MenuItem value={3}>3</MenuItem>
                 </Select>
+                <Button variant="outlined" onClick={submitTypes}>Bestätigen</Button>
             </FormControl>
         </div>
         <div style={{width:1000, display: "flex"}}>
@@ -54,7 +69,8 @@ export default function DataViewer() {
                 {
                     [...Array(shotCount)].map((value: undefined, index: number) => (
                         <TextField
-                          id="standard-select-currency"
+                            key={index}
+                          id={`standard-select-currency-${index}`}
                           select
                           label="Annotation-Type"
                           defaultValue="EUR"
