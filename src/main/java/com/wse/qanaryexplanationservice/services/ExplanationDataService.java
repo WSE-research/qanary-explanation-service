@@ -22,7 +22,7 @@ public class ExplanationDataService {
     private final Property gptExplanation;
     private final Property testData;
     private final Property exampleData;
-    private final Property annotationType;
+    private final Property rdfType;
     private final Property usedComponent;
     private final Property usedComponentAsNum;
     private final Property dataset;
@@ -30,7 +30,10 @@ public class ExplanationDataService {
     private final Property explanation;
     private final Property questionId;
     private final Property question;
-
+    private final String QANARY_VOCAB = "http://www.wdaqua.eu/qa#";
+    private final String RDFS = "http://www.w3.org/2000/01/rdf-schema#";
+    private final String RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+    private final String AEX_VOCAB = "http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#";
     @Value("${virtuoso.triplestore.endpoint}")
     private String VIRTUOSO_TRIPLESTORE_ENDPOINT;
     @Value("${virtuoso.triplestore.username}")
@@ -38,25 +41,28 @@ public class ExplanationDataService {
     @Value("${virtuoso.triplestore.password}")
     private String VIRTUOSO_TRIPLESTORE_PASSWORD;
 
-
     public ExplanationDataService() {
         model = ModelFactory.createDefaultModel();
 
+        // Init Prefixes
+        model.setNsPrefix("aex", AEX_VOCAB);
+        model.setNsPrefix("rdfs", RDFS);
+        model.setNsPrefix("qa", QANARY_VOCAB);
+        model.setNsPrefix("rdf", RDF);
+
         //Init Properties
-        annotationType = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#annotationType");
-        usedComponent = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#usedComponent");
-        usedComponentAsNum = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#usedComponentAsNum");
-        dataset = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#dataset");
-        graphId = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#graphId");
-        explanation = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#explanation");
-        questionId = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#questionId");
-        question = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#question");
-        model.setNsPrefix("aex", "http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#");
-        model.setNsPrefix("rdfs", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-        prompt = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#prompt");
-        gptExplanation = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#gptExplanation");
-        testData = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#testData");
-        exampleData = model.createProperty("http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#exampleData");
+        rdfType = model.createProperty(RDF + "type");
+        usedComponent = model.createProperty(AEX_VOCAB + "usedComponent");
+        usedComponentAsNum = model.createProperty(AEX_VOCAB + "usedComponentAsNum");
+        dataset = model.createProperty(AEX_VOCAB + "dataset");
+        graphId = model.createProperty(AEX_VOCAB + "graphId");
+        explanation = model.createProperty(AEX_VOCAB + "explanation");
+        questionId = model.createProperty(AEX_VOCAB + "questionId");
+        question = model.createProperty(AEX_VOCAB + "question");
+        prompt = model.createProperty(AEX_VOCAB + "prompt");
+        gptExplanation = model.createProperty(AEX_VOCAB + "gptExplanation");
+        testData = model.createProperty(AEX_VOCAB + "testData");
+        exampleData = model.createProperty(AEX_VOCAB + "exampleData");
     }
 
     public void insertDataset(AutomatedTest automatedTest) {
@@ -68,9 +74,7 @@ public class ExplanationDataService {
         VirtModel virtModel = VirtModel.openDatabaseModel("urn:aex:" + uuid, VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
         virtModel.add(model);
         virtModel.close();
-
-        //  Clear experiment specific Statements
-        model.remove(statementList);
+        model.remove(statementList); //  Clear experiment specific Statements
     }
 
     public List<Statement> createSpecificStatementList(AutomatedTest automatedTest, String uuid) {
@@ -91,7 +95,7 @@ public class ExplanationDataService {
         Resource resource = model.createResource();
 
         // Add items to object
-        resource.addProperty(annotationType, ResourceFactory.createPlainLiteral(testDataObject.getAnnotationType().name()));
+        resource.addProperty(rdfType, ResourceFactory.createProperty(QANARY_VOCAB + testDataObject.getAnnotationType().name()));
         resource.addProperty(usedComponent, ResourceFactory.createPlainLiteral(testDataObject.getUsedComponent()));
         resource.addProperty(usedComponentAsNum, ResourceFactory.createPlainLiteral(String.valueOf(testDataObject.getComponentNumber())));
         resource.addProperty(dataset, ResourceFactory.createPlainLiteral(testDataObject.getDataSet()));
