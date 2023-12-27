@@ -1,51 +1,54 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTestDTO;
 import com.wse.qanaryexplanationservice.pojos.ExperimentSelectionDTO;
-import com.wse.qanaryexplanationservice.repositories.ClientRepository;
-import org.apache.jena.query.QuerySolutionMap;
-import org.apache.jena.rdf.model.ResourceFactory;
-import org.checkerframework.checker.units.qual.A;
+import com.wse.qanaryexplanationservice.repositories.SparqlRepository;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ClientService {
 
-    @Autowired
-    private ExplanationDataService explanationDataService;
-    @Autowired
-    private ExplanationService explanationService;
-    @Autowired
-    private ClientRepository clientRepository;
     private final Logger logger = LoggerFactory.getLogger(ClientService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String SELECT_ALL_EXPERIMENTS_QUERY = "/queries/selectAllExperiments.rq";
+    @Autowired
+    private ExplanationDataService explanationDataService;
+    @Autowired
+    private SparqlRepository sparqlRepository;
 
     public JSONArray extractExperiments(JSONObject jsonObject) {
         return jsonObject.getJSONArray("explanations");
     }
 
-    public void insertJSONs(JSONObject jsonObject) throws Exception {
+    /**
+     * Takes a JSON including several experiments and inserts every experiment to the underlying triplestore
+     *
+     * @param jsonObject
+     * @throws Exception
+     */ // TODO: Refactor: Create a Class which contains explanations and a array of AutomatedTestDTOs, maybe with a inherited conversion for AutomatedTest
+    public void insertJsons(JSONObject jsonObject) throws Exception {
         JSONArray experiments = extractExperiments(jsonObject);
         experiments.forEach(experiment -> {
             try {
                 AutomatedTestDTO automatedTestDto = objectMapper.readValue(experiment.toString(), AutomatedTestDTO.class);
                 AutomatedTest automatedTest = convertToAutomatedTest(automatedTestDto);
-                logger.info("{}",automatedTest.toString());
+                logger.info("{}", automatedTest.toString());
                 explanationDataService.insertDataset(automatedTest);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
@@ -53,7 +56,7 @@ public class ClientService {
         });
     }
 
-    public AutomatedTest convertToAutomatedTest(AutomatedTestDTO automatedTestDTO) {
+    private AutomatedTest convertToAutomatedTest(AutomatedTestDTO automatedTestDTO) {
         AutomatedTest automatedTest = new AutomatedTest();
         automatedTest.setTestData(automatedTestDTO.getTestData());
         automatedTest.setPrompt(automatedTestDTO.getPrompt());
@@ -65,12 +68,27 @@ public class ClientService {
 
     public String getExperimentExplanations(ExperimentSelectionDTO experimentSelectionDTO) throws IOException {
         String sequenceToBeInserted = explanationDataService.createSequenceForExperimentSelection(experimentSelectionDTO);
-        String query = explanationService.getStringFromFile(SELECT_ALL_EXPERIMENTS_QUERY);
-        query = query.replace("?sequence",sequenceToBeInserted);
-        clientRepository.setSparqlEndpoint(new URL("http://localhost:8890/sparql"));
-        JsonNode jsonNode = clientRepository.executeSparqlQuery(query);
+        String query = new String(Files.readAllBytes(new ClassPathResource(SELECT_ALL_EXPERIMENTS_QUERY).getFile().toPath()));
+        query = query.replace("?sequence", sequenceToBeInserted).replace("?testType", "qa:" + experimentSelectionDTO.getTestType());
+        logger.info("{}", query);
+        sparqlRepository.setSparqlEndpoint("http://localhost:8890/sparql");
+        ResultSet resultSet = sparqlRepository.executeSparqlQueryWithResultSet(query);
+        JSONObject jsonObject = new JSONObject();
+        JSONArray jsonArray = new JSONArray();
+        while (resultSet.hasNext()) {
+            QuerySolution querySolution = resultSet.next();
+            JSONObject temp = new JSONObject();
+            temp.put("explanation", querySolution.get("explanation"));
+            temp.put("gptExplanation", querySolution.get("gptExplanation"));
+            jsonArray.put(temp);
+        }
+        jsonObject.put("explanations", jsonArray);
 
-        return jsonNode.asText();
+        return jsonObject.toString();
+    }
+
+    public String getExperiments(ExperimentSelectionDTO experimentSelectionDTO) {
+        return null;
     }
 
 }

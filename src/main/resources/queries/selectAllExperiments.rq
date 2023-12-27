@@ -8,7 +8,8 @@ WHERE {
 
  ?experimentId aex:gptExplanation ?gptExplanation ;
                   aex:testData [
-                    aex:explanation ?explanation
+                    aex:explanation ?explanation ;
+                    rdf:type ?testType
                   ] ;
                   aex:exampleData [
                   a rdf:Seq ;

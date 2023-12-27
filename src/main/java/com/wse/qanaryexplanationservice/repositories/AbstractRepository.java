@@ -7,7 +7,6 @@ import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdfconnection.RDFConnection;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
@@ -76,6 +75,27 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         return objectMapper.readValue(responseStream, JsonNode.class).get("results");
     }
 
+    public JsonNode executeSparqlQueryReturnJsonObject(String query) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) sparqlEndpoint.openConnection();
+        connection.setRequestMethod("GET");
+
+        // Set up query as a parameter for the request
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("query", query);
+
+        connection.setDoOutput(true);
+
+        DataOutputStream out = new DataOutputStream(connection.getOutputStream());
+        out.writeBytes(ParameterStringBuilder.getParamsString(parameters));
+        out.flush();
+        out.close();
+
+        // read the response and store it as a JsonNode
+        InputStream responseStream = getInputStream(connection);
+
+        return objectMapper.readValue(responseStream, JsonNode.class);
+    }
+
     protected InputStream getInputStream(HttpURLConnection connection) throws IOException {
         return connection.getInputStream();
     }
@@ -95,4 +115,5 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         QueryExecution queryExecution = rdfConnection.query(executableQuery);
         return queryExecution.execSelect();
     }
+
 }
