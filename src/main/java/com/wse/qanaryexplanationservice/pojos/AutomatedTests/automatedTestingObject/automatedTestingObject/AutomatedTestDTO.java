@@ -1,16 +1,17 @@
 package com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
-public class AutomatedTest {
+public class AutomatedTestDTO {
 
     private TestDataObject testData;
-    private ArrayList<TestDataObject> exampleData;
+    private TestDataObject[] exampleData;
     private String gptExplanation;
     private String prompt;
 
-    public AutomatedTest() {
-        this.exampleData = new ArrayList<>();
+    public AutomatedTestDTO() {
+
     }
 
     public String getPrompt() {
@@ -21,12 +22,12 @@ public class AutomatedTest {
         this.prompt = prompt;
     }
 
-    public ArrayList<TestDataObject> getExampleData() {
+    public TestDataObject[] getExampleData() {
         return exampleData;
     }
 
-    public void setExampleData(TestDataObject exampleData) {
-        this.exampleData.add(exampleData);
+    public void setExampleData(TestDataObject[] exampleData) {
+        this.exampleData = exampleData;
     }
 
     public TestDataObject getTestData() {
@@ -45,14 +46,11 @@ public class AutomatedTest {
         this.gptExplanation = gptExplanation;
     }
 
-    public void setExampleDataArrayList(ArrayList<TestDataObject> list) {
-        this.exampleData = list;
-    }
     @Override
     public String toString() {
-        return "AutomatedTest{" +
+        return "AutomatedTestDTO{" +
                 "testData=" + testData +
-                ", exampleData=" + exampleData +
+                ", exampleData=" + Arrays.toString(exampleData) +
                 ", gptExplanation='" + gptExplanation + '\'' +
                 ", prompt='" + prompt + '\'' +
                 '}';

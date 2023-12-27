@@ -44,6 +44,10 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         this.webClient = webClient;
     }
 
+    public void setSparqlEndpoint(URL sparqlEndpoint) {
+        this.sparqlEndpoint = sparqlEndpoint;
+    }
+
     /**
      * @param sparqlQuery From service returned query which already contains all relevant parameters
      * @return The Requests-Response-Body as JsonNode

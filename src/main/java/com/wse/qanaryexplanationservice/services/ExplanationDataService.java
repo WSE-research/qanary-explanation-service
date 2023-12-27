@@ -2,6 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.TestDataObject;
+import com.wse.qanaryexplanationservice.pojos.ExperimentSelectionDTO;
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +84,7 @@ public class ExplanationDataService {
         logger.info("Experiment ID: {}", experimentId);
 
         statementList.add(ResourceFactory.createStatement(experimentId, prompt, ResourceFactory.createPlainLiteral(automatedTest.getPrompt())));
-        // statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral(automatedTest.getGptExplanation())));
+        statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral(automatedTest.getGptExplanation())));
         statementList.add(ResourceFactory.createStatement(experimentId, testData, setUpTestObject(automatedTest.getTestData())));
         statementList.add(ResourceFactory.createStatement(experimentId, exampleData, setupExampleData(automatedTest.getExampleData())));
 
@@ -113,6 +114,21 @@ public class ExplanationDataService {
             seq.add(i + 1, setUpTestObject(examples.get(i)));
         }
         return seq;
+    }
+
+
+    // TODO: StringBuilder not the best solution here, probably refactor existing methods to use the model approach
+    public String createSequenceForExperimentSelection(ExperimentSelectionDTO experimentSelectionDTO) {
+        String[] list = experimentSelectionDTO.getAnnotationTypes();
+        StringBuilder stringBuilder = new StringBuilder();
+        logger.info("{}", experimentSelectionDTO.getShots());
+        for(int i = 0; i < experimentSelectionDTO.getShots(); i++) {
+            stringBuilder.append("rdfs:_" + (i+1) + "[ rdf:type qa:" + list[i] + "]");
+            if(i+1 != experimentSelectionDTO.getShots()) {
+                stringBuilder.append(";");
+            }
+        }
+        return stringBuilder.toString();
     }
 
 }
