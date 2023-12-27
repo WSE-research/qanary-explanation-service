@@ -1,0 +1,73 @@
+.container {
+    display: flex;
+    background-color: lightgrey;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 50px 10px;
+}
+
+.left {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.right {
+    display: flex;
+    gap: 2rem;
+}
+
+.MuiFormControl-root {
+    margin: 0 !important;
+}
+
+.exampleData {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.explanationContainer {
+    margin-top: 1rem;
+    display: flex;
+}
+.explanationContainer > div {
+    flex: 1;
+    margin: 30px;
+    background-color: yellow;
+}
+.explanationContainer p {
+    padding: 10px;
+}
+.explanationSelection {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 50px;
+}
+.explanationSelection > span {
+    font-weight: 500;
+}
+.explanationSelection > span:hover {
+    cursor: pointer;
+}
+
+@media only screen and (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+    .right {
+        flex-direction: column;
+    }
+    .explanationContainer {
+        flex-direction: column;
+    }
+}
+
+@media only screen and (min-width: 1033px) {
+    .left {
+        align-self: flex-end;
+    }
+}
