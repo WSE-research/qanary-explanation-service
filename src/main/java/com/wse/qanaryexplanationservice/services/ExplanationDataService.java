@@ -66,6 +66,10 @@ public class ExplanationDataService {
         exampleData = model.createProperty(AEX_VOCAB + "exampleData");
     }
 
+    /**
+     * Inserts a AutomatedTest object to the triplestore with a unique graphID
+     * @param automatedTest Object which will be parsed to a model and inserted to the triplestore
+     */
     public void insertDataset(AutomatedTest automatedTest) {
 
         String uuid = UUID.randomUUID().toString();
@@ -78,6 +82,12 @@ public class ExplanationDataService {
         model.remove(statementList); //  Clear experiment specific Statements
     }
 
+    /**
+     * Creates statements (= triples)
+     * @param automatedTest Object including all information about the test(s)
+     * @param uuid graph identifier
+     * @return List of Statements (= triples)
+     */
     public List<Statement> createSpecificStatementList(AutomatedTest automatedTest, String uuid) {
         List<Statement> statementList = new ArrayList<>();
         Resource experimentId = model.createResource(uuid);
@@ -91,6 +101,11 @@ public class ExplanationDataService {
         return statementList;
     }
 
+    /**
+     * Creates a resource and adds all required triples to describe the resource (= subject)
+     * @param testDataObject Concrete subject (either the test or example)
+     * @return Resource (= subject)
+     */
     public Resource setUpTestObject(TestDataObject testDataObject) {
 
         Resource resource = model.createResource();
@@ -108,6 +123,11 @@ public class ExplanationDataService {
         return resource;
     }
 
+    /**
+     * Method to create the list of example objects as a rdf-sequence
+     * @param examples List of examples of type TestDataObject
+     * @return
+     */
     public Seq setupExampleData(ArrayList<TestDataObject> examples) {
         Seq seq = model.createSeq();
         for (int i = 0; i < examples.size(); i++) {
