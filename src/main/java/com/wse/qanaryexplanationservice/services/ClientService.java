@@ -42,7 +42,7 @@ public class ClientService {
      * @param jsonObject
      * @throws Exception
      */ // TODO: Refactor: Create a Class which contains explanations and a array of AutomatedTestDTOs, maybe with a inherited conversion for AutomatedTest
-    public void insertJsons(JSONObject jsonObject) throws Exception {
+    public void insertJson(JSONObject jsonObject) throws RuntimeException {
         JSONArray experiments = extractExperiments(jsonObject);
         experiments.forEach(experiment -> {
             try {
@@ -51,6 +51,7 @@ public class ClientService {
                 logger.info("{}", automatedTest.toString());
                 explanationDataService.insertDataset(automatedTest);
             } catch (JsonProcessingException e) {
+                logger.error("{}", e.toString());
                 throw new RuntimeException(e);
             }
         });
@@ -69,6 +70,7 @@ public class ClientService {
     public String getExperimentExplanations(ExperimentSelectionDTO experimentSelectionDTO) throws IOException {
         String sequenceToBeInserted = explanationDataService.createSequenceForExperimentSelection(experimentSelectionDTO);
         String query = new String(Files.readAllBytes(new ClassPathResource(SELECT_ALL_EXPERIMENTS_QUERY).getFile().toPath()));
+        query = query.replace("?testType", "qa:" + experimentSelectionDTO.getTestType());
         query = query.replace("?sequence", sequenceToBeInserted).replace("?testType", "qa:" + experimentSelectionDTO.getTestType());
         logger.info("{}", query);
         sparqlRepository.setSparqlEndpoint("http://localhost:8890/sparql");
