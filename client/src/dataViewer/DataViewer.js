@@ -23,13 +23,31 @@ export default function DataViewer() {
     }
 
     const submitTypes = () => {
-        const allValues = new Array(shotCount+1);
-        allValues[0] = document.getElementById('standard-select-currency').innerHTML;
+        const allValues = new Array(shotCount);
+        let body = {
+            "testType": document.getElementById('standard-select-currency').innerHTML,
+            "shots": shotCount
+        };
         for(let i = 0; i < shotCount; i++) {
             const selectElement = document.getElementById('standard-select-currency-' + i);
-            allValues[i+1] = selectElement.innerHTML;
+            allValues[i] = selectElement.innerHTML;
         }
+        body.annotationTypes = allValues;
+        sendRequest(JSON.stringify(body));
         setShotCount(1);
+    }
+
+    function sendRequest(body) {
+        fetch("http://localhost:4000/experiments/explanations", {
+            method: "POST",
+            body: body,
+            headers: {
+                "Content-Type":"application/json"
+            }
+        })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error(error));
     }
 
     useEffect(() => {
@@ -71,7 +89,7 @@ export default function DataViewer() {
             <div>
                 <h3>Test Data</h3>
                         <TextField
-                          id="standard-select-currency"
+                          id="standard-select-currency" // TODO: Rename id
                           select
                           label="Annotation-Type"
                           helperText="Please select a Annotation type"
@@ -90,7 +108,7 @@ export default function DataViewer() {
                     [...Array(shotCount)].map((value: undefined, index: number) => (
                         <TextField
                             key={index}
-                          id={`standard-select-currency-${index}`}
+                          id={`standard-select-currency-${index}`} // TODO: Rename id
                           select
                           label="Annotation-Type"
                           helperText="Please select a Annotation type"
