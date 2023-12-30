@@ -1,11 +1,10 @@
 import "./DataViewer.css";
-import Box from '@mui/material/Box';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {Button} from "@mui/material";
 
 export default function DataViewer() {
@@ -17,7 +16,7 @@ export default function DataViewer() {
     const [experimentsIndex, setExperimentsIndex] = useState();
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    const handleChange = (event: SelectChangeEvent) => {
+    const handleChange = (event) => {
         setShotCount(event.target.value)
         setAnnTypes(new Array(shotCount));
     }
@@ -25,11 +24,11 @@ export default function DataViewer() {
     const submitTypes = () => {
         const allValues = new Array(shotCount);
         let body = {
-            "testType": document.getElementById('standard-select-currency').innerHTML,
+            "testType": document.getElementById('test-type').innerHTML,
             "shots": shotCount
         };
         for(let i = 0; i < shotCount; i++) {
-            const selectElement = document.getElementById('standard-select-currency-' + i);
+            const selectElement = document.getElementById('example-type-' + i);
             allValues[i] = selectElement.innerHTML;
         }
         body.annotationTypes = allValues;
@@ -46,25 +45,12 @@ export default function DataViewer() {
             }
         })
             .then(response => response.json())
-            .then(data => console.log(data))
+            .then(data =>  {
+                setExperiments(data.explanations);
+                setExperimentsIndex(data.explanations.length);
+            })
             .catch(error => console.error(error));
     }
-
-    useEffect(() => {
-        fetch("http://localhost:4000/experiments", {
-            method: "GET",
-            headers: {
-                
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            setExperiments(data.explanations);
-            setExperimentsIndex(data.explanations.length);
-        })
-        .catch(error => console.error(error));
-    },[]);
-
 
     return(
         <div>
@@ -89,7 +75,7 @@ export default function DataViewer() {
             <div>
                 <h3>Test Data</h3>
                         <TextField
-                          id="standard-select-currency" // TODO: Rename id
+                          id="test-type"
                           select
                           label="Annotation-Type"
                           helperText="Please select a Annotation type"
@@ -105,10 +91,10 @@ export default function DataViewer() {
                 <h3>Example Data</h3>
                 <div className="exampleData">
                 {
-                    [...Array(shotCount)].map((value: undefined, index: number) => (
+                    [...Array(shotCount)].map((value, index) => (
                         <TextField
                             key={index}
-                          id={`standard-select-currency-${index}`} // TODO: Rename id
+                          id={`example-type-${index}`} // TODO: Rename id
                           select
                           label="Annotation-Type"
                           helperText="Please select a Annotation type"
@@ -133,7 +119,7 @@ export default function DataViewer() {
                 {
                     experiments 
                     ?
-                    experiments[currentIndex].testData.explanation
+                    experiments[currentIndex].explanation
                     :
                     null
                 }
