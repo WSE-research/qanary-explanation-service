@@ -39,7 +39,7 @@ public class ClientService {
     /**
      * Takes a JSON including several experiments and inserts every experiment to the underlying triplestore
      *
-     * @param jsonObject
+     * @param
      * @throws Exception
      */ // TODO: Refactor: Create a Class which contains explanations and a array of AutomatedTestDTOs, maybe with a inherited conversion for AutomatedTest
     public void insertJson(JSONObject jsonObject) throws RuntimeException {
@@ -57,6 +57,12 @@ public class ClientService {
         });
     }
 
+    /**
+     * Mirroring AutomatedTestDTO to the similar AutomatedTest class
+     *
+     * @param automatedTestDTO Object of type AutomatedTestDTO @see com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.AutomatedTestDTO
+     * @return Object of type AutomatedTest @see com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.AutomatedTest
+     */
     private AutomatedTest convertToAutomatedTest(AutomatedTestDTO automatedTestDTO) {
         AutomatedTest automatedTest = new AutomatedTest();
         automatedTest.setTestData(automatedTestDTO.getTestData());
@@ -67,6 +73,13 @@ public class ClientService {
         return automatedTest;
     }
 
+    /**
+     * Fetches explanations and return them as a JSON-String inside a array with the key value "explanations"
+     *
+     * @param experimentSelectionDTO Object which defines some requirements for the experiments which will be fetched (Type, shots)
+     * @return JSON-String inside a array with the key value "explanations"
+     * @throws IOException When File-Reading fails
+     */
     public String getExperimentExplanations(ExperimentSelectionDTO experimentSelectionDTO) throws IOException {
         String sequenceToBeInserted = explanationDataService.createSequenceForExperimentSelection(experimentSelectionDTO);
         String query = new String(Files.readAllBytes(new ClassPathResource(SELECT_ALL_EXPERIMENTS_QUERY).getFile().toPath()));
@@ -89,6 +102,10 @@ public class ClientService {
         return jsonObject.toString();
     }
 
+    /**
+     * @param experimentSelectionDTO
+     * @return
+     */
     public String getExperiments(ExperimentSelectionDTO experimentSelectionDTO) {
         return null;
     }

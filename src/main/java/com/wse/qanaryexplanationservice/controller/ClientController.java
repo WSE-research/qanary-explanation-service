@@ -27,11 +27,12 @@ public class ClientController {
 
     /**
      * Endpoint to return all explanations for the experiments which are described by the passed JSON-String
+     *
      * @param experimentSelectionDTO Class to mirror passed JSON
      * @return Experiments explanations
      * @throws IOException while reading file
      */
-    @CrossOrigin
+    @CrossOrigin(origins = {"http://localhost:3000"})
     @PostMapping("/experiments/explanations")
     public ResponseEntity<String> getExperimentExplanations(@RequestBody ExperimentSelectionDTO experimentSelectionDTO) throws IOException {
         return new ResponseEntity<>(clientService.getExperimentExplanations(experimentSelectionDTO), HttpStatus.OK);
@@ -39,22 +40,25 @@ public class ClientController {
 
     /**
      * Endpoint to pass a JSON-String following the AutomatedTest-Structure and insert it to the underlying triplestore
+     *
      * @param automatedTest JSON-String following the AutomatedTest-Structure
      * @return ResponseEntity with "Successful"-message
      */
     @PostMapping(value = "/insertjson", consumes = "application/json")
     public ResponseEntity<String> insertAutomatedTestJson(@RequestBody String automatedTest) {
-        try{
+        try {
             JSONObject jsonObject = new JSONObject(automatedTest);
             clientService.insertJson(jsonObject);
             return new ResponseEntity<>("Successful", HttpStatus.OK);
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
+            logger.error("{}", e.toString());
             return new ResponseEntity<>(null, HttpStatusCode.valueOf(500));
         }
     }
 
     /**
      * Endpoint to return all experiments including all data
+     *
      * @param experimentSelectionDTO Class to mirror passed JSON
      * @return JSON-String with all experiments including all data
      */
