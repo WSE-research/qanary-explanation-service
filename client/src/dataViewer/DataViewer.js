@@ -4,27 +4,43 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Button} from "@mui/material";
 
 export default function DataViewer() {
 
-    const annotationTypes = ["Instance", "SpotInstance", "Relation", "QuestionTranslation", "AnswerSPARQL", "AnswerJSON"];
+    const annotationTypes = ["AnnotationOfInstance", "AnnotationOfSpotInstance", "AnnotationOfRelation", "AnnotationOfQuestionTranslation", "AnnotationOfAnswerSPARQL", "AnnotationOfAnswerJSON"];
     const [shotCount, setShotCount] = useState(1);
-    const [annTypes, setAnnTypes] = useState();
     const [experiments, setExperiments] = useState(null);
     const [experimentsIndex, setExperimentsIndex] = useState();
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [currentIndex, setCurrentIndex] = useState();
     const [numberOfAnnotations, setNumberOfAnnotations] = useState();
     const [qualityAnnotations, setQualityAnnotations] = useState();
     const [qualityPrefix, setQualityPrefix] = useState();
+    const [showScoreAndSlider, setShowScoreAndSlider] = useState(false);
 
-    const handleChange = (event) => {
-        setShotCount(event.target.value)
-        setAnnTypes(new Array(shotCount));
-    }
+    useEffect(() => {
+        experimentsIndex > 0 ? setShowScoreAndSlider(true) : setShowScoreAndSlider(false)
+    }, [experimentsIndex]);
+
+    useEffect(() => {
+        if (experiments) {   // only invoke if experiments are provided
+            if (experiments[currentIndex].hasScore) {    // if score is provided, set states
+                let hasScore = experiments[currentIndex].hasScore
+                setNumberOfAnnotations(hasScore.numberOfAnnotations);
+                setQualityAnnotations(hasScore.qualityAnnotations);
+                setQualityPrefix(hasScore.qualityPrefix);
+            } else {  // If no score is provided, clear previous states
+                setQualityPrefix("")
+                setQualityAnnotations("")
+                setNumberOfAnnotations("")
+            }
+        }
+    }, [currentIndex, experiments]);
 
     const submitTypes = () => {
+        setExperiments(null);
+        setExperimentsIndex(null)
         const allValues = new Array(shotCount);
         let body = {
             "testType": document.getElementById('test-type').innerHTML,
@@ -49,8 +65,11 @@ export default function DataViewer() {
         })
             .then(response => response.json())
             .then(data => {
-                setExperiments(data.explanations);
                 setExperimentsIndex(data.explanations.length);
+                if (data.explanations.length > 0) {
+                    setCurrentIndex(0);
+                    setExperiments(data.explanations);
+                }
             })
             .catch(error => console.error(error));
     }
@@ -64,7 +83,7 @@ export default function DataViewer() {
                         <Select
                             label="Shots"
                             value={shotCount}
-                            onChange={handleChange}
+                            onChange={(event) => setShotCount(event.target.value)}
                         >
                             <MenuItem value={1}>1</MenuItem>
                             <MenuItem value={2}>2</MenuItem>
@@ -83,9 +102,10 @@ export default function DataViewer() {
                             label="Annotation-Type"
                             helperText="Please select a Annotation type"
                             variant="standard"
+                            defaultValue=''
                         >
                             {annotationTypes.map((annType) => (
-                                <MenuItem key={annType} value={annType}>{"AnnotationOf" + annType}</MenuItem>
+                                <MenuItem key={annType} value={annType}>{annType}</MenuItem>
                             ))}
                         </TextField>
                     </div>
@@ -97,16 +117,17 @@ export default function DataViewer() {
                                 [...Array(shotCount)].map((value, index) => (
                                     <TextField
                                         key={index}
-                                        id={`example-type-${index}`} // TODO: Rename id
+                                        id={`example-type-${index}`}
                                         select
                                         label="Annotation-Type"
                                         helperText="Please select a Annotation type"
                                         variant="standard"
+                                        defaultValue=''
                                         style={{marginTop: 15}}
                                     >
                                         {annotationTypes.map((annType) => (
                                             <MenuItem className={"no-margin"} key={annType}
-                                                      value={annType}>{"AnnotationOf" + annType}</MenuItem>
+                                                      value={annType}>{annType}</MenuItem>
                                         ))}
                                     </TextField>
                                 ))
@@ -116,44 +137,12 @@ export default function DataViewer() {
                 </div>
             </div>
 
-            {
-                experiments ?
-                    <div className={"scoresContainer"}>
-                        <TextField
-                            id="numberOfAnnotations"
-                            label="Anzahl Annotationen"
-                            value={experiments[currentIndex].hasScore.numberOfAnnotations}
-                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                setNumberOfAnnotations(event.target.value);
-                            }}
-                        />
-                        <TextField
-                            id="qualityAnnotations"
-                            label="Qualität Annotationen"
-                            value={experiments[currentIndex].hasScore.numberOfAnnotations}
-                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                setNumberOfAnnotations(event.target.value);
-                            }}
-                        />
-                        <TextField
-                            id="qualityPrefix"
-                            label="Qualität Prefix"
-                            value={experiments[currentIndex].hasScore.numberOfAnnotations}
-                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                setNumberOfAnnotations(event.target.value);
-                            }}
-                        />
-                    </div>
-                    :
-                    null
-            }
-
             <div className="explanationContainer">
                 <div>
                     <h3>Golden Standard</h3>
                     <p>
                         {
-                            experiments
+                            (experiments)
                                 ?
                                 experiments[currentIndex].explanation
                                 :
@@ -165,7 +154,7 @@ export default function DataViewer() {
                     <h3>GPT Explanation</h3>
                     <p>
                         {
-                            experiments
+                            (experiments)
                                 ?
                                 experiments[currentIndex].gptExplanation
                                 :
@@ -174,16 +163,60 @@ export default function DataViewer() {
                     </p>
                 </div>
             </div>
-            <div className="explanationSelection">
-        <span onClick={() =>
-            (currentIndex > 0) ? setCurrentIndex(currentIndex - 1) : null
-        }>Zurück</span>
-                {currentIndex} / {experimentsIndex}
-                <span onClick={() =>
-                    (currentIndex < experimentsIndex) ? setCurrentIndex(currentIndex + 1) : null
-                }>Weiter</span>
-            </div>
 
+            {
+                showScoreAndSlider ?
+                    <div className={"scoresContainer"}>
+                        <div className={"scores"}>
+                            <TextField
+                                id="numberOfAnnotations"
+                                InputLabelProps={{shrink: true}}
+                                label="Anzahl Annotationen"
+                                shrink="true"
+                                value={numberOfAnnotations}
+                                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                    setNumberOfAnnotations(event.target.value);
+                                }}
+                            />
+                            <TextField
+                                id="qualityAnnotations"
+                                label="Qualität Annotationen"
+                                InputLabelProps={{shrink: true}}
+                                value={qualityAnnotations}
+                                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                    setQualityAnnotations(event.target.value);
+                                }}
+                            />
+                            <TextField
+                                id="qualityPrefix"
+                                label="Qualität Prefix"
+                                InputLabelProps={{shrink: true}}
+                                value={qualityPrefix}
+                                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                    setQualityPrefix(event.target.value);
+                                }}
+                            />
+                        </div>
+                        <button onClick={() => console.log(numberOfAnnotations)}>Update Experiment</button>
+                    </div>
+                    :
+                    <div>
+
+                    </div>
+            }
+
+            {
+                showScoreAndSlider ?
+                    <div className="explanationSelection">
+                        <span
+                            onClick={() => (currentIndex > 0) ? setCurrentIndex(currentIndex - 1) : null}>Zurück</span>
+                        {currentIndex + 1} / {experimentsIndex}
+                        <span
+                            onClick={() => (currentIndex < experimentsIndex - 1) ? setCurrentIndex(currentIndex + 1) : null}>Weiter</span>
+                    </div>
+                    :
+                    null
+            }
 
         </div>
     );

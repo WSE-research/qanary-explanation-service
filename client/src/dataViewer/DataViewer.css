@@ -1,6 +1,6 @@
 .container {
     display: flex;
-    background-color: lightgrey;
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 25px 60px -12px inset, rgba(0, 0, 0, 0.3) 0px 18px 36px -18px inset;
     align-items: center;
     justify-content: center;
     gap: 2rem;
@@ -32,41 +32,63 @@
 .explanationContainer {
     margin-top: 1rem;
     display: flex;
+    height: 30vh;
 }
+
 .explanationContainer > div {
     flex: 1;
     margin: 30px;
-    background-color: yellow;
+    border-radius: 25px;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    max-height: 100%;
+    overflow-y: auto;
 }
+
 .explanationContainer p {
     padding: 10px;
 }
+
 .explanationSelection {
     display: flex;
     gap: 1rem;
     justify-content: center;
     margin-bottom: 50px;
 }
+
 .explanationSelection > span {
     font-weight: 500;
 }
+
 .explanationSelection > span:hover {
     cursor: pointer;
 }
 
 .scoresContainer {
+    padding: 2rem;
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: .5rem;
+}
+
+.scores {
+    display: flex;
+    gap: .5rem;
 }
 
 @media only screen and (max-width: 768px) {
     .container {
         flex-direction: column;
     }
+
     .right {
         flex-direction: column;
     }
+
     .explanationContainer {
         flex-direction: column;
+        height: 60vh;
     }
 }
 
