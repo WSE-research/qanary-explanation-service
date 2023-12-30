@@ -3,6 +3,8 @@ package com.wse.qanaryexplanationservice.services;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.TestDataObject;
 import com.wse.qanaryexplanationservice.pojos.ExperimentSelectionDTO;
+import com.wse.qanaryexplanationservice.pojos.Score;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,10 @@ public class ExplanationDataService {
     private final Property explanation;
     private final Property questionId;
     private final Property question;
+    private final Property hasScore;
+    private final Property numberOfAnnotations;
+    private final Property qualityAnnotations;
+    private final Property qualityPrefix;
     private final String QANARY_VOCAB = "http://www.wdaqua.eu/qa#";
     private final String RDFS = "http://www.w3.org/2000/01/rdf-schema#";
     private final String RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
@@ -64,6 +70,10 @@ public class ExplanationDataService {
         gptExplanation = model.createProperty(AEX_VOCAB + "gptExplanation");
         testData = model.createProperty(AEX_VOCAB + "testData");
         exampleData = model.createProperty(AEX_VOCAB + "exampleData");
+        hasScore = model.createProperty(AEX_VOCAB + "hasScore");
+        numberOfAnnotations = model.createProperty(AEX_VOCAB + "numberOfAnnotations");
+        qualityAnnotations = model.createProperty(AEX_VOCAB + "qualityAnnotations");
+        qualityPrefix = model.createProperty(AEX_VOCAB + "qualityPrefix");
     }
 
     /**
@@ -77,9 +87,44 @@ public class ExplanationDataService {
         model.add(statementList);
         // TODO: Move connection details (e.g. application.properties / ...)
         VirtModel virtModel = VirtModel.openDatabaseModel("urn:aex:" + uuid, VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
-        virtModel.add(model);
+        virtModel.add(model); // TODO: Auslagern des VirtModel Aufrufs
         virtModel.close();
         model.remove(statementList); //  Clear experiment specific Statements
+    }
+
+    public String updateDataset(Score score) {
+        List<Statement> scoreStatements = createScoreStatements(score);
+        VirtModel virtModel = VirtModel.openDatabaseModel(score.getGraphId(),VIRTUOSO_TRIPLESTORE_ENDPOINT,VIRTUOSO_TRIPLESTORE_USERNAME,VIRTUOSO_TRIPLESTORE_PASSWORD);
+        virtModel.add(scoreStatements);
+        virtModel.close();
+
+        return "Successful!";
+    }
+
+    public List<Statement> createScoreStatements(Score score) {
+        List<Statement> statementList = new ArrayList<>();
+        Resource blankNode = ResourceFactory.createResource();
+        statementList.add(ResourceFactory.createStatement(
+                ResourceFactory.createResource(score.getGraphId()),
+                hasScore,
+                blankNode
+        ));
+        statementList.add(ResourceFactory.createStatement(
+                blankNode,
+                numberOfAnnotations,
+                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getNumberOfAnnotations()),XSDDatatype.XSDint)
+        ));
+        statementList.add(ResourceFactory.createStatement(
+                blankNode,
+                qualityPrefix,
+                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getQualityPrefix()),XSDDatatype.XSDint)
+        ));
+        statementList.add(ResourceFactory.createStatement(
+                blankNode,
+                qualityAnnotations,
+                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getQualityAnnotations()),XSDDatatype.XSDint)
+        ));
+        return statementList;
     }
 
     /**
@@ -92,6 +137,7 @@ public class ExplanationDataService {
         List<Statement> statementList = new ArrayList<>();
         Resource experimentId = model.createResource(uuid);
         logger.info("Experiment ID: {}", experimentId);
+
 
         statementList.add(ResourceFactory.createStatement(experimentId, prompt, ResourceFactory.createPlainLiteral(automatedTest.getPrompt())));
         statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral(automatedTest.getGptExplanation())));

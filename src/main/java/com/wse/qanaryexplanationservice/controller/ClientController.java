@@ -1,7 +1,9 @@
 package com.wse.qanaryexplanationservice.controller;
 
 import com.wse.qanaryexplanationservice.pojos.ExperimentSelectionDTO;
+import com.wse.qanaryexplanationservice.pojos.Score;
 import com.wse.qanaryexplanationservice.services.ClientService;
+import com.wse.qanaryexplanationservice.services.ExplanationDataService;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,9 @@ public class ClientController {
     private final Logger logger = LoggerFactory.getLogger(ClientController.class);
     @Autowired
     private ClientService clientService;
+
+    @Autowired
+    private ExplanationDataService explanationDataService;
 
     // TODO: set CrossOrigin later
 
@@ -65,6 +70,11 @@ public class ClientController {
     @PostMapping("/experiments")
     public ResponseEntity<String> test(@RequestBody ExperimentSelectionDTO experimentSelectionDTO) {
         return new ResponseEntity<>(clientService.getExperiments(experimentSelectionDTO), HttpStatus.OK);
+    }
+
+    @PostMapping("/updatedataset")
+    public ResponseEntity<String> updateDatasetWithScore(@RequestBody Score score) {
+        return new ResponseEntity<>(explanationDataService.updateDataset(score), HttpStatus.OK);
     }
 
 }

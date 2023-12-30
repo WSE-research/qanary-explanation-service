@@ -8,6 +8,7 @@ import com.wse.qanaryexplanationservice.pojos.ExperimentSelectionDTO;
 import com.wse.qanaryexplanationservice.repositories.SparqlRepository;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.RDFNode;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -95,6 +96,10 @@ public class ClientService {
             JSONObject temp = new JSONObject();
             temp.put("explanation", querySolution.get("explanation"));
             temp.put("gptExplanation", querySolution.get("gptExplanation"));
+            temp.put("graphId", querySolution.get("experimentId"));
+            if(querySolution.get("hasScore") != null) {
+                temp.put("hasScore", querySolution.get("hasScore"));
+            }
             jsonArray.put(temp);
         }
         jsonObject.put("explanations", jsonArray);
