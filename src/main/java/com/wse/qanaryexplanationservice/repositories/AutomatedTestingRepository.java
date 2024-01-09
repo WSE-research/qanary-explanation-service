@@ -31,7 +31,8 @@ import java.time.Duration;
 @Configuration
 public class AutomatedTestingRepository extends AbstractRepository {
 
-    private final URL CHATGPT_ENDPOINT = new URL("https://api.openai.com/v1/completions"); // TODO:
+    private final URL CHATGPT_ENDPOINT_4K = new URL("https://api.openai.com/v1/completions");
+    private final URL CHATGPT_ENDPOINT_16K = new URL("https://api.openai.com/v1/chat/completions");
     private final int RESPONSE_TOKEN = 1000;
     @Value("${chatgpt.api.key}")
     private String chatGptApiKey;
@@ -87,7 +88,9 @@ public class AutomatedTestingRepository extends AbstractRepository {
     // Variable as object
     public String sendGptPrompt(String body, int tokens) throws Exception {
 
-        HttpURLConnection con = (HttpURLConnection) CHATGPT_ENDPOINT.openConnection();
+        boolean isTokenLessThan4k = tokens < (4096 - RESPONSE_TOKEN);
+        HttpURLConnection con = isTokenLessThan4k ? (HttpURLConnection) CHATGPT_ENDPOINT_4K.openConnection() : (HttpURLConnection) CHATGPT_ENDPOINT_16K.openConnection();
+        
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
         if (this.chatGptApiKey != null)
@@ -95,7 +98,6 @@ public class AutomatedTestingRepository extends AbstractRepository {
         else
             throw new Exception("Missing API Key");
 
-        boolean isTokenLessThan4k = tokens < (4096 - RESPONSE_TOKEN);
         JSONObject data = isTokenLessThan4k ? createRequestFor4kModel(body) : createRequestFor16kModel(body);
 
         logger.info("Json Request: {}", data);

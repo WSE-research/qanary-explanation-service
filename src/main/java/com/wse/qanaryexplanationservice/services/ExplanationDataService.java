@@ -10,7 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import virtuoso.jena.driver.VirtGraph;
 import virtuoso.jena.driver.VirtModel;
+import virtuoso.jena.driver.VirtuosoUpdateRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,6 +80,7 @@ public class ExplanationDataService {
 
     /**
      * Inserts a AutomatedTest object to the triplestore with a unique graphID
+     *
      * @param automatedTest Object which will be parsed to a model and inserted to the triplestore
      */
     public void insertDataset(AutomatedTest automatedTest) {
@@ -94,11 +97,24 @@ public class ExplanationDataService {
 
     public String updateDataset(Score score) {
         List<Statement> scoreStatements = createScoreStatements(score);
-        VirtModel virtModel = VirtModel.openDatabaseModel(score.getGraphId(),VIRTUOSO_TRIPLESTORE_ENDPOINT,VIRTUOSO_TRIPLESTORE_USERNAME,VIRTUOSO_TRIPLESTORE_PASSWORD);
+        logger.info("{}", scoreStatements.toString());
+        removeOldDataset(score.getGraphId());
+        VirtModel virtModel = VirtModel.openDatabaseModel("urn:aex:" + score.getGraphId(), VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
         virtModel.add(scoreStatements);
         virtModel.close();
 
         return "Successful!";
+    }
+
+    public String removeOldDataset(String graphId) {
+        String deleteQuery = "PREFIX aex: <http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#> PREFIX urn: <> DELETE WHERE" +
+                "{ GRAPH <urn:aex:" + graphId + "> { <" + graphId + "> aex:hasScore ?hasScore ; aex:numberOfAnnotations ?numberOfAnnotations; " +
+                "aex:qualityAnnotations ?qualityAnnotations; aex:qualityPrefix ?qualityPrefix .} }";
+        logger.info("Update Query: {}", deleteQuery);
+        VirtGraph virtGraph = new VirtGraph("urn:aex:" + graphId, VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
+        VirtuosoUpdateRequest virtuosoUpdateRequest = new VirtuosoUpdateRequest(deleteQuery, virtGraph);
+        virtuosoUpdateRequest.exec();
+        return null;
     }
 
     public List<Statement> createScoreStatements(Score score) {
@@ -112,25 +128,26 @@ public class ExplanationDataService {
         statementList.add(ResourceFactory.createStatement(
                 blankNode,
                 numberOfAnnotations,
-                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getNumberOfAnnotations()),XSDDatatype.XSDint)
+                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getNumberOfAnnotations()), XSDDatatype.XSDint)
         ));
         statementList.add(ResourceFactory.createStatement(
                 blankNode,
                 qualityPrefix,
-                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getQualityPrefix()),XSDDatatype.XSDint)
+                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getQualityPrefix()), XSDDatatype.XSDint)
         ));
         statementList.add(ResourceFactory.createStatement(
                 blankNode,
                 qualityAnnotations,
-                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getQualityAnnotations()),XSDDatatype.XSDint)
+                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getQualityAnnotations()), XSDDatatype.XSDint)
         ));
         return statementList;
     }
 
     /**
      * Creates statements (= triples)
+     *
      * @param automatedTest Object including all information about the test(s)
-     * @param uuid graph identifier
+     * @param uuid          graph identifier
      * @return List of Statements (= triples)
      */
     public List<Statement> createSpecificStatementList(AutomatedTest automatedTest, String uuid) {
@@ -140,7 +157,7 @@ public class ExplanationDataService {
 
 
         statementList.add(ResourceFactory.createStatement(experimentId, prompt, ResourceFactory.createPlainLiteral(automatedTest.getPrompt())));
-        statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral(automatedTest.getGptExplanation())));
+        //statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral(automatedTest.getGptExplanation())));
         statementList.add(ResourceFactory.createStatement(experimentId, testData, setUpTestObject(automatedTest.getTestData())));
         statementList.add(ResourceFactory.createStatement(experimentId, exampleData, setupExampleData(automatedTest.getExampleData())));
 
@@ -149,6 +166,7 @@ public class ExplanationDataService {
 
     /**
      * Creates a resource and adds all required triples to describe the resource (= subject)
+     *
      * @param testDataObject Concrete subject (either the test or example)
      * @return Resource (= subject)
      */
@@ -171,6 +189,7 @@ public class ExplanationDataService {
 
     /**
      * Method to create the list of example objects as a rdf-sequence
+     *
      * @param examples List of examples of type TestDataObject
      * @return
      */
@@ -188,9 +207,9 @@ public class ExplanationDataService {
         String[] list = experimentSelectionDTO.getAnnotationTypes();
         StringBuilder stringBuilder = new StringBuilder();
         logger.info("{}", experimentSelectionDTO.getShots());
-        for(int i = 0; i < experimentSelectionDTO.getShots(); i++) {
-            stringBuilder.append("rdfs:_" + (i+1) + "[ rdf:type qa:" + list[i] + "]");
-            if(i+1 != experimentSelectionDTO.getShots()) {
+        for (int i = 0; i < experimentSelectionDTO.getShots(); i++) {
+            stringBuilder.append("rdfs:_" + (i + 1) + "[ rdf:type qa:" + list[i] + "]");
+            if (i + 1 != experimentSelectionDTO.getShots()) {
                 stringBuilder.append(";");
             }
         }

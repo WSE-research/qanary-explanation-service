@@ -72,6 +72,7 @@ public class ClientController {
         return new ResponseEntity<>(clientService.getExperiments(experimentSelectionDTO), HttpStatus.OK);
     }
 
+    @CrossOrigin
     @PostMapping("/updatedataset")
     public ResponseEntity<String> updateDatasetWithScore(@RequestBody Score score) {
         return new ResponseEntity<>(explanationDataService.updateDataset(score), HttpStatus.OK);
