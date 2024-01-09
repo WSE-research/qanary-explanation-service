@@ -50,7 +50,7 @@ public class AutomatedTestController {
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>("Invalid Annotation Type!", HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE); // TODO: Later, implement way to provide chatgpt key as param as well
+            return new ResponseEntity<>(e.toString(), HttpStatus.NOT_ACCEPTABLE); // TODO: Later, implement way to provide chatgpt key as param as well
         }
     }
 

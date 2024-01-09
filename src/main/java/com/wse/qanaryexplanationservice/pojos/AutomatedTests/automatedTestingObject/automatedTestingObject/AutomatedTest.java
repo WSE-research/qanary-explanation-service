@@ -45,6 +45,9 @@ public class AutomatedTest {
         this.gptExplanation = gptExplanation;
     }
 
+    public void setExampleDataArrayList(ArrayList<TestDataObject> list) {
+        this.exampleData = list;
+    }
     @Override
     public String toString() {
         return "AutomatedTest{" +

@@ -1,7 +1,8 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryResponseObject;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.*;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTestRequestBody;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.Example;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import org.apache.jena.query.QuerySolutionMap;
@@ -87,37 +88,6 @@ public class ExplanationDataServiceTest {
             assertEquals("Example_Question", resultSet.next().get("hasQuestion").asLiteral().getString());
         }
 
-        @Test
-        public void convertToInserQuery() throws IOException {
-            AutomatedTest automatedTest = new AutomatedTest();
-            automatedTest.setPrompt("Example Prompt");
-            automatedTest.setGptExplanation("Example Gpt Explanation");
-            automatedTest.setTestData(new TestDataObject(AnnotationType.AnnotationOfRelation,
-                    AnnotationType.AnnotationOfRelation.ordinal(),
-                    "NED-DBpedia",
-                    "exampleQuestion",
-                    "exampleExplanation",
-                    "example_dataset",
-                    "graphID",
-                    "questionID:123",
-                    123,
-                    23,
-                    "1231,12344223"));
-            automatedTest.setExampleData(new TestDataObject(AnnotationType.AnnotationOfRelation,
-                    AnnotationType.AnnotationOfRelation.ordinal(),
-                    "NER-DBpedia",
-                    "123qwef",
-                    "exampfw4rtzleExplanation",
-                    "examp32423le_dataset",
-                    "grapewqhID",
-                    "questdfqweionID:123",
-                    1223,
-                    213,
-                    "1998231,1232244223"));
-            logger.info(String.valueOf(automatedTest.getExampleData().size()));
-            explanationDataService.insertDataset(automatedTest);
-
-        }
     }
 
 
