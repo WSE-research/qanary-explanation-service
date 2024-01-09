@@ -16,7 +16,9 @@ RUN /app/extract_commons_version.sh
 
 #Build Stage - Frontend
 FROM node:latest AS client_build
-WORKDIR /app/client
+WORKDIR /app
+COPY ./client ./client
+RUN cd client
 RUN npm run build
 
 
