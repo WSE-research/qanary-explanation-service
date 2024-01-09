@@ -18,8 +18,7 @@ RUN /app/extract_commons_version.sh
 FROM node:latest AS client_build
 WORKDIR /app
 COPY ./client ./client
-RUN cd client
-RUN npm run build
+RUN cd client && npm run build
 
 
 #Build Stage
