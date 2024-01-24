@@ -1,0 +1,8 @@
+PREFIX ex: <http://example#>
+
+SELECT *
+FROM ?graph
+WHERE {
+    ?graph ex:usedComponent ?usedComponent ;
+           ex:hasInputQuery ?inputQuery .
+}
