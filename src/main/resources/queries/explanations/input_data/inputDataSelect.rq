@@ -3,6 +3,6 @@ PREFIX ex: <http://example#>
 SELECT *
 FROM ?graph
 WHERE {
-    ?graph ex:usedComponent ?usedComponent ;
+    ?usedComponent ex:hasAnnotationType ?annotationType ;
            ex:hasInputQuery ?inputQuery .
 }

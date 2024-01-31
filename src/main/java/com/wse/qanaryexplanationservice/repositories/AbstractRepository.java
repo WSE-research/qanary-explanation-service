@@ -45,6 +45,7 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
 
     public void setSparqlEndpoint(URL sparqlEndpoint) {
         this.sparqlEndpoint = sparqlEndpoint;
+        this.rdfConnection = RDFConnection.connect(sparqlEndpoint.toString());
     }
 
     /**

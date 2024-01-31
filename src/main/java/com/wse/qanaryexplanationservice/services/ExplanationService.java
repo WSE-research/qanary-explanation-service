@@ -16,10 +16,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +35,7 @@ public class ExplanationService {
     // Query files
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
+    private static final String INPUT_DATA_QUERY = "/queries/explanations/input_data/inputDataSelect.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
@@ -90,10 +93,10 @@ public class ExplanationService {
         String result = null;
         logger.info("Explanations {}", explanations.size());
         if (Objects.equals(lang, "en")) {
-            result = "The component " + componentURI + " has added " + (explanations.size() == 10 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
+            result = "The component " + componentURI + " has added " + (explanations.size() == 5 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         } else if (Objects.equals(lang, "de")) {
-            result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 10 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
+            result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 5 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
                     + prefix + ": " + StringUtils.join(explanations, " ");
         }
         return result;
@@ -463,6 +466,59 @@ public class ExplanationService {
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
         stringResultSetMap.clear();
         return getResult(componentURI, lang, explanations, createdExplanations.get(0));
+    }
+
+    public String createInputExplanation(String graph, String component) throws IOException {
+        QuerySolutionMap bindings = new QuerySolutionMap();
+        bindings.add("graph",ResourceFactory.createResource(graph));
+        bindings.add("usedComponent", ResourceFactory.createResource(component));
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_QUERY,bindings);
+
+        // set RDFConnection
+        this.explanationSparqlRepository.setSparqlEndpoint(new URL("http://localhost:8891/sparql"));
+        ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
+        int resultSetSize = 0;
+        List<String> explanationsForQueries = new ArrayList<>();
+
+        while(resultSet.hasNext()) {
+            QuerySolution currentSolution = resultSet.nextSolution();
+            resultSetSize++;
+            explanationsForQueries.add(createExplanationForQuery(currentSolution, graph, component));
+        }
+
+        // create Prefix
+        String prefix = getStringFromFile("/explanations/input_data/prefixes/en"); // adopt for any other languages
+        prefix = prefix.replace("${numberOfQueries}",String.valueOf(resultSetSize) +
+                (resultSetSize == 1 ? " SPARQL query" : " SPARQL queries")
+                );
+        prefix = prefix.replace("${component}",component).replace("${graph}",graph);
+        // Zusammenbauen
+
+        logger.info("Items: {}", explanationsForQueries.toString());
+        logger.info("PREFIX: {}", prefix);
+
+        return composeExplanation(explanationsForQueries,prefix);
+    }
+
+    public String createExplanationForQuery(QuerySolution currentSolution, String graph, String component) throws IOException {
+        String annotationType = currentSolution.get("annotationType").toString();
+        Map<String,String> items = new HashMap<>() {{
+            put("graph",graph);
+            put("component",component);
+            put("annotationType", annotationType);
+        }};
+        // for each language
+        String listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
+        return StringSubstitutor.replace(listItem,items,TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
+    }
+
+    public String composeExplanation(List<String> listItems, String prefix) {
+        StringBuilder finalExplanation = new StringBuilder();
+        finalExplanation.append(prefix);
+        for(int i = 0; i < listItems.size(); i++) {
+            finalExplanation.append("\n").append(i+1).append(". ").append(listItems.get(i));
+        }
+        return finalExplanation.toString();
     }
 
 }
