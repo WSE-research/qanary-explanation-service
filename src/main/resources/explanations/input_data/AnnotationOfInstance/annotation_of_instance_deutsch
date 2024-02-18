@@ -1,0 +1,4 @@
+Die Komponente ${component} hat mit einer SPARQL-Anfrage auf den Graphen ${graph} alle Annotationen vom Typ ${typ} angefragt.
+Dabei umfasst eine Annotation sowohl das Datum als auch die erzeugende Komponente, die URI der Ursprungsfrage, eine Resource als Body
+und die dazugehörige Start- bzw. Endposition der korrelierenden Entität in der Ursprungsfrage. Sofern vorhanden wird auch die Bewertung für
+die Resource übergeben.

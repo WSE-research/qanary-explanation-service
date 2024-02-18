@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @ControllerAdvice
 public class ExplanationController {
@@ -47,6 +49,18 @@ public class ExplanationController {
             else
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @CrossOrigin
+    @GetMapping(value = {"/inputdata/{graphURI}/{componentURI}"}, produces = {
+            "application/rdf+xml",
+            "text/turtle",
+            "application/ld+json",
+            "*/*"})
+    public ResponseEntity<?> getInputExplanation(
+            @PathVariable String graphURI,
+            @PathVariable(required = false) String componentURI) throws IOException {
+        return new ResponseEntity<>(this.explanationService.createInputExplanation(graphURI,componentURI), HttpStatus.OK);
     }
 
 }
