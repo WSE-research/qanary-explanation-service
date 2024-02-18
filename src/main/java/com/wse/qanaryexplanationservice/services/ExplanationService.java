@@ -474,7 +474,7 @@ public class ExplanationService {
         bindings.add("usedComponent", ResourceFactory.createResource(component));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_QUERY,bindings);
 
-        // set RDFConnection
+        // set RDFConnection to URL for Input-data triplestore @see https://github.com/dschiese/input-data-storage
         this.explanationSparqlRepository.setSparqlEndpoint(new URL("http://localhost:8891/sparql"));
         ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
         int resultSetSize = 0;
