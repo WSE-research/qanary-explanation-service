@@ -439,6 +439,7 @@ public class AutomatedTestingService {
         AutomatedTest test;
 
         while (jsonArray.length() < requestBody.getRuns()) {
+            logger.info("CURRENT RUN: {}", jsonArray.length()+1);
             test = createTest(requestBody); // null if not successful
             if (test != null) {
                 if (doGptCall) {
