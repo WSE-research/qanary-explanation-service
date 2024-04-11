@@ -4,7 +4,10 @@
       "mode": "dockerfile",
       "image": "wseresearch/qanary-explanation-service",
       "tag": "latest",
-      "port": "40190:4000"
+      "port": "40190:4000",
+      "files": {
+        ".env": ".env"
+      }
     }
   ]
 }
