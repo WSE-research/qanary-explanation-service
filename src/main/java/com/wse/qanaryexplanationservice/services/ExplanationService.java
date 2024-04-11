@@ -16,12 +16,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -447,8 +449,14 @@ public class ExplanationService {
      * @return String with the file's content
      */
     public String getStringFromFile(String path) throws IOException {
-        File file = new ClassPathResource(path).getFile();
-        return new String(Files.readAllBytes(file.toPath()));
+        ClassPathResource cpr = new ClassPathResource(path);
+        try {
+            byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
+            return new String(bdata, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        throw new IOException();
     }
 
     /**
