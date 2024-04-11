@@ -7,6 +7,7 @@ import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdfconnection.RDFConnection;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
@@ -30,11 +31,10 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
     protected Environment environment;
     protected RDFConnection rdfConnection;
 
-
     @Autowired
     protected AbstractRepository(Environment environment) throws MalformedURLException {
         this.environment = environment;
-        this.sparqlEndpoint = new URL("http://localhost:8080/sparql");
+        this.sparqlEndpoint = new URL(environment.getProperty("sparql.endpoint"));
         this.rdfConnection = RDFConnection.connect(sparqlEndpoint.toString());
     }
 
