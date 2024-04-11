@@ -8,7 +8,7 @@ WHERE {
     ?annotationId rdf:type ?annotationType .
     FILTER(
         ?annotationType = qa:AnnotationOfAnswerSPARQL ||
-        ?annotationType = qa:AnnotationOfAnswerJSON ||
+        ?annotationType = qa:AnnotationOfAnswerJSON || ?annotationType = qa:AnnotationOfAnswerJson ||
         ?annotationType = qa:AnnotationOfInstance ||
         ?annotationType = qa:AnnotationOfSpotInstance ||
         ?annotationType = qa:AnnotationOfRelation ||
