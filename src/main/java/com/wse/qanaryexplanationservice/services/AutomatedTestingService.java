@@ -463,7 +463,6 @@ public class AutomatedTestingService {
         return random.nextInt(typeAndComponents.get(annotationType.name()).length);
     }
 
-
 }
 
 // TODO: don't retry already used combinations

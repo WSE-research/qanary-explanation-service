@@ -1,5 +1,7 @@
 package com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects;
 
+import org.springframework.util.MultiValueMap;
+
 import java.util.List;
 
 public class QanaryRequestObject {
@@ -8,6 +10,7 @@ public class QanaryRequestObject {
     private String additionaltriples;
     private String componentfilterinput;
     private List<String> componentlist;
+    private MultiValueMap<String,String> componentListAsMap;
 
     public QanaryRequestObject(
             String question,
@@ -19,6 +22,18 @@ public class QanaryRequestObject {
         this.additionaltriples = additionaltriples;
         this.componentfilterinput = componentfilterinput;
         this.componentlist = componentList;
+        transformComponentsToUrl();
+    }
+
+    public void transformComponentsToUrl() {
+        for (String component : this.componentlist
+        ) {
+            componentListAsMap.add("componentlist[]", component);
+        }
+    }
+
+    public MultiValueMap<String,String> getComponentListAsMap() {
+        return componentListAsMap;
     }
 
     public String getQuestion() {
