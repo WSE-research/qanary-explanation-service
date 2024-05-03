@@ -1,7 +1,9 @@
 package com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects;
 
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.util.HashMap;
 import java.util.List;
 
 public class QanaryRequestObject {
@@ -18,6 +20,7 @@ public class QanaryRequestObject {
             String componentfilterinput,
             List<String> componentList
     ) {
+        this.componentListAsMap = new LinkedMultiValueMap<>();
         this.question = question;
         this.additionaltriples = additionaltriples;
         this.componentfilterinput = componentfilterinput;

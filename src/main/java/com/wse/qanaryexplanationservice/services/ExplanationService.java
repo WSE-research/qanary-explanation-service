@@ -1,5 +1,9 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationObject;
+import com.wse.qanaryexplanationservice.pojos.ComposedExplanation;
+import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationRequest;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -10,6 +14,7 @@ import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +83,8 @@ public class ExplanationService {
     private ExplanationSparqlRepository explanationSparqlRepository;
     @Autowired
     private AnnotationsService annotationsService;
+    @Autowired
+    private GenerativeExplanationsService generativeExplanationsService;
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
 
@@ -161,13 +168,13 @@ public class ExplanationService {
         // Create property 'hasExplanationForCreatedDataProperty'
         Property hasExplanationForCreatedDataProperty = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
         Property rdfsSubPropertyOf = model.createProperty(RDFS.getURI(), "subPropertyOf");
-        Property hasExplanation = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanation");
+        // Property hasExplanation = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanation");
 
         // creates Resource, in this case the componentURI
         Resource componentUriResource = model.createResource(componentURI);
 
         // add triples to the model
-        model.add(hasExplanationForCreatedDataProperty, rdfsSubPropertyOf, hasExplanation);
+        // model.add(hasExplanationForCreatedDataProperty, rdfsSubPropertyOf, hasExplanation);
         model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentDeLiteral));
         model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentEnLiteral));
 
@@ -527,6 +534,49 @@ public class ExplanationService {
             finalExplanation.append("\n").append(i+1).append(". ").append(listItems.get(i));
         }
         return finalExplanation.toString();
+    }
+
+    /**
+     * Controller called method to start the process explaining several components with both approaches;
+     * the rulebased and the generative one.
+     * @param composedExplanationDTO
+     */
+    public ComposedExplanation composedExplanationsForQaProcess(ComposedExplanationDTO composedExplanationDTO) {
+        logger.info("Request object: ", composedExplanationDTO);
+        ComposedExplanation composedExplanation = new ComposedExplanation();
+        GenerativeExplanationRequest generativeExplanationRequest = composedExplanationDTO.getGenerativeExplanationRequest();
+
+        generativeExplanationRequest.getQanaryComponents().forEach(component -> {
+
+            try {
+                String templatebased = this.createTextualExplanation(   // compute template based explanation
+                        composedExplanationDTO.getGraphUri(),
+                        "urn:qanary:" + component.getComponentName(),
+                        "en",
+                        new ArrayList<String>() {{
+                             add(component.getComponentMainType().toLowerCase());
+                        }}
+                );
+
+                GenerativeExplanationObject generativeExplanationObject = generativeExplanationsService.createGenerativeExplanation(
+                        component,
+                        generativeExplanationRequest.getShots(),
+                        composedExplanationDTO.getGraphUri()
+                );
+
+                String prompt = generativeExplanationsService.createPrompt(
+                        generativeExplanationRequest.getShots(),
+                        generativeExplanationObject
+                );
+
+                String generativeExplanation = generativeExplanationsService.sendPrompt(prompt);
+
+                composedExplanation.addExplanationItem(templatebased, prompt, generativeExplanation);
+            }catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        return composedExplanation;
     }
 
 }

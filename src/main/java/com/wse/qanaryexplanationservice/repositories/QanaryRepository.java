@@ -27,7 +27,7 @@ public class QanaryRepository {
         multiValueMap.add("question", qanaryRequestObject.getQuestion());
         multiValueMap.addAll(qanaryRequestObject.getComponentListAsMap());
 
-        QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder
+        QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder // TODO: use new endpoint for question answering
                         .scheme("http").host(qanaryPipelineHost).port(qanaryPipelinePort).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
                         .build())

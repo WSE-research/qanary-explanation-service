@@ -12,6 +12,10 @@ public class AutomatedTestRequestBody {
 
     }
 
+    public AutomatedTestRequestBody(String testingType) {
+
+    }
+
     public int getRuns() {
         return runs;
     }

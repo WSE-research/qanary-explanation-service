@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.controller;
 
+import com.wse.qanaryexplanationservice.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,4 +64,28 @@ public class ExplanationController {
         return new ResponseEntity<>(this.explanationService.createInputExplanation(graphURI,componentURI), HttpStatus.OK);
     }
 
+    @PostMapping(value = {"/composedexplanations"})
+    public ResponseEntity<?> getComposedExplanation(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
+        return new ResponseEntity<>(explanationService.composedExplanationsForQaProcess(composedExplanationDTO), HttpStatus.OK);
+    }
+
 }
+
+
+/*
+EXAMPLE REQUEST for /composedexplanations
+{
+    "graphUri": "",
+    "generativeExplanationRequest": {
+        "shots": 1,
+        "gptModel": "gpt3.5",
+        "qanaryComponents": [
+            {
+                "componentName": null,
+                "componentMainType": "AnnotationOfInstance"
+            }
+        ]
+    }
+}
+
+ */

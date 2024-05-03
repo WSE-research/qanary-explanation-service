@@ -55,23 +55,13 @@ public class AutomatedTestingRepository extends AbstractRepository {
             multiValueMap.add("componentlist[]", component);
         }
 
-        QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder
+        QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder // TODO: localhost as env-variable
                         .scheme("http").host("localhost").port(8080).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
                         .build())
                 .retrieve()
                 .bodyToMono(QanaryResponseObject.class)
                 .block();
-
-        /*
-        Mono<QanaryResponseObject> response = webClient.post().uri(uriBuilder -> uriBuilder
-                        .scheme("http").host("localhost").port(8080).path("/startquestionansweringwithtextquestion")
-                        .queryParams(multiValueMap)
-                        .build())
-                .retrieve()
-                .bodyToMono(QanaryResponseObject.class)
-                .onErrorResume(WebClientResponseException.class, ex -> ex.getStatusCode().value() == 500 ? Mono.error(ex) : Mono.empty());
-        */
 
         logger.info("Response Object: {}", responseObject);
 

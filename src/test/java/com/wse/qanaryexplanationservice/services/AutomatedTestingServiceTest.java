@@ -35,6 +35,8 @@ public class AutomatedTestingServiceTest {
     private final Map<String, String[]> typeAndComponents = new HashMap<>();
     @Autowired
     private AutomatedTestingService automatedTestingService;
+    @Autowired
+    private GenerativeExplanations generativeExplanations;
 
     @Autowired
     public AutomatedTestingServiceTest(Environment environment) {
@@ -114,7 +116,7 @@ public class AutomatedTestingServiceTest {
         public void createDatasetResultSetIsNullTest() {
             setupTest(null);
 
-            Assertions.assertThrows(Exception.class, () -> automatedTestingService.createDataset("componentURI", "graphURI", "anyAnnotationType"));
+            Assertions.assertThrows(Exception.class, () -> generativeExplanations.createDataset("componentURI", "graphURI", "anyAnnotationType"));
 
         }
     }

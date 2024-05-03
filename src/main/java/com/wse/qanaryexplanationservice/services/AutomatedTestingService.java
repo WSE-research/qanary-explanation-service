@@ -38,48 +38,9 @@ import java.util.*;
 @Service
 public class AutomatedTestingService {
 
-    private final static String DATASET_QUERY = "/queries/evaluation_dataset_query.rq";
-    private final static String QUESTION_QUERY = "/queries/random_question_query.rq";
-    private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
-    private final static int QADO_DATASET_QUESTION_COUNT = 394;
     private final EncodingRegistry encodingRegistry = Encodings.newLazyEncodingRegistry();
     // Prefixes for ResultSets
-    private final Map<String, String> prefixes = new HashMap<>() {{
-        put("http://www.w3.org/ns/openannotation/core/", "oa:");
-        put("http://localhost:8080/question/stored-question__text_", "questionID:");
-        put("http://www.wdaqua.eu/qa#", "qa:");
-        put("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:");
-        put("http://www.w3.org/2000/01/rdf-schema#", "rdfs:");
-        put("http://www.w3.org/2002/07/owl#", "owl:");
-        put("^^http://www.w3.org/2001/XMLSchema#integer", "");
-        put("^^http://www.w3.org/2001/XMLSchema#dateTime", "");
-        put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
-        put("^^http://www.w3.org/2001/XMLSchema#float", "");
-    }};
-    // Dependency map for annotation types, used for setting up the Qanary pipeline, so that all relevant annotation are made
-    // Important: Old approach was to resolve deeper dependencies recursively, however, yet they are hard coded in this map due to the little amount of different types
-    private final Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
-        put(AnnotationType.AnnotationOfInstance, new AnnotationType[]{});
-        put(AnnotationType.AnnotationOfRelation, new AnnotationType[]{
-                AnnotationType.AnnotationOfQuestionLanguage
-        });
-        put(AnnotationType.AnnotationOfSpotInstance, new AnnotationType[]{});
-        //put(AnnotationType.annotationofquestiontranslation, null);
-        put(AnnotationType.AnnotationOfQuestionLanguage, new AnnotationType[]{});
-        put(AnnotationType.AnnotationOfAnswerSPARQL, new AnnotationType[]{
-                AnnotationType.AnnotationOfInstance,
-                AnnotationType.AnnotationOfRelation,
-                AnnotationType.AnnotationOfSpotInstance,
-                AnnotationType.AnnotationOfQuestionLanguage
-        });
-        put(AnnotationType.AnnotationOfAnswerJSON, new AnnotationType[]{
-                AnnotationType.AnnotationOfAnswerSPARQL,
-                AnnotationType.AnnotationOfInstance,
-                AnnotationType.AnnotationOfRelation,
-                AnnotationType.AnnotationOfSpotInstance,
-                AnnotationType.AnnotationOfQuestionLanguage
-        });
-    }};
+
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
     // stores the correct template for different x-shot approaches
     private final Map<Integer, String> exampleCountAndTemplate = new HashMap<>() {{
@@ -88,177 +49,23 @@ public class AutomatedTestingService {
         put(3, "/testtemplates/threeshot");
     }};
     private final Random random;
-    // All available annotation types and the components which create them
-    private final Map<String, String[]> typeAndComponents = new HashMap<>();
+    @Autowired
+    private GenerativeExplanations generativeExplanations;
     @Autowired
     private ExplanationDataService explanationDataService;
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
-    @Autowired
-    private ExplanationService explanationService;
 
     // CONSTRUCTOR(s)
     public AutomatedTestingService(Environment environment) {
         this.random = new Random();
-        for (AnnotationType annType : AnnotationType.values()
-        ) {
-            typeAndComponents.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
-        }
-    }
-
-    /**
-     * @param list List of annotation-types - in the usual workflow this comes from the dependency resolver
-     * @return List of components in the order of their annotation type (and therefore their dependencies)
-     */
-    public List<String> selectRandomComponents(ArrayList<AnnotationType> list) {
-        // Is null when no dependencies were resolved and therefore only one component shall be executed
-        if (list == null)
-            return new ArrayList<>();
-
-        Collections.sort(list); // sorts them by the enum definition, which equals the dependency tree (the last is the target-component)
-        List<String> componentList = new ArrayList<>();
-
-        for (AnnotationType annType : list
-        ) {
-            String[] componentsList = this.typeAndComponents.get(annType.name());
-            int selectedComponentAsInt = random.nextInt(componentsList.length);
-            componentList.add(componentsList[selectedComponentAsInt]);
-        }
-        return componentList;
-    }
-
-    /**
-     * Creates the explanation and returns the english one
-     *
-     * @return The explanation for given graphURI and componentURI
-     */
-    public String getExplanation(String graphURI, String componentURI) throws IOException, IndexOutOfBoundsException {
-
-        Model explanationModel = explanationService.createModel(graphURI, "urn:qanary:" + componentURI);
-        explanationModel.setNsPrefix("explanations", EXPLANATION_NAMESPACE);
-        Property hasExplanationForCreatedDataProperty = explanationModel.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
-        Statement statement = explanationModel.getRequiredProperty(ResourceFactory.createResource("urn:qanary:" + componentURI), hasExplanationForCreatedDataProperty, "en");
-
-        return statement.getString();
-    }
-
-    /**
-     * Executes a SPARQL query on the triplestore to fetch a question from the (existing!) QADO-dataset
-     *
-     * @param questionNumber The number of the question
-     * @return a random question as plain String
-     */
-    public String getRandomQuestion(Integer questionNumber) throws IOException {
-
-        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
-        querySolutionMap.add("id", ResourceFactory.createTypedLiteral(questionNumber.toString(), XSDDatatype.XSDnonNegativeInteger));
-
-        try {
-            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(QUESTION_QUERY, querySolutionMap);
-            ResultSet resultSet = automatedTestingRepository.takeRandomQuestion(query);
-            return resultSet.next().get("hasQuestion").asLiteral().getString();
-        } catch (IOException e) {
-            String errorMessage = "Error while fetching a random question";
-            logger.error("Error: {}", errorMessage);
-            throw new IOException(errorMessage);
-        }
-
-    }
-
-    /**
-     * Calls the corresponding repository to execute the Qanary pipeline with the given components and question.
-     *
-     * @param randomComponents Holds the components which will be executed in the correct order (respects dependencies)
-     * @return QanaryResponseObject involving the questionID as well as the graphURI
-     */
-    public QanaryResponseObject executeQanaryPipeline(String question, List<String> randomComponents) throws Exception {
-        QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, randomComponents);
-
-        try {
-            return automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject);
-        } catch (WebClientResponseException e) {
-            String errorMessage = "Error while executing Qanary pipeline, Error message: " + e.getMessage();
-            logger.error(errorMessage);
-            throw new Exception(e);
-        }
-    }
-
-    /**
-     * Transforms ResultSet QuerySolutions to triple-"sentence" representation by appending s, p, o and an "."
-     *
-     * @return Dataset as String
-     */
-    public String createDataset(String componentURI, String graphURI, String annotationType) throws Exception {
-
-        try {
-            ResultSet triples = fetchTriples(graphURI, componentURI, annotationType);
-            StringBuilder dataSet = new StringBuilder();
-            while (triples.hasNext()) {
-                QuerySolution querySolution = triples.next();
-                dataSet.append(querySolution.getResource("s")).append(" ").append(querySolution.getResource("p")).append(" ").append(querySolution.get("o")).append(" .\n");
-            }
-            String dataSetAsString = dataSet.toString();
-
-            // Replace prefixes
-            for (Map.Entry<String, String> entry : prefixes.entrySet()) {
-                dataSetAsString = dataSetAsString.replace(entry.getKey(), entry.getValue());
-            }
-            return dataSetAsString;
-        } catch (Exception e) {
-            logger.error(String.valueOf(e));
-            throw new Exception(e);
-        }
-    }
-
-    /**
-     * Fetches triples for specific graph + component
-     *
-     * @return Triples as ResultSet
-     * @throws Exception If a component hasn't made any annotations to the graph the query will result in an empty ResultSet
-     */
-    public ResultSet fetchTriples(String graphURI, String componentURI, String annotationType) throws Exception {
-        QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
-        bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
-        bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:" + componentURI));
-        bindingsForQuery.add("annotatedBy", ResourceFactory.createResource("urn:qanary:" + componentURI));
-        try {
-            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
-            query = query.replace("?annotationType", "qa:" + annotationType);
-            ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
-
-            if (!resultSet.hasNext())
-                throw new RuntimeException("ResultSet is null");
-            else
-                return resultSet;
-        } catch (IOException e) {
-            logger.error("Error while fetching triples: {}", e.getMessage());
-            throw new Exception(e);
-        }
-    }
-
-    public ResultSet fetchTriplesWithComponentSelectQueries(String graphURI, String componentURI, String annotationType) throws Exception {
-        QuerySolutionMap bindingsForSelectQuery = new QuerySolutionMap();
-        bindingsForSelectQuery.add("graph", ResourceFactory.createResource(graphURI));
-        bindingsForSelectQuery.add("annotatedBy", ResourceFactory.createResource("urn:qanary:" + componentURI));
-
-        try {
-            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap("/queries/select_all_" + annotationType + ".rq", bindingsForSelectQuery);
-            ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
-            if (!resultSet.hasNext())
-                throw new RuntimeException("Error while fetching Dataset, ResultSet is null");
-            else
-                return resultSet;
-        } catch (IOException e) {
-            logger.error("Error while fetching triples: {}", e.getMessage());
-            throw new Exception(e);
-        }
     }
 
     public String selectComponent(AnnotationType annotationType, AutomatedTest automatedTest, Example example) {
 
-        String[] componentsList = this.typeAndComponents.get(annotationType.name());
+        String[] componentsList = generativeExplanations.typeAndComponents.get(annotationType.name());
 
         // Case if example is null, e.g. when the testing data is calculated
         if (example == null || !example.getUniqueComponent()) {
@@ -268,7 +75,7 @@ public class AutomatedTestingService {
         // Case if component should be unique in the whole test-case
         else {
             ArrayList<String> usedComponentsInTest = fetchUsedComponents(automatedTest);
-            ArrayList<String> componentList = new ArrayList<>(List.of(this.typeAndComponents.get(annotationType.name())));
+            ArrayList<String> componentList = new ArrayList<>(List.of(generativeExplanations.typeAndComponents.get(annotationType.name())));
             String component;
             try {
                 do {
@@ -356,32 +163,32 @@ public class AutomatedTestingService {
             // Select component
             logger.info("Selecting component");
             Integer selectedComponentAsInt = selectComponentAsInt(givenAnnotationType);
-            String selectedComponent = typeAndComponents.get(givenAnnotationType.name())[selectedComponentAsInt];
+            String selectedComponent = generativeExplanations.typeAndComponents.get(givenAnnotationType.name())[selectedComponentAsInt];
 
             // Selection Question
             logger.info("Selecting question");
-            Integer randomQuestionID = random.nextInt(QADO_DATASET_QUESTION_COUNT);
-            String question = getRandomQuestion(randomQuestionID);
+            Integer randomQuestionID = random.nextInt(generativeExplanations.QADO_DATASET_QUESTION_COUNT);
+            String question = generativeExplanations.getRandomQuestion(randomQuestionID);
 
             // Resolve dependencies and select random components
             logger.info("Resolve dependencies and select components");
-            ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(dependencyMapForAnnotationTypes.get(givenAnnotationType)));
-            List<String> componentListForQanaryPipeline = selectRandomComponents(annotationTypes);
+            ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(generativeExplanations.dependencyMapForAnnotationTypes.get(givenAnnotationType)));
+            List<String> componentListForQanaryPipeline = generativeExplanations.selectRandomComponents(annotationTypes);
             componentListForQanaryPipeline.add(selectedComponent); // Seperation of concerns, add this to the selectRandomComps method
 
             // Execute Qanary pipeline and store graphURI + questionID
             logger.info("Execute Qanary pipeline");
-            QanaryResponseObject qanaryResponse = executeQanaryPipeline(question, componentListForQanaryPipeline);
+            QanaryResponseObject qanaryResponse = generativeExplanations.executeQanaryPipeline(question, componentListForQanaryPipeline);
             String graphURI = qanaryResponse.getOutGraph();
             String questionID = qanaryResponse.getQuestion().replace("http://localhost:8080/question/stored-question__text_", "questionID:");
 
             // Create dataset
             logger.info("Create dataset");
-            String dataset = createDataset(selectedComponent, graphURI, givenAnnotationType.name());
+            String dataset = generativeExplanations.createDataset(selectedComponent, graphURI, givenAnnotationType.name());
 
             // Create Explanation for selected component
             logger.info("Create explanation");
-            String explanation = getExplanation(graphURI, selectedComponent);
+            String explanation = generativeExplanations.getExplanation(graphURI, selectedComponent);
             return new TestDataObject(
                     givenAnnotationType,
                     givenAnnotationType.ordinal(),
@@ -460,7 +267,7 @@ public class AutomatedTestingService {
     }
 
     public Integer selectComponentAsInt(AnnotationType annotationType) {
-        return random.nextInt(typeAndComponents.get(annotationType.name()).length);
+        return random.nextInt(generativeExplanations.typeAndComponents.get(annotationType.name()).length);
     }
 
 }
