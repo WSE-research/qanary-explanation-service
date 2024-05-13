@@ -24,6 +24,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,8 @@ public class GenerativeExplanationsService {
     @Autowired
     private GenerativeExplanationsRepository generativeExplanationsRepository;
     private final EncodingRegistry encodingRegistry = Encodings.newLazyEncodingRegistry();
+    @Value("${questionId.replacement}")
+    private String questionIdReplacement;
 
 
     /**
@@ -61,11 +64,24 @@ public class GenerativeExplanationsService {
      * @param graphUri GraphUri for the test component
      * @return
      */
-    public GenerativeExplanationObject createGenerativeExplanation(QanaryComponent component, int shots, String graphUri) {
+    public GenerativeExplanationObject createGenerativeExplanation(QanaryComponent component, int shots, String graphUri) throws Exception {
         GenerativeExplanationObject generativeExplanationObject = new GenerativeExplanationObject();
+        /*
         do {
             generativeExplanationObject.setTestComponent(computeSingleTestObject(component));
         }while(generativeExplanationObject.getTestComponent() == null);
+         */
+        TestDataObject testObject = new TestDataObject(
+                AnnotationType.valueOf(component.getComponentMainType()),
+                AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
+                component.getComponentName(),
+                null,
+                generativeExplanations.getExplanation(graphUri, component.getComponentName()),
+                generativeExplanations.createDataset(component.getComponentName(),graphUri,component.getComponentMainType()),
+                graphUri,
+                null,null,null,null
+                );
+        generativeExplanationObject.setTestComponent(testObject);
         for (int i = 0; i < shots; i++) {
             TestDataObject example = computeSingleTestObject(null);
             while(example == null)
@@ -100,12 +116,11 @@ public class GenerativeExplanationsService {
             logger.info("Execute Qanary pipeline");
             QanaryResponseObject qanaryResponse = generativeExplanations.executeQanaryPipeline(question, componentListForQanaryPipeline);
             String graphURI = qanaryResponse.getOutGraph();
-            String questionID = qanaryResponse.getQuestion().replace("http://localhost:8080/question/stored-question__text_", "questionID:"); // TODO: Replace with env-variable
+            String questionID = replaceQuestionId(qanaryResponse.getQuestion());
 
             // Create dataset
             logger.info("Create dataset");
             String dataset = generativeExplanations.createDataset(component.getComponentName(), graphURI, component.getComponentMainType());
-
             // Create Explanation for selected component
             logger.info("Create explanation");
             String explanation = generativeExplanations.getExplanation(graphURI, component.getComponentName());
@@ -127,6 +142,10 @@ public class GenerativeExplanationsService {
         }
     }
 
+    public String replaceQuestionId(String replaceableString) {
+        return replaceableString = replaceableString.replace(questionIdReplacement + "/question/stored-question__text_", "questionID:");
+    }
+
     public QanaryComponent createRandomQanaryComponent() {
         AnnotationType type = AnnotationType.values()[random.nextInt(AnnotationType.values().length)];
         String component = selectRandomComponentWithAnnotationType(type.name());
@@ -145,7 +164,7 @@ public class GenerativeExplanationsService {
 
         logger.info("Shots {} and Object {}", shots, generativeExplanationObject.getExampleComponents().get(0).getExplanation());
 
-        prompt.replace("<TASK_RDF_DATA_TEST", generativeExplanationObject.getTestComponent().getDataSet());
+        prompt = prompt.replace("<TASK_RDF_DATA_TEST>", generativeExplanationObject.getTestComponent().getDataSet());
 
         ArrayList<TestDataObject> testDataObjects = generativeExplanationObject.getExampleComponents();
         int i = 1;
@@ -173,43 +192,14 @@ public class GenerativeExplanationsService {
     }
 
     /**
-     * Creates the input data explanations for the passed components
-     * @param explanationRequestObject
-     * @return A Map containing the component as a key and its generative explanation as value
-     * @throws Exception
-     */
-    public Map<String,String> createGenerativeExplanationInputData(ComposedExplanationDTO explanationRequestObject) throws Exception {
-        // choose random templates available
-        GenerativeExplanationRequest generativeExplanationRequest = explanationRequestObject.getGenerativeExplanationRequest();
-        List<String> components = generativeExplanationRequest.getQanaryComponents().stream().map(qanaryComponent -> qanaryComponent.getComponentName()).toList();
-        int shots = generativeExplanationRequest.getShots();
-        Map<String,String> explanations = new HashMap<>();
-        QuerySolutionMap bindings = new QuerySolutionMap();
-        bindings.add("graph", ResourceFactory.createResource(explanationRequestObject.getGraphUri()));
-        for (String component: components) {
-            bindings.add("component", ResourceFactory.createResource("urn:qanary:" + component));
-            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(ExplanationService.INPUT_DATA_SELECT_QUERY,bindings);
-            ResultSet results = QanaryRepository.selectWithPipeline(query);
-            explanations.put(component, createGenerativeExplanationInputDataForOneComponent(component, results, shots));
-        }
-
-        return explanations;
-
-    }
-
-    /**
      * Replaces the prompt depending on the passed number of shots, in case of shots > 0, than pre-defined examples are used.
      * @param component
-     * @param results ResultSet of the prior executed SELECT query to fetch all AnnotationOfLog items
      * @param shots Determines the selected prompt
      * @return
      * @throws Exception
      */
-    public String createGenerativeExplanationInputDataForOneComponent(String component, ResultSet results, int shots) throws Exception {
+    public String createGenerativeExplanationInputDataForOneComponent(String component, QuerySolution solution, int shots) throws Exception {
         String prompt = getStringFromFile(generativeExplanations.getPromptTemplateInputData(shots));
-
-        try {
-            QuerySolution solution = results.next();
 
             prompt = prompt.replace("${QUERY}", solution.get("body").toString()).replace("${COMPONENT}", component);
             if (shots > 0) {
@@ -221,10 +211,6 @@ public class GenerativeExplanationsService {
                 }
             }
             return sendPrompt(prompt);
-        } catch(Exception e) {
-            e.printStackTrace();
-            return "For the component" + component + " no explanation could be generated";
-        }
     }
 
 

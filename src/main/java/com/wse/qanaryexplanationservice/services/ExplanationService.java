@@ -89,7 +89,8 @@ public class ExplanationService {
     private GenerativeExplanationsService generativeExplanationsService;
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
-
+    @Value("${questionId.replacement}")
+    private String questionIdReplacement;
     @Autowired
     QanaryRepository qanaryRepository;
 
@@ -403,8 +404,9 @@ public class ExplanationService {
     public String replaceProperties(Map<String, String> convertedMap, String template) {
 
         // Replace all placeholders with values from map
-        template = StringSubstitutor.replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
-
+        template = StringSubstitutor
+                .replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX)
+                .replace(questionIdReplacement + "/question/stored-question__text_","questionID:");
         template = checkAndReplaceOuterPlaceholder(template);
 
         logger.info("Template with inserted params: {}", template);
@@ -602,18 +604,38 @@ public class ExplanationService {
 
                 String generativeExplanation = generativeExplanationsService.sendPrompt(prompt);
 
-                composedExplanation.addExplanationItem(templatebased, prompt, generativeExplanation);
+                composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt, generativeExplanation);
             }catch (Exception e) {
                 e.printStackTrace();
             }
         });
         return composedExplanation;
     }
-    public Map<String,String> createGenerativeInputExplanations(ComposedExplanationDTO composedExplanationDTO) throws Exception {
-        return generativeExplanationsService.createGenerativeExplanationInputData(composedExplanationDTO);
-    }
 
-    public ComposedExplanation composedExplanationForInputData(ComposedExplanationDTO composedExplanationDTO) {
+    public ComposedExplanation composedExplanationForInputData(ComposedExplanationDTO composedExplanationDTO) throws Exception {
+        List<String> components = composedExplanationDTO.getGenerativeExplanationRequest().getQanaryComponents().stream().map(component -> component.getComponentName()).toList();
+        String graph = composedExplanationDTO.getGraphUri();
+        ComposedExplanation composedExplanation = new ComposedExplanation();
+        for (String component:components) {
+
+            QuerySolutionMap bindings = new QuerySolutionMap();
+            bindings.add("graph", ResourceFactory.createResource(graph));
+            bindings.add("component", ResourceFactory.createResource("urn:qanary:" + component));
+            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(ExplanationService.INPUT_DATA_SELECT_QUERY,bindings);
+            ResultSet results = QanaryRepository.selectWithPipeline(query);
+
+            QuerySolution querySolution = results.next(); // TODO: Add component to composedExplanation
+
+            String generativeExplanation = generativeExplanationsService.createGenerativeExplanationInputDataForOneComponent(
+                    component,
+                    querySolution,
+                    composedExplanationDTO.getGenerativeExplanationRequest().getShots()
+                    );
+
+            String templatebasedExplanation = createExplanationForQuery(querySolution,graph,component);
+            composedExplanation.addExplanationItem(component, templatebasedExplanation,"",generativeExplanation);
+        }
+        return composedExplanation;
 
     }
 
