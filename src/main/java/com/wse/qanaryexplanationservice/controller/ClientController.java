@@ -1,7 +1,7 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.pojos.ExperimentSelectionDTO;
-import com.wse.qanaryexplanationservice.pojos.Score;
+import com.wse.qanaryexplanationservice.helper.dtos.ExperimentSelectionDTO;
+import com.wse.qanaryexplanationservice.helper.pojos.Score;
 import com.wse.qanaryexplanationservice.services.ClientService;
 import com.wse.qanaryexplanationservice.services.ExplanationDataService;
 import org.json.JSONObject;
@@ -24,7 +24,6 @@ public class ClientController {
     private final Logger logger = LoggerFactory.getLogger(ClientController.class);
     @Autowired
     private ClientService clientService;
-
     @Autowired
     private ExplanationDataService explanationDataService;
 

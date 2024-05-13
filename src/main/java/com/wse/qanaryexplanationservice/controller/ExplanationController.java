@@ -1,8 +1,11 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +17,7 @@ import java.io.IOException;
 @ControllerAdvice
 public class ExplanationController {
 
+    private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
     @Autowired
     private ExplanationService explanationService;
 
@@ -61,22 +65,35 @@ public class ExplanationController {
     public ResponseEntity<?> getInputExplanation(
             @PathVariable String graphURI,
             @PathVariable(required = false) String componentURI) throws IOException {
-        return new ResponseEntity<>(this.explanationService.createInputExplanation(graphURI,componentURI), HttpStatus.OK);
+        return new ResponseEntity<>(this.explanationService.createInputExplanation(graphURI, componentURI), HttpStatus.OK);
     }
 
     @CrossOrigin
-    @PostMapping(value = {"/inputdatagenerative"}, produces = {
+    @PostMapping(value = {"/composedexplanations/inputdata"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
             "*/*"})
-    public ResponseEntity<?> getInputExplanationGenerative(@RequestBody ComposedExplanationDTO composedExplanationDTO) throws Exception {
-        return new ResponseEntity<>(this.explanationService.composedExplanationForInputData(composedExplanationDTO), HttpStatus.OK);
+    public ResponseEntity<?> getComposedExplanationInputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) throws Exception {
+        try {
+            ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationForInputData(composedExplanationDTO);
+            return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.error("{}", e.toString());
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
     }
 
-    @PostMapping(value = {"/composedexplanations"})
-    public ResponseEntity<?> getComposedExplanation(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
-        return new ResponseEntity<>(explanationService.composedExplanationsForQaProcess(composedExplanationDTO), HttpStatus.OK);
+    @PostMapping(value = {"/composedexplanations/outputdata"})
+    public ResponseEntity<?> getComposedExplanationOutputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
+        try {
+            ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationsForOutputData(composedExplanationDTO);
+            return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.error("{}", e.toString());
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
 }

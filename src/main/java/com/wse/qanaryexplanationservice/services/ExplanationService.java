@@ -1,9 +1,9 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.dtos.ComposedExplanationDTO;
-import com.wse.qanaryexplanationservice.pojos.ComposedExplanation;
-import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationObject;
-import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationRequest;
+import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
+import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
+import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -41,6 +41,7 @@ public class ExplanationService {
     // Query files
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
+    private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
@@ -81,8 +82,6 @@ public class ExplanationService {
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
-    @Autowired
-    private AnnotationsService annotationsService;
     @Autowired
     private GenerativeExplanationsService generativeExplanationsService;
     @Value("${explanations.dataset.limit}")
@@ -221,7 +220,7 @@ public class ExplanationService {
      */
     public String explainQaSystem(String graphURI, String header) throws Exception {
 
-        List<String> components = annotationsService.getUsedComponents(graphURI);
+        List<String> components = getUsedComponents(graphURI);
         Map<String, Model> models = new HashMap<>();
 
         for (String component : components
@@ -233,6 +232,18 @@ public class ExplanationService {
         Model systemExplanationModel = createSystemModel(models, components, questionURI, graphURI);
 
         return convertToDesiredFormat(header, systemExplanationModel);
+    }
+
+    public List<String> getUsedComponents(String graphID) throws IOException {
+        QuerySolutionMap bindings = new QuerySolutionMap();
+        bindings.add("graph", ResourceFactory.createResource(graphID));
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(COMPONENTS_SPARQL_QUERY, bindings);
+        ResultSet resultSet = QanaryRepository.selectWithPipeline(query);
+        List<String> components = new ArrayList<>();
+        while (resultSet.hasNext()) {
+            components.add(resultSet.next().get("component").toString());
+        }
+        return components;
     }
 
     // get the origin questionURI for a graphURI
@@ -572,7 +583,7 @@ public class ExplanationService {
      *
      * @param composedExplanationDTO
      */
-    public ComposedExplanation composedExplanationsForQaProcess(ComposedExplanationDTO composedExplanationDTO) {
+    public ComposedExplanation composedExplanationsForOutputData(ComposedExplanationDTO composedExplanationDTO) {
         logger.info("Request object: ", composedExplanationDTO);
         ComposedExplanation composedExplanation = new ComposedExplanation();
         GenerativeExplanationRequest generativeExplanationRequest = composedExplanationDTO.getGenerativeExplanationRequest();

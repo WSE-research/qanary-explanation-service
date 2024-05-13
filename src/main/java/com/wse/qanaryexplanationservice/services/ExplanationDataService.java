@@ -1,9 +1,9 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTest;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.TestDataObject;
-import com.wse.qanaryexplanationservice.pojos.ExperimentSelectionDTO;
-import com.wse.qanaryexplanationservice.pojos.Score;
+import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTest;
+import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
+import com.wse.qanaryexplanationservice.helper.dtos.ExperimentSelectionDTO;
+import com.wse.qanaryexplanationservice.helper.pojos.Score;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;

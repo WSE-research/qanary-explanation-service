@@ -2,9 +2,9 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTest;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTestDTO;
-import com.wse.qanaryexplanationservice.pojos.ExperimentSelectionDTO;
+import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTest;
+import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTestDTO;
+import com.wse.qanaryexplanationservice.helper.dtos.ExperimentSelectionDTO;
 import com.wse.qanaryexplanationservice.repositories.SparqlRepository;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
