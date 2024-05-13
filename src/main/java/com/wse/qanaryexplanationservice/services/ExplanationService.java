@@ -39,7 +39,7 @@ public class ExplanationService {
 
     protected static final String INPUT_DATA_SELECT_QUERY = "/queries/explanations/input_data/input_data_select.rq";
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
-    private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
+    private static final String ANNOTATIONS_QUERY = "/queries/fetch_all_annotation_types.rq";
     private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";

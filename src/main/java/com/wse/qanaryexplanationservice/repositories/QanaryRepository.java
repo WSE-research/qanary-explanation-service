@@ -24,7 +24,6 @@ public class QanaryRepository {
     private final static Logger logger = LoggerFactory.getLogger(QanaryRequestObject.class);
     private static String QANARY_PIPELINE_HOST;
     private static int QANARY_PIPELINE_PORT;
-    private static String VIRTUOSO_ENDPOINT;
     private static RDFConnection connection;
 
     public QanaryRepository() {
