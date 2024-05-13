@@ -56,7 +56,7 @@ public class AutomatedTestingService {
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
     @Autowired
-    private AutomatedTestingRepository automatedTestingRepository;
+    private GenerativeExplanationsService generativeExplanationsService;
 
     // CONSTRUCTOR(s)
     public AutomatedTestingService(Environment environment) {
@@ -120,13 +120,6 @@ public class AutomatedTestingService {
             i += 1;
         }
         return prompt;
-    }
-
-    public String sendPrompt(String prompt) throws Exception {
-        Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO); // TODO: Move to applications.properties
-        int tokens = encoding.countTokens(prompt);
-        logger.info("Calculated Token: {}", tokens);
-        return automatedTestingRepository.sendGptPrompt(prompt, tokens);
     }
 
     public String getStringFromFile(String path) throws IOException {
@@ -250,7 +243,7 @@ public class AutomatedTestingService {
             test = createTest(requestBody); // null if not successful
             if (test != null) {
                 if (doGptCall) {
-                    String gptExplanation = sendPrompt(test.getPrompt()); // Send prompt to OpenAI-API
+                    String gptExplanation = generativeExplanationsService.sendPrompt(test.getPrompt()); // Send prompt to OpenAI-API
                     test.setGptExplanation(gptExplanation); // Add the response-explanation
                 }
                 JSONObject finishedTest = new JSONObject(test);

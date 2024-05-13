@@ -64,6 +64,16 @@ public class ExplanationController {
         return new ResponseEntity<>(this.explanationService.createInputExplanation(graphURI,componentURI), HttpStatus.OK);
     }
 
+    @CrossOrigin
+    @PostMapping(value = {"/inputdatagenerative"}, produces = {
+            "application/rdf+xml",
+            "text/turtle",
+            "application/ld+json",
+            "*/*"})
+    public ResponseEntity<?> getInputExplanationGenerative(@RequestBody ComposedExplanationDTO composedExplanationDTO) throws Exception {
+        return new ResponseEntity<>(this.explanationService.createGenerativeInputExplanations(composedExplanationDTO), HttpStatus.OK);
+    }
+
     @PostMapping(value = {"/composedexplanations"})
     public ResponseEntity<?> getComposedExplanation(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
         return new ResponseEntity<>(explanationService.composedExplanationsForQaProcess(composedExplanationDTO), HttpStatus.OK);

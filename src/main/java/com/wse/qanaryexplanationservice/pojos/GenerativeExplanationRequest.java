@@ -35,4 +35,8 @@ public class GenerativeExplanationRequest {
     public void setShots(int shots) {
         this.shots = shots;
     }
+
+    public String getComponentListAsRequestList() {
+        return "";
+    }
 }

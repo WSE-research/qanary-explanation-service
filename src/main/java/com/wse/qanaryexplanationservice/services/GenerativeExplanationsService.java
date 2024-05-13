@@ -4,12 +4,23 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
+import com.wse.qanaryexplanationservice.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AnnotationType;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.TestDataObject;
 import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationObject;
+import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationRequest;
+import com.wse.qanaryexplanationservice.pojos.InputQueryExample;
 import com.wse.qanaryexplanationservice.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
+import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
+import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
+import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.QuerySolutionMap;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +50,7 @@ public class GenerativeExplanationsService {
     @Autowired
     private GenerativeExplanations generativeExplanations;
     @Autowired
-    private AutomatedTestingRepository automatedTestingRepository; // Outsource that!
+    private GenerativeExplanationsRepository generativeExplanationsRepository;
     private final EncodingRegistry encodingRegistry = Encodings.newLazyEncodingRegistry();
 
 
@@ -158,9 +169,63 @@ public class GenerativeExplanationsService {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO); // TODO: Move to applications.properties
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);
-        return automatedTestingRepository.sendGptPrompt(prompt, tokens);
+        return generativeExplanationsRepository.sendGptPrompt(prompt, tokens);
     }
 
+    /**
+     * Creates the input data explanations for the passed components
+     * @param explanationRequestObject
+     * @return A Map containing the component as a key and its generative explanation as value
+     * @throws Exception
+     */
+    public Map<String,String> createGenerativeExplanationInputData(ComposedExplanationDTO explanationRequestObject) throws Exception {
+        // choose random templates available
+        GenerativeExplanationRequest generativeExplanationRequest = explanationRequestObject.getGenerativeExplanationRequest();
+        List<String> components = generativeExplanationRequest.getQanaryComponents().stream().map(qanaryComponent -> qanaryComponent.getComponentName()).toList();
+        int shots = generativeExplanationRequest.getShots();
+        Map<String,String> explanations = new HashMap<>();
+        QuerySolutionMap bindings = new QuerySolutionMap();
+        bindings.add("graph", ResourceFactory.createResource(explanationRequestObject.getGraphUri()));
+        for (String component: components) {
+            bindings.add("component", ResourceFactory.createResource("urn:qanary:" + component));
+            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(ExplanationService.INPUT_DATA_SELECT_QUERY,bindings);
+            ResultSet results = QanaryRepository.selectWithPipeline(query);
+            explanations.put(component, createGenerativeExplanationInputDataForOneComponent(component, results, shots));
+        }
+
+        return explanations;
+
+    }
+
+    /**
+     * Replaces the prompt depending on the passed number of shots, in case of shots > 0, than pre-defined examples are used.
+     * @param component
+     * @param results ResultSet of the prior executed SELECT query to fetch all AnnotationOfLog items
+     * @param shots Determines the selected prompt
+     * @return
+     * @throws Exception
+     */
+    public String createGenerativeExplanationInputDataForOneComponent(String component, ResultSet results, int shots) throws Exception {
+        String prompt = getStringFromFile(generativeExplanations.getPromptTemplateInputData(shots));
+
+        try {
+            QuerySolution solution = results.next();
+
+            prompt = prompt.replace("${QUERY}", solution.get("body").toString()).replace("${COMPONENT}", component);
+            if (shots > 0) {
+                InputQueryExample inputQueryExample = GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.get(random.nextInt(GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.size()));
+                prompt = prompt.replace("${ZEROSHOT_QUERY}", inputQueryExample.getQuery()).replace("${ZEROSHOT_EXPLANATION", inputQueryExample.getExplanations()); // select random pre-defined statements
+                if (shots > 1) {
+                    InputQueryExample inputQueryExample2 = GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.get(random.nextInt(GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.size()));
+                    prompt = prompt.replace("${ONESHOT_QUERY}", inputQueryExample.getQuery()).replace("${ONE_EXPLANATION", inputQueryExample.getExplanations()); // select random pre-defined statements
+                }
+            }
+            return sendPrompt(prompt);
+        } catch(Exception e) {
+            e.printStackTrace();
+            return "For the component" + component + " no explanation could be generated";
+        }
+    }
 
 
 

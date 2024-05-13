@@ -7,7 +7,9 @@ import com.knuddels.jtokkit.api.ModelType;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AnnotationType;
+import com.wse.qanaryexplanationservice.pojos.InputQueryExample;
 import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
+import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.query.QuerySolution;
@@ -78,10 +80,18 @@ public class GenerativeExplanations {
         put("^^http://www.w3.org/2001/XMLSchema#float", "");
     }};
 
+    protected static final ArrayList<InputQueryExample> INPUT_QUERIES_AND_EXAMPLE = InputQueryExample.queryExamplesList();
+
     private final Map<Integer, String> exampleCountAndTemplate = new HashMap<>() {{
         put(1, "/testtemplates/oneshot");
         put(2, "/testtemplates/twoshot");
         put(3, "/testtemplates/threeshot");
+    }};
+
+    private final Map<Integer, String> exampleCountAndTemplateInputData = new HashMap<>() {{
+        put(1, "/testtemplates/inputdata/oneshot");
+        put(2, "/testtemplates/inputdata/twoshot");
+        put(0, "/testtemplates/inputdata/zeroshot");
     }};
 
     protected final int QADO_DATASET_QUESTION_COUNT = 394;
@@ -126,7 +136,8 @@ public class GenerativeExplanations {
         QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, randomComponents);
 
         try {
-            return automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject);
+            return QanaryRepository.executeQanaryPipeline(qanaryRequestObject);
+//            return automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject);
         } catch (WebClientResponseException e) {
             String errorMessage = "Error while executing Qanary pipeline, Error message: " + e.getMessage();
             logger.error(errorMessage);
@@ -206,7 +217,6 @@ public class GenerativeExplanations {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
             query = query.replace("?annotationType", "qa:" + annotationType);
             ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
-            logger.info("++++++++QUERY+++++++    {}", query);
 
             if (!resultSet.hasNext())
                 throw new RuntimeException("Fetching triples failed, ResultSet is null");
@@ -236,6 +246,6 @@ public class GenerativeExplanations {
     public String getPromptTemplate(int shots) {
         return this.exampleCountAndTemplate.get(shots);
     }
-
+    public String getPromptTemplateInputData(int shots) { return this.exampleCountAndTemplateInputData.get(shots);}
 
 }

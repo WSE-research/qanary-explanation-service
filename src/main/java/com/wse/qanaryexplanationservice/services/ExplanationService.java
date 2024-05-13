@@ -1,16 +1,16 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationRequest;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
+import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
-import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.QuerySolutionMap;
-import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
@@ -23,10 +23,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ResourceUtils;
+import virtuoso.jena.driver.VirtGraph;
+import virtuoso.jena.driver.VirtuosoQueryExecution;
+import virtuoso.jena.driver.VirtuosoQueryExecutionFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
+import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -43,6 +44,7 @@ public class ExplanationService {
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
     private static final String INPUT_DATA_QUERY = "/queries/explanations/input_data/inputDataSelect.rq";
+    protected static final String INPUT_DATA_SELECT_QUERY = "/queries/explanations/input_data/input_data_select.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
@@ -87,6 +89,9 @@ public class ExplanationService {
     private GenerativeExplanationsService generativeExplanationsService;
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
+
+    @Autowired
+    QanaryRepository qanaryRepository;
 
     public ExplanationService() {
     }
@@ -483,29 +488,37 @@ public class ExplanationService {
         return getResult(componentURI, lang, explanations, createdExplanations.get(0));
     }
 
+    /**
+     * Creates a rulebased explanation for the input data of the passed component
+     * @param graph Knowledge graph where the data is stored
+     * @param component Component name (with prefixes!) for which the explanation is created
+     * @return Explanation as string
+     * @throws IOException If template selection from file fails
+     */
     public String createInputExplanation(String graph, String component) throws IOException {
         QuerySolutionMap bindings = new QuerySolutionMap();
-        bindings.add("graph",ResourceFactory.createResource(graph));
-        bindings.add("usedComponent", ResourceFactory.createResource(component));
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_QUERY,bindings);
+        bindings.add("graph", ResourceFactory.createResource(graph));
+        bindings.add("component", ResourceFactory.createResource(component));
 
-        // set RDFConnection to URL for Input-data triplestore @see https://github.com/dschiese/input-data-storage
-        this.explanationSparqlRepository.setSparqlEndpoint(new URL("http://localhost:8891/sparql"));
-        ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
+        String queryTemplate = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_SELECT_QUERY,bindings);
+
         int resultSetSize = 0;
         List<String> explanationsForQueries = new ArrayList<>();
-
-        while(resultSet.hasNext()) {
-            QuerySolution currentSolution = resultSet.nextSolution();
-            resultSetSize++;
-            explanationsForQueries.add(createExplanationForQuery(currentSolution, graph, component));
+        ResultSet results = explanationSparqlRepository.executeSparqlQueryWithResultSet(queryTemplate);
+        while(results.hasNext()) {
+            QuerySolution currentSolution = results.nextSolution();
+            try {
+                explanationsForQueries.add(createExplanationForQuery(currentSolution, graph, component));
+                resultSetSize++;
+            } catch(RuntimeException e) {
+            }
         }
 
         // create Prefix
         String prefix = getStringFromFile("/explanations/input_data/prefixes/en"); // adopt for any other languages
         prefix = prefix.replace("${numberOfQueries}",String.valueOf(resultSetSize) +
                 (resultSetSize == 1 ? " SPARQL query" : " SPARQL queries")
-                );
+        );
         prefix = prefix.replace("${component}",component).replace("${graph}",graph);
         // Zusammenbauen
 
@@ -516,7 +529,7 @@ public class ExplanationService {
     }
 
     public String createExplanationForQuery(QuerySolution currentSolution, String graph, String component) throws IOException {
-        String annotationType = currentSolution.get("annotationType").toString();
+        String annotationType = disassembleAnnotationTypeFromQuery(currentSolution.get("body").toString());
         Map<String,String> items = new HashMap<>() {{
             put("graph",graph);
             put("component",component);
@@ -525,6 +538,24 @@ public class ExplanationService {
         // for each language
         String listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
         return StringSubstitutor.replace(listItem,items,TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
+
+
+    }
+
+    public String disassembleAnnotationTypeFromQuery(String sparql) throws IOException {
+        BufferedReader reader = new BufferedReader(new StringReader(sparql));
+        String line = reader.readLine();
+        while(line != null) {
+            if(line.contains("AnnotationOf")) {
+                String modifiedLine = line.substring(line.indexOf("qa:AnnotationOf")); // Current String equals "AnnotationOfSOMEWHAT ...." -> Need to remove the last part
+                String annotationType = modifiedLine.replace(modifiedLine.substring(modifiedLine.indexOf(" "), modifiedLine.length()), "").replace("qa:", "");
+                logger.info("Found annotationType: {}", annotationType);
+                return annotationType;
+            }
+            line = reader.readLine();
+        }
+        logger.error("No template available for SPARQL query: {}", sparql);
+        throw new RuntimeException("No annotation type could be dissambled");
     }
 
     public String composeExplanation(List<String> listItems, String prefix) {
@@ -577,6 +608,13 @@ public class ExplanationService {
             }
         });
         return composedExplanation;
+    }
+    public Map<String,String> createGenerativeInputExplanations(ComposedExplanationDTO composedExplanationDTO) throws Exception {
+        return generativeExplanationsService.createGenerativeExplanationInputData(composedExplanationDTO);
+    }
+
+    public ComposedExplanation composedExplanationForInputData(ComposedExplanationDTO composedExplanationDTO) {
+
     }
 
 }

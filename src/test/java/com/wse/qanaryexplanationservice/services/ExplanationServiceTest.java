@@ -197,6 +197,11 @@ public class ExplanationServiceTest {
 
         }
 
+        @Test
+        public void createInputExplanation_newTest() throws IOException {
+            explanationService.createInputExplanation("urn:graph:cab6c5eb-b69a-4fd1-8b10-eca6d82d3525","urn:qanary:NED-DBpediaSpotlight");
+        }
+
         /*
         Converts a given Map<String,RDFNode> to a Map<String, String>
          */
