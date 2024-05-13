@@ -1,20 +1,20 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.dtos.ComposedExplanationDTO;
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryRequestObject;
-import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.pojos.ComposedExplanation;
+import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.pojos.GenerativeExplanationRequest;
 import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
-import org.apache.jena.query.*;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.QuerySolutionMap;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
-import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,15 +22,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.util.ResourceUtils;
-import virtuoso.jena.driver.VirtGraph;
-import virtuoso.jena.driver.VirtuosoQueryExecution;
-import virtuoso.jena.driver.VirtuosoQueryExecutionFactory;
 
-import java.io.*;
-import java.net.URL;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -40,11 +37,10 @@ import java.util.stream.Collectors;
 @Service
 public class ExplanationService {
 
+    protected static final String INPUT_DATA_SELECT_QUERY = "/queries/explanations/input_data/input_data_select.rq";
     // Query files
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
-    private static final String INPUT_DATA_QUERY = "/queries/explanations/input_data/inputDataSelect.rq";
-    protected static final String INPUT_DATA_SELECT_QUERY = "/queries/explanations/input_data/input_data_select.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
@@ -80,6 +76,8 @@ public class ExplanationService {
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
+    @Autowired
+    QanaryRepository qanaryRepository;
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
     @Autowired
     private ExplanationSparqlRepository explanationSparqlRepository;
@@ -91,8 +89,6 @@ public class ExplanationService {
     private int EXPLANATIONS_DATASET_LIMIT;
     @Value("${questionId.replacement}")
     private String questionIdReplacement;
-    @Autowired
-    QanaryRepository qanaryRepository;
 
     public ExplanationService() {
     }
@@ -406,7 +402,7 @@ public class ExplanationService {
         // Replace all placeholders with values from map
         template = StringSubstitutor
                 .replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX)
-                .replace(questionIdReplacement + "/question/stored-question__text_","questionID:");
+                .replace(questionIdReplacement + "/question/stored-question__text_", "questionID:");
         template = checkAndReplaceOuterPlaceholder(template);
 
         logger.info("Template with inserted params: {}", template);
@@ -492,7 +488,8 @@ public class ExplanationService {
 
     /**
      * Creates a rulebased explanation for the input data of the passed component
-     * @param graph Knowledge graph where the data is stored
+     *
+     * @param graph     Knowledge graph where the data is stored
      * @param component Component name (with prefixes!) for which the explanation is created
      * @return Explanation as string
      * @throws IOException If template selection from file fails
@@ -502,44 +499,44 @@ public class ExplanationService {
         bindings.add("graph", ResourceFactory.createResource(graph));
         bindings.add("component", ResourceFactory.createResource(component));
 
-        String queryTemplate = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_SELECT_QUERY,bindings);
+        String queryTemplate = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_SELECT_QUERY, bindings);
 
         int resultSetSize = 0;
         List<String> explanationsForQueries = new ArrayList<>();
         ResultSet results = explanationSparqlRepository.executeSparqlQueryWithResultSet(queryTemplate);
-        while(results.hasNext()) {
+        while (results.hasNext()) {
             QuerySolution currentSolution = results.nextSolution();
             try {
                 explanationsForQueries.add(createExplanationForQuery(currentSolution, graph, component));
                 resultSetSize++;
-            } catch(RuntimeException e) {
+            } catch (RuntimeException e) {
             }
         }
 
         // create Prefix
         String prefix = getStringFromFile("/explanations/input_data/prefixes/en"); // adopt for any other languages
-        prefix = prefix.replace("${numberOfQueries}",String.valueOf(resultSetSize) +
+        prefix = prefix.replace("${numberOfQueries}", resultSetSize +
                 (resultSetSize == 1 ? " SPARQL query" : " SPARQL queries")
         );
-        prefix = prefix.replace("${component}",component).replace("${graph}",graph);
+        prefix = prefix.replace("${component}", component).replace("${graph}", graph);
         // Zusammenbauen
 
-        logger.info("Items: {}", explanationsForQueries.toString());
+        logger.info("Items: {}", explanationsForQueries);
         logger.info("PREFIX: {}", prefix);
 
-        return composeExplanation(explanationsForQueries,prefix);
+        return composeExplanation(explanationsForQueries, prefix);
     }
 
     public String createExplanationForQuery(QuerySolution currentSolution, String graph, String component) throws IOException {
         String annotationType = disassembleAnnotationTypeFromQuery(currentSolution.get("body").toString());
-        Map<String,String> items = new HashMap<>() {{
-            put("graph",graph);
-            put("component",component);
+        Map<String, String> items = new HashMap<>() {{
+            put("graph", graph);
+            put("component", component);
             put("annotationType", annotationType);
         }};
         // for each language
         String listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
-        return StringSubstitutor.replace(listItem,items,TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
+        return StringSubstitutor.replace(listItem, items, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
 
 
     }
@@ -547,8 +544,8 @@ public class ExplanationService {
     public String disassembleAnnotationTypeFromQuery(String sparql) throws IOException {
         BufferedReader reader = new BufferedReader(new StringReader(sparql));
         String line = reader.readLine();
-        while(line != null) {
-            if(line.contains("AnnotationOf")) {
+        while (line != null) {
+            if (line.contains("AnnotationOf")) {
                 String modifiedLine = line.substring(line.indexOf("qa:AnnotationOf")); // Current String equals "AnnotationOfSOMEWHAT ...." -> Need to remove the last part
                 String annotationType = modifiedLine.replace(modifiedLine.substring(modifiedLine.indexOf(" "), modifiedLine.length()), "").replace("qa:", "");
                 logger.info("Found annotationType: {}", annotationType);
@@ -563,8 +560,8 @@ public class ExplanationService {
     public String composeExplanation(List<String> listItems, String prefix) {
         StringBuilder finalExplanation = new StringBuilder();
         finalExplanation.append(prefix);
-        for(int i = 0; i < listItems.size(); i++) {
-            finalExplanation.append("\n").append(i+1).append(". ").append(listItems.get(i));
+        for (int i = 0; i < listItems.size(); i++) {
+            finalExplanation.append("\n").append(i + 1).append(". ").append(listItems.get(i));
         }
         return finalExplanation.toString();
     }
@@ -572,6 +569,7 @@ public class ExplanationService {
     /**
      * Controller called method to start the process explaining several components with both approaches;
      * the rulebased and the generative one.
+     *
      * @param composedExplanationDTO
      */
     public ComposedExplanation composedExplanationsForQaProcess(ComposedExplanationDTO composedExplanationDTO) {
@@ -586,8 +584,8 @@ public class ExplanationService {
                         composedExplanationDTO.getGraphUri(),
                         "urn:qanary:" + component.getComponentName(),
                         "en",
-                        new ArrayList<String>() {{
-                             add(component.getComponentMainType().toLowerCase());
+                        new ArrayList<>() {{
+                            add(component.getComponentMainType().toLowerCase());
                         }}
                 );
 
@@ -605,8 +603,8 @@ public class ExplanationService {
                 String generativeExplanation = generativeExplanationsService.sendPrompt(prompt);
 
                 composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt, generativeExplanation);
-            }catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                logger.error("{}", e.toString());
             }
         });
         return composedExplanation;
@@ -616,12 +614,12 @@ public class ExplanationService {
         List<String> components = composedExplanationDTO.getGenerativeExplanationRequest().getQanaryComponents().stream().map(component -> component.getComponentName()).toList();
         String graph = composedExplanationDTO.getGraphUri();
         ComposedExplanation composedExplanation = new ComposedExplanation();
-        for (String component:components) {
+        for (String component : components) {
 
             QuerySolutionMap bindings = new QuerySolutionMap();
             bindings.add("graph", ResourceFactory.createResource(graph));
             bindings.add("component", ResourceFactory.createResource("urn:qanary:" + component));
-            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(ExplanationService.INPUT_DATA_SELECT_QUERY,bindings);
+            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(ExplanationService.INPUT_DATA_SELECT_QUERY, bindings);
             ResultSet results = QanaryRepository.selectWithPipeline(query);
 
             QuerySolution querySolution = results.next(); // TODO: Add component to composedExplanation
@@ -630,10 +628,10 @@ public class ExplanationService {
                     component,
                     querySolution,
                     composedExplanationDTO.getGenerativeExplanationRequest().getShots()
-                    );
+            );
 
-            String templatebasedExplanation = createExplanationForQuery(querySolution,graph,component);
-            composedExplanation.addExplanationItem(component, templatebasedExplanation,"",generativeExplanation);
+            String templatebasedExplanation = createExplanationForQuery(querySolution, graph, component);
+            composedExplanation.addExplanationItem(component, templatebasedExplanation, "", generativeExplanation);
         }
         return composedExplanation;
 

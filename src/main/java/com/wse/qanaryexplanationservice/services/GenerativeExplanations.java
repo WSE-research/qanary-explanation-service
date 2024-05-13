@@ -1,9 +1,5 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.knuddels.jtokkit.Encodings;
-import com.knuddels.jtokkit.api.Encoding;
-import com.knuddels.jtokkit.api.EncodingRegistry;
-import com.knuddels.jtokkit.api.ModelType;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.QanaryObjects.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AnnotationType;
@@ -32,18 +28,12 @@ import java.util.*;
 
 /**
  * Service which provides different methods to create explanations with generative AI.
- *
  */
 @Service
 public class GenerativeExplanations {
 
-    public GenerativeExplanations(Environment environment) {
-        for (AnnotationType annType : AnnotationType.values()
-        ) {
-            typeAndComponents.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
-        }
-    }
-
+    protected static final ArrayList<InputQueryExample> INPUT_QUERIES_AND_EXAMPLE = InputQueryExample.queryExamplesList();
+    private final static String DATASET_QUERY = "/queries/evaluation_dataset_query.rq";
     protected final Map<String, String[]> typeAndComponents = new HashMap<>();
     protected final Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
         put(AnnotationType.AnnotationOfInstance, new AnnotationType[]{});
@@ -67,12 +57,7 @@ public class GenerativeExplanations {
                 AnnotationType.AnnotationOfQuestionLanguage
         });
     }};
-    @Value("${questionId.replacement}")
-    public void setQuestionIdReplacement(String questionIdUri) {
-        this.prefixes.put(questionIdUri + "/question/stored-question__text_", "questionID:");
-    }
-
-
+    protected final int QADO_DATASET_QUESTION_COUNT = 394;
     private final Map<String, String> prefixes = new HashMap<>() {{
         put("http://www.w3.org/ns/openannotation/core/", "oa:");
         put("http://www.wdaqua.eu/qa#", "qa:");
@@ -84,9 +69,6 @@ public class GenerativeExplanations {
         put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
         put("^^http://www.w3.org/2001/XMLSchema#float", "");
     }};
-
-    protected static final ArrayList<InputQueryExample> INPUT_QUERIES_AND_EXAMPLE = InputQueryExample.queryExamplesList();
-
     private final Map<Integer, String> exampleCountAndTemplate = new HashMap<>() {{
         put(1, "/testtemplates/oneshot");
         put(2, "/testtemplates/twoshot");
@@ -98,16 +80,25 @@ public class GenerativeExplanations {
         put(2, "/testtemplates/inputdata/twoshot");
         put(0, "/testtemplates/inputdata/zeroshot");
     }};
-
-    protected final int QADO_DATASET_QUESTION_COUNT = 394;
     private final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final String QUESTION_QUERY = "/queries/random_question_query.rq";
-    private final static String DATASET_QUERY = "/queries/evaluation_dataset_query.rq";
-    private Logger logger = LoggerFactory.getLogger(GenerativeExplanations.class);
+    private final Logger logger = LoggerFactory.getLogger(GenerativeExplanations.class);
     @Autowired
     private AutomatedTestingRepository automatedTestingRepository;
     @Autowired
     private ExplanationService explanationService;
+
+    public GenerativeExplanations(Environment environment) {
+        for (AnnotationType annType : AnnotationType.values()
+        ) {
+            typeAndComponents.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
+        }
+    }
+
+    @Value("${questionId.replacement}")
+    public void setQuestionIdReplacement(String questionIdUri) {
+        this.prefixes.put(questionIdUri + "/question/stored-question__text_", "questionID:");
+    }
 
     /**
      * Executes a SPARQL query on the triplestore to fetch a question from the (existing!) QADO-dataset
@@ -251,6 +242,9 @@ public class GenerativeExplanations {
     public String getPromptTemplate(int shots) {
         return this.exampleCountAndTemplate.get(shots);
     }
-    public String getPromptTemplateInputData(int shots) { return this.exampleCountAndTemplateInputData.get(shots);}
+
+    public String getPromptTemplateInputData(int shots) {
+        return this.exampleCountAndTemplateInputData.get(shots);
+    }
 
 }

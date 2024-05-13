@@ -20,7 +20,7 @@ import java.net.URL;
 public class GenerativeExplanationsRepository {
 
 
-    private Logger logger = LoggerFactory.getLogger(GenerativeExplanationsRepository.class);
+    private final Logger logger = LoggerFactory.getLogger(GenerativeExplanationsRepository.class);
     private final URL CHATGPT_ENDPOINT_4K = new URL("https://api.openai.com/v1/completions");
     private final URL CHATGPT_ENDPOINT_16K = new URL("https://api.openai.com/v1/chat/completions");
     private final int RESPONSE_TOKEN = 1000;
