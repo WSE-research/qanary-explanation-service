@@ -21,6 +21,13 @@ public class ExplanationController {
     @Autowired
     private ExplanationService explanationService;
 
+    /**
+     * Computes the explanations for (currently) the output data for a specific graph and/or component
+     *
+     * @param componentURI ComponentURI with its prefixes
+     * @param acceptHeader The answer is formatted as RDF, possibly in RDF/XML, TTL or JSON-LD.
+     * @return Explanation for system or component as RDF
+     */
     @CrossOrigin
     @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{componentURI}"}, produces = {
             "application/rdf+xml",
@@ -62,6 +69,13 @@ public class ExplanationController {
             "text/turtle",
             "application/ld+json",
             "*/*"})
+    @Operation(
+            summary = "Computes the rulebased explanation for a specific component",
+            description = """
+                    This endpoint doesn't require a body and only takes the graph and component as path variables.
+                    The component must include the prefixes, e.g. 'urn:qanary:'
+                    """
+    )
     public ResponseEntity<?> getInputExplanation(
             @PathVariable String graphURI,
             @PathVariable(required = false) String componentURI) throws IOException {
@@ -74,7 +88,30 @@ public class ExplanationController {
             "text/turtle",
             "application/ld+json",
             "*/*"})
-    public ResponseEntity<?> getComposedExplanationInputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) throws Exception {
+    @Operation(
+            summary = "Computes the rulebased and generative input-data explanations for all components included in the body.",
+            description = """
+                    The Request body should follow this structure:
+                            {
+                                "graphUri": "",
+                                "generativeExplanationRequest": {
+                                    "shots": 1,
+                                    "gptModel": "gpt3.5",
+                                    "qanaryComponents": [
+                                        {
+                                            "componentName": null,
+                                            "componentMainType": "AnnotationOfInstance"
+                                        },
+                                        {
+                                        ...
+                                        },
+                                        ...
+                                    ]
+                                }
+                            }
+                    """
+    )
+    public ResponseEntity<?> getComposedExplanationInputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
         try {
             ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationForInputData(composedExplanationDTO);
             return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
@@ -86,6 +123,29 @@ public class ExplanationController {
     }
 
     @PostMapping(value = {"/composedexplanations/outputdata"})
+    @Operation(
+            summary = "Computes the rulebased and generative output-data explanations for all components included in the body.",
+            description = """
+                    The Request body should follow this structure:
+                            {
+                                "graphUri": "",
+                                "generativeExplanationRequest": {
+                                    "shots": 1,
+                                    "gptModel": "gpt3.5",
+                                    "qanaryComponents": [
+                                        {
+                                            "componentName": null,
+                                            "componentMainType": "AnnotationOfInstance"
+                                        },
+                                        {
+                                        ...
+                                        },
+                                        ...
+                                    ]
+                                }
+                            }
+                    """
+    )
     public ResponseEntity<?> getComposedExplanationOutputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
         try {
             ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationsForOutputData(composedExplanationDTO);
@@ -97,22 +157,3 @@ public class ExplanationController {
     }
 
 }
-
-
-/*
-EXAMPLE REQUEST for /composedexplanations
-{
-    "graphUri": "",
-    "generativeExplanationRequest": {
-        "shots": 1,
-        "gptModel": "gpt3.5",
-        "qanaryComponents": [
-            {
-                "componentName": null,
-                "componentMainType": "AnnotationOfInstance"
-            }
-        ]
-    }
-}
-
- */

@@ -4,8 +4,6 @@ import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.Example;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
-import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
-import org.apache.jena.query.ResultSet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,16 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -103,21 +97,9 @@ public class AutomatedTestingServiceTest {
          * Sad path: ResultSet is null
          */
 
-        @MockBean
-        private AutomatedTestingRepository automatedTestingRepository;
-
-
-        // Setup fetchTriples handling
-        private void setupTest(ResultSet resultSet) {
-            when(automatedTestingRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
-        }
-
         @Test
         public void createDatasetResultSetIsNullTest() {
-            setupTest(null);
-
             Assertions.assertThrows(Exception.class, () -> generativeExplanations.createDataset("componentURI", "graphURI", "anyAnnotationType"));
-
         }
     }
 

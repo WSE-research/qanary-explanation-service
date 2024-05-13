@@ -4,8 +4,8 @@ import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
-import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
+import com.wse.qanaryexplanationservice.repositories.QuestionsRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 public class ExplanationService {
 
     protected static final String INPUT_DATA_SELECT_QUERY = "/queries/explanations/input_data/input_data_select.rq";
-    // Query files
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
     private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
@@ -77,11 +76,7 @@ public class ExplanationService {
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
-    @Autowired
-    QanaryRepository qanaryRepository;
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
-    @Autowired
-    private ExplanationSparqlRepository explanationSparqlRepository;
     @Autowired
     private GenerativeExplanationsService generativeExplanationsService;
     @Value("${explanations.dataset.limit}")
@@ -110,10 +105,6 @@ public class ExplanationService {
                     + prefix + ": " + StringUtils.join(explanations, " ");
         }
         return result;
-    }
-
-    protected void setRepository(ExplanationSparqlRepository explanationSparqlRepository) {
-        this.explanationSparqlRepository = explanationSparqlRepository;
     }
 
     /**
@@ -238,7 +229,7 @@ public class ExplanationService {
         QuerySolutionMap bindings = new QuerySolutionMap();
         bindings.add("graph", ResourceFactory.createResource(graphID));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(COMPONENTS_SPARQL_QUERY, bindings);
-        ResultSet resultSet = QanaryRepository.selectWithPipeline(query);
+        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
         List<String> components = new ArrayList<>();
         while (resultSet.hasNext()) {
             components.add(resultSet.next().get("component").toString());
@@ -249,7 +240,7 @@ public class ExplanationService {
     // get the origin questionURI for a graphURI
     public String fetchQuestionUri(String graphURI) throws Exception {
         String query = buildSparqlQuery(graphURI, null, QUESTION_QUERY);
-        ResultSet resultSet = explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
+        ResultSet resultSet = QuestionsRepository.selectQuestion(query);
 
         try {
             String questionURI = resultSet.next().get("source").toString();
@@ -329,7 +320,7 @@ public class ExplanationService {
         String query = buildSparqlQuery(graphURI, componentURI, ANNOTATIONS_QUERY);
 
         ArrayList<String> types = new ArrayList<>();
-        ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
+        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
 
         // Iterate through the QuerySolutions and gather all annotation-types
         while (resultSet.hasNext()) {
@@ -373,7 +364,7 @@ public class ExplanationService {
 
         // For the first language that will be executed, for each annotation-type a component created
         if (!stringResultSetMap.containsKey(type))
-            stringResultSetMap.put(type, this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query));
+            stringResultSetMap.put(type, QanaryRepository.selectWithResultSet(query));
 
         List<String> explanationsForCurrentType = addingExplanations(type, lang, stringResultSetMap.get(type));
 
@@ -514,7 +505,7 @@ public class ExplanationService {
 
         int resultSetSize = 0;
         List<String> explanationsForQueries = new ArrayList<>();
-        ResultSet results = explanationSparqlRepository.executeSparqlQueryWithResultSet(queryTemplate);
+        ResultSet results = QanaryRepository.selectWithResultSet(queryTemplate);
         while (results.hasNext()) {
             QuerySolution currentSolution = results.nextSolution();
             try {
@@ -631,7 +622,7 @@ public class ExplanationService {
             bindings.add("graph", ResourceFactory.createResource(graph));
             bindings.add("component", ResourceFactory.createResource("urn:qanary:" + component));
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(ExplanationService.INPUT_DATA_SELECT_QUERY, bindings);
-            ResultSet results = QanaryRepository.selectWithPipeline(query);
+            ResultSet results = QanaryRepository.selectWithResultSet(query);
 
             QuerySolution querySolution = results.next(); // TODO: Add component to composedExplanation
 

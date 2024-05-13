@@ -1,11 +1,11 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
-import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
-import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
+import com.wse.qanaryexplanationservice.repositories.QuestionsRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.query.QuerySolution;
@@ -84,8 +84,6 @@ public class GenerativeExplanations {
     private final String QUESTION_QUERY = "/queries/random_question_query.rq";
     private final Logger logger = LoggerFactory.getLogger(GenerativeExplanations.class);
     @Autowired
-    private AutomatedTestingRepository automatedTestingRepository;
-    @Autowired
     private ExplanationService explanationService;
 
     public GenerativeExplanations(Environment environment) {
@@ -113,7 +111,7 @@ public class GenerativeExplanations {
 
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(QUESTION_QUERY, querySolutionMap);
-            ResultSet resultSet = automatedTestingRepository.takeRandomQuestion(query);
+            ResultSet resultSet = QuestionsRepository.selectQuestion(query);
             return resultSet.next().get("hasQuestion").asLiteral().getString();
         } catch (IOException e) {
             String errorMessage = "Error while fetching a random question";
@@ -133,7 +131,6 @@ public class GenerativeExplanations {
 
         try {
             return QanaryRepository.executeQanaryPipeline(qanaryRequestObject);
-//            return automatedTestingRepository.executeQanaryPipeline(qanaryRequestObject);
         } catch (WebClientResponseException e) {
             String errorMessage = "Error while executing Qanary pipeline, Error message: " + e.getMessage();
             logger.error(errorMessage);
@@ -212,7 +209,7 @@ public class GenerativeExplanations {
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
             query = query.replace("?annotationType", "qa:" + annotationType);
-            ResultSet resultSet = automatedTestingRepository.executeSparqlQueryWithResultSet(query);
+            ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
 
             if (!resultSet.hasNext())
                 throw new RuntimeException("Fetching triples failed, ResultSet is null");

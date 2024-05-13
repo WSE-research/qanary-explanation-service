@@ -199,7 +199,7 @@ public class ExplanationServiceTest {
 
         @Test
         public void createInputExplanation_newTest() throws IOException {
-            explanationService.createInputExplanation("urn:graph:cab6c5eb-b69a-4fd1-8b10-eca6d82d3525","urn:qanary:NED-DBpediaSpotlight");
+            explanationService.createInputExplanation("urn:graph:cab6c5eb-b69a-4fd1-8b10-eca6d82d3525", "urn:qanary:NED-DBpediaSpotlight");
         }
 
         /*
@@ -282,7 +282,6 @@ public class ExplanationServiceTest {
 
         @Test
         public void createSpecificExplanationTest() throws IOException {
-            explanationService.setRepository(explanationSparqlRepository);
             when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
 
             List<String> explanations = explanationService.createSpecificExplanation("annotationofinstance", "graphURI", "de", "componentuRI");

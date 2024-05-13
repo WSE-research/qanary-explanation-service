@@ -38,15 +38,17 @@ public class AutomatedTestingService {
         put(2, "/testtemplates/twoshot");
         put(3, "/testtemplates/threeshot");
     }};
+
+
     private final Random random;
     @Autowired
     private GenerativeExplanations generativeExplanations;
-    @Autowired
-    private ExplanationDataService explanationDataService;
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
     @Autowired
     private GenerativeExplanationsService generativeExplanationsService;
+    @Autowired
+    private ExplanationDataService explanationDataService;
 
     // CONSTRUCTOR(s)
     public AutomatedTestingService(Environment environment) {

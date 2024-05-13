@@ -53,7 +53,7 @@ public class QanaryRepository {
         return responseObject;
     }
 
-    public static ResultSet selectWithPipeline(String sparql) {
+    public static ResultSet selectWithResultSet(String sparql) {
         QueryExecution queryExecution = connection.query(sparql);
         return queryExecution.execSelect();
     }

@@ -1,18 +1,14 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.dtos.ExperimentSelectionDTO;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
-import com.wse.qanaryexplanationservice.helper.dtos.ExperimentSelectionDTO;
-import com.wse.qanaryexplanationservice.helper.pojos.Score;
-import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import virtuoso.jena.driver.VirtGraph;
 import virtuoso.jena.driver.VirtModel;
-import virtuoso.jena.driver.VirtuosoUpdateRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,54 +91,6 @@ public class ExplanationDataService {
         model.remove(statementList); //  Clear experiment specific Statements
     }
 
-    public String updateDataset(Score score) {
-        List<Statement> scoreStatements = createScoreStatements(score);
-        logger.info("{}", scoreStatements.toString());
-        removeOldDataset(score.getGraphId());
-        VirtModel virtModel = VirtModel.openDatabaseModel("urn:aex:" + score.getGraphId(), VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
-        virtModel.add(scoreStatements);
-        virtModel.close();
-
-        return "Successful!";
-    }
-
-    public String removeOldDataset(String graphId) {
-        String deleteQuery = "PREFIX aex: <http://www.semanticweb.org/dennisschiese/ontologies/2023/9/automatedExplanation#> PREFIX urn: <> DELETE WHERE" +
-                "{ GRAPH <urn:aex:" + graphId + "> { <" + graphId + "> aex:hasScore ?hasScore ; aex:numberOfAnnotations ?numberOfAnnotations; " +
-                "aex:qualityAnnotations ?qualityAnnotations; aex:qualityPrefix ?qualityPrefix .} }";
-        logger.info("Update Query: {}", deleteQuery);
-        VirtGraph virtGraph = new VirtGraph("urn:aex:" + graphId, VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
-        VirtuosoUpdateRequest virtuosoUpdateRequest = new VirtuosoUpdateRequest(deleteQuery, virtGraph);
-        virtuosoUpdateRequest.exec();
-        return null;
-    }
-
-    public List<Statement> createScoreStatements(Score score) {
-        List<Statement> statementList = new ArrayList<>();
-        Resource blankNode = ResourceFactory.createResource();
-        statementList.add(ResourceFactory.createStatement(
-                ResourceFactory.createResource(score.getGraphId()),
-                hasScore,
-                blankNode
-        ));
-        statementList.add(ResourceFactory.createStatement(
-                blankNode,
-                numberOfAnnotations,
-                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getNumberOfAnnotations()), XSDDatatype.XSDint)
-        ));
-        statementList.add(ResourceFactory.createStatement(
-                blankNode,
-                qualityPrefix,
-                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getQualityPrefix()), XSDDatatype.XSDint)
-        ));
-        statementList.add(ResourceFactory.createStatement(
-                blankNode,
-                qualityAnnotations,
-                ResourceFactory.createTypedLiteral(String.valueOf(score.getHasScore().getQualityAnnotations()), XSDDatatype.XSDint)
-        ));
-        return statementList;
-    }
-
     /**
      * Creates statements (= triples)
      *
@@ -191,7 +139,6 @@ public class ExplanationDataService {
      * Method to create the list of example objects as a rdf-sequence
      *
      * @param examples List of examples of type TestDataObject
-     * @return
      */
     public Seq setupExampleData(ArrayList<TestDataObject> examples) {
         Seq seq = model.createSeq();

@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Repository
-public abstract class AbstractRepository implements SparqlRepositoryIF {
+public abstract class AbstractRepository {
 
     protected URL sparqlEndpoint;
     protected ObjectMapper objectMapper;
@@ -51,7 +51,6 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
      * @param sparqlQuery From service returned query which already contains all relevant parameters
      * @return The Requests-Response-Body as JsonNode
      */
-    @Override
     public JsonNode executeSparqlQuery(String sparqlQuery) throws IOException {
 
         HttpURLConnection connection = (HttpURLConnection) sparqlEndpoint.openConnection();
@@ -100,7 +99,6 @@ public abstract class AbstractRepository implements SparqlRepositoryIF {
         return connection.getInputStream();
     }
 
-    @Override
     public String fetchQuestion(String questionURI) {
         return webClient
                 .get()
