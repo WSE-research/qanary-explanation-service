@@ -1,3 +1,0 @@
-[submodule "input-data-storage"]
-	path = input-data-storage
-	url = git@github.com:dschiese/input-data-storage.git
