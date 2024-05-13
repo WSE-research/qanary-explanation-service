@@ -1,0 +1,131 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#"
+     xml:base="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+    <owl:Ontology rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18"/>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Object Properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#dataset -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#dataset">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topObjectProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#ExplanationItem"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Data"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#explanation -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#explanation">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topObjectProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#ExplanationItem"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Explanation"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#explanations -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#explanations">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topObjectProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Component"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#ExplanationItem"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#subComponents -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#subComponents">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topObjectProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Component"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Component"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Data properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#content -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#content">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Explanation"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#data -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#data">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Data"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Classes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Component -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Component"/>
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Data -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Data"/>
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Explanation -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#Explanation"/>
+    
+
+
+    <!-- http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#ExplanationItem -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/dennisschiese/ontologies/2024/4/untitled-ontology-18#ExplanationItem"/>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi -->
