@@ -22,6 +22,7 @@ import org.apache.jena.rdf.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -66,10 +67,14 @@ public class GenerativeExplanations {
                 AnnotationType.AnnotationOfQuestionLanguage
         });
     }};
+    @Value("${questionId.replacement}")
+    public void setQuestionIdReplacement(String questionIdUri) {
+        this.prefixes.put(questionIdUri + "/question/stored-question__text_", "questionID:");
+    }
+
 
     private final Map<String, String> prefixes = new HashMap<>() {{
         put("http://www.w3.org/ns/openannotation/core/", "oa:");
-        put("http://localhost:8080/question/stored-question__text_", "questionID:");
         put("http://www.wdaqua.eu/qa#", "qa:");
         put("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:");
         put("http://www.w3.org/2000/01/rdf-schema#", "rdfs:");
