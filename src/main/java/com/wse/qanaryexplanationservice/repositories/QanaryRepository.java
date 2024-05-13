@@ -28,22 +28,18 @@ public class QanaryRepository {
     private static WebClient webClient = WebClient.builder().clientConnector(new ReactorClientHttpConnector(HttpClient.create().responseTimeout(Duration.ofSeconds(60)))).build();
     private static Logger logger = LoggerFactory.getLogger(QanaryRequestObject.class);
 
-    public QanaryRepository() { }
+    public QanaryRepository() {
+        // TODO: HOST NOT SPECIFIED!
+    }
 
-    private static String QANARY_PIPELINE_HOST;
-    private static int QANARY_PIPELINE_PORT;
+    @Value("${qanary.pipeline.host}")
+    private static String qanaryPipelineHost;
+    @Value("${qanary.pipeline.port}")
+    private static int qanaryPipelinePort;
     private static String VIRTUOSO_ENDPOINT;
 
     private static RDFConnection connection;
 
-    @Value("${qanary.pipeline.host}")
-    public void setQanaryPipelineHost(String qanaryPipelineHost) {
-        QANARY_PIPELINE_HOST = qanaryPipelineHost;
-    }
-    @Value("${qanary.pipeline.port}")
-    public void setQanaryPipelinePort(int qanaryPipelinePort) {
-        QANARY_PIPELINE_PORT = qanaryPipelinePort;
-    }
     @Value("${sparql.endpoint}")
     public void setVirtuosoEndpoint(String sparqlEndpoint) {
         connection = RDFConnection.connect(sparqlEndpoint);
@@ -60,7 +56,7 @@ public class QanaryRepository {
         multiValueMap.addAll(qanaryRequestObject.getComponentListAsMap());
 
         QanaryResponseObject responseObject = webClient.post().uri(uriBuilder -> uriBuilder // TODO: use new endpoint for question answering
-                        .scheme("http").host(QANARY_PIPELINE_HOST).port(QANARY_PIPELINE_PORT).path("/startquestionansweringwithtextquestion")
+                        .scheme("http").host(qanaryPipelineHost).port(qanaryPipelinePort).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
                         .build())
                 .retrieve()

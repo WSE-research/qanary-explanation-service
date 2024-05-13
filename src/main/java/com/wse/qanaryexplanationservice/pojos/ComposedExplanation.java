@@ -1,9 +1,6 @@
 package com.wse.qanaryexplanationservice.pojos;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.wse.qanaryexplanationservice.pojos.ExplanationItem;
 
 public class ComposedExplanation {
@@ -14,17 +11,17 @@ public class ComposedExplanation {
 
     }
 
-    Map<String,ExplanationItem> explanationItems = new HashMap<>();
+    ArrayList<ExplanationItem> explanationItems = new ArrayList<>();
 
-    public Map<String, ExplanationItem> getExplanationItems() {
+    public ArrayList<ExplanationItem> getExplanationItems() {
         return explanationItems;
     }
 
-    public void setExplanationItems(Map<String, ExplanationItem> explanationItems) {
+    public void setExplanationItems(ArrayList<ExplanationItem> explanationItems) {
         this.explanationItems = explanationItems;
     }
 
-    public void addExplanationItem(String component, String rulebased, String prompt, String generative) {
-        this.explanationItems.put(component, new ExplanationItem(rulebased,prompt,generative));
+    public void addExplanationItem(String rulebased, String prompt, String generative) {
+        this.explanationItems.add(new ExplanationItem(rulebased,prompt,generative));
     }
 }
