@@ -460,15 +460,15 @@ public class ExplanationService {
      * @param path Given path
      * @return String with the file's content
      */
-    public String getStringFromFile(String path) throws IOException {
+    public String getStringFromFile(String path) throws RuntimeException {
         ClassPathResource cpr = new ClassPathResource(path);
         try {
             byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
             return new String(bdata, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("{}", e.getMessage());
+            throw new RuntimeException();
         }
-        throw new IOException();
     }
 
     /**
@@ -537,7 +537,13 @@ public class ExplanationService {
             put("annotationType", annotationType);
         }};
         // for each language
-        String listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
+        String listItem = "";
+        try {
+            listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
+        } catch (RuntimeException e) {
+            logger.error("{}", e.getMessage());
+            listItem = "No explanation template for annotation type " + annotationType + " available.";
+        }
         return StringSubstitutor.replace(listItem, items, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
 
 
