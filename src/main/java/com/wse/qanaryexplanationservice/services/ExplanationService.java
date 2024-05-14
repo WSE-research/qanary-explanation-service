@@ -5,7 +5,6 @@ import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
-import com.wse.qanaryexplanationservice.repositories.QuestionsRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
@@ -240,7 +239,7 @@ public class ExplanationService {
     // get the origin questionURI for a graphURI
     public String fetchQuestionUri(String graphURI) throws Exception {
         String query = buildSparqlQuery(graphURI, null, QUESTION_QUERY);
-        ResultSet resultSet = QuestionsRepository.selectQuestion(query);
+        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
 
         try {
             String questionURI = resultSet.next().get("source").toString();
