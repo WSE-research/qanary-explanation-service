@@ -235,7 +235,7 @@ public class AutomatedTestingService {
             test = createTest(requestBody); // null if not successful
             if (test != null) {
                 if (doGptCall) {
-                    String gptExplanation = generativeExplanationsService.sendPrompt(test.getPrompt()); // Send prompt to OpenAI-API
+                    String gptExplanation = generativeExplanationsService.sendPrompt(test.getPrompt(), requestBody.getGptModel()); // Send prompt to OpenAI-API
                     test.setGptExplanation(gptExplanation); // Add the response-explanation
                 }
                 JSONObject finishedTest = new JSONObject(test);

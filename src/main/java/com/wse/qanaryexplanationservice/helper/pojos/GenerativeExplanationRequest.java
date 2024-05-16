@@ -1,12 +1,14 @@
 package com.wse.qanaryexplanationservice.helper.pojos;
 
+import com.wse.qanaryexplanationservice.helper.GptModel;
+
 import java.util.ArrayList;
 
 public class GenerativeExplanationRequest {
 
     private ArrayList<QanaryComponent> qanaryComponents;
     private int shots;
-    private String gptModel;
+    private GptModel gptModel;
     public GenerativeExplanationRequest() {
 
     }
@@ -27,11 +29,11 @@ public class GenerativeExplanationRequest {
         this.shots = shots;
     }
 
-    public String getGptModel() {
+    public GptModel getGptModel() {
         return gptModel;
     }
 
-    public void setGptModel(String gptModel) {
+    public void setGptModel(GptModel gptModel) {
         this.gptModel = gptModel;
     }
 

@@ -607,7 +607,7 @@ public class ExplanationService {
                         generativeExplanationObject
                 );
 
-                String generativeExplanation = generativeExplanationsService.sendPrompt(prompt);
+                String generativeExplanation = generativeExplanationsService.sendPrompt(prompt, generativeExplanationRequest.getGptModel());
 
                 composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt, generativeExplanation);
             } catch (Exception e) {
@@ -634,7 +634,8 @@ public class ExplanationService {
             String generativeExplanation = generativeExplanationsService.createGenerativeExplanationInputDataForOneComponent(
                     component,
                     querySolution,
-                    composedExplanationDTO.getGenerativeExplanationRequest().getShots()
+                    composedExplanationDTO.getGenerativeExplanationRequest().getShots(),
+                    composedExplanationDTO.getGenerativeExplanationRequest().getGptModel()
             );
 
             String templatebasedExplanation = createExplanationForQuery(querySolution, graph, component);

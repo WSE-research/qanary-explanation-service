@@ -4,6 +4,7 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
+import com.wse.qanaryexplanationservice.helper.GptModel;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
@@ -172,11 +173,11 @@ public class GenerativeExplanationsService {
         return new String(Files.readAllBytes(file.toPath()));
     }
 
-    public String sendPrompt(String prompt) throws Exception {
+    public String sendPrompt(String prompt, GptModel gptModel) throws Exception {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO); // TODO: Move to applications.properties
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);
-        return generativeExplanationsRepository.sendGptPrompt(prompt, tokens);
+        return generativeExplanationsRepository.sendGptPrompt(prompt, tokens, gptModel);
     }
 
     /**
@@ -187,7 +188,7 @@ public class GenerativeExplanationsService {
      * @return
      * @throws Exception
      */
-    public String createGenerativeExplanationInputDataForOneComponent(String component, QuerySolution solution, int shots) throws Exception {
+    public String createGenerativeExplanationInputDataForOneComponent(String component, QuerySolution solution, int shots, GptModel gptModel) throws Exception {
         String prompt = getStringFromFile(generativeExplanations.getPromptTemplateInputData(shots));
 
         prompt = prompt.replace("${QUERY}", solution.get("body").toString()).replace("${COMPONENT}", component);
@@ -199,7 +200,7 @@ public class GenerativeExplanationsService {
                 prompt = prompt.replace("${ONESHOT_QUERY}", inputQueryExample2.getQuery()).replace("${ONE_EXPLANATION", inputQueryExample2.getExplanations()); // select random pre-defined statements
             }
         }
-        return sendPrompt(prompt);
+        return sendPrompt(prompt, gptModel);
     }
 
 
