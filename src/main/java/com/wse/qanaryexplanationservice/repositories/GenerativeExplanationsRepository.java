@@ -33,7 +33,7 @@ public class GenerativeExplanationsRepository {
         put(GptModel.GPT_3_5, COMPLETIONS_ENDPOINT);
         put(GptModel.GPT_3_5_16K, CHAT_COMPLETIONS_ENDPOINT);
         put(GptModel.GPT_4, CHAT_COMPLETIONS_ENDPOINT);
-        put(GptModel.GPT_4_O, new URL(""));
+        put(GptModel.GPT_4_O, null);
     }};
 
     private final Map<GptModel, String> GPT_CONCRETE_MODEL = new HashMap<>() {{
@@ -48,7 +48,7 @@ public class GenerativeExplanationsRepository {
 
     public String sendGptPrompt(String body, int tokens, GptModel gptModel) throws Exception {
 
-        gptModel = (gptModel.equals(GptModel.GPT_3_5) && tokens > (4096 - RESPONSE_TOKEN)) ? GptModel.GPT_3_5_16K : gptModel;
+        gptModel = selectGptModelBasedOnTokens(gptModel, tokens);
 
         HttpURLConnection con = (HttpURLConnection) GPT_MODEL_ENDPOINT.get(gptModel).openConnection();
 
@@ -75,6 +75,10 @@ public class GenerativeExplanationsRepository {
                 new JSONObject(output).getJSONArray("choices").getJSONObject(0).getString("text")
                 :
                 new JSONObject(output).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+    }
+
+    public GptModel selectGptModelBasedOnTokens(GptModel gptModel, int tokens) {
+        return (gptModel.equals(GptModel.GPT_3_5) && tokens > (4096 - RESPONSE_TOKEN)) ? GptModel.GPT_3_5_16K : gptModel;
     }
 
     public JSONObject createRequestForCompletions(String body, GptModel gptModel) {
