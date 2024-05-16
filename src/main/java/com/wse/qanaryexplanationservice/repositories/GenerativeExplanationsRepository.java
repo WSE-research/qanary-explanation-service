@@ -48,7 +48,7 @@ public class GenerativeExplanationsRepository {
 
     public String sendGptPrompt(String body, int tokens, GptModel gptModel) throws Exception {
 
-        gptModel = (gptModel.compareTo(GptModel.GPT_3_5) == 0 && tokens > (4096 - RESPONSE_TOKEN)) ? GptModel.GPT_3_5_16K : gptModel;
+        gptModel = (gptModel.equals(GptModel.GPT_3_5) && tokens > (4096 - RESPONSE_TOKEN)) ? GptModel.GPT_3_5_16K : gptModel;
 
         HttpURLConnection con = (HttpURLConnection) GPT_MODEL_ENDPOINT.get(gptModel).openConnection();
 
