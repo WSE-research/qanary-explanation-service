@@ -7,5 +7,5 @@ public enum AnnotationType {
     //annotationofquestiontranslation,
     AnnotationOfQuestionLanguage,
     AnnotationOfAnswerSPARQL,
-    AnnotationOfAnswerJSON
+    AnnotationOfAnswerJson
 }

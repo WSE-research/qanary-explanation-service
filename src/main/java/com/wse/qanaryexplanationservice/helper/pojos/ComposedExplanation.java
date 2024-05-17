@@ -20,7 +20,7 @@ public class ComposedExplanation {
         this.explanationItems = explanationItems;
     }
 
-    public void addExplanationItem(String component, String rulebased, String prompt, String generative) {
-        this.explanationItems.put(component, new ExplanationItem(rulebased, prompt, generative));
+    public void addExplanationItem(String component, String rulebased, String prompt, String generative, String dataset) {
+        this.explanationItems.put(component, new ExplanationItem(rulebased, prompt, generative, dataset));
     }
 }

@@ -70,6 +70,7 @@ public class GenerativeExplanationsService {
                 graphUri,
                 null, null, null, null
         );
+        logger.warn("Dataset for test object: {}", testObject.getDataSet());
         generativeExplanationObject.setTestComponent(testObject);
         for (int i = 0; i < shots; i++) {
             TestDataObject example = computeSingleTestObject(null);
@@ -188,10 +189,10 @@ public class GenerativeExplanationsService {
      * @return
      * @throws Exception
      */
-    public String createGenerativeExplanationInputDataForOneComponent(String component, QuerySolution solution, int shots, GptModel gptModel) throws Exception {
+    public String createGenerativeExplanationInputDataForOneComponent(String component, String body, int shots, GptModel gptModel) throws Exception {
         String prompt = getStringFromFile(generativeExplanations.getPromptTemplateInputData(shots));
 
-        prompt = prompt.replace("${QUERY}", solution.get("body").toString()).replace("${COMPONENT}", component);
+        prompt = prompt.replace("${QUERY}", body).replace("${COMPONENT}", component);
         if (shots > 0) {
             InputQueryExample inputQueryExample = GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.get(random.nextInt(GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.size()));
             prompt = prompt.replace("${ZEROSHOT_QUERY}", inputQueryExample.getQuery()).replace("${ZEROSHOT_EXPLANATION", inputQueryExample.getExplanations()); // select random pre-defined statements

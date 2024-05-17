@@ -49,7 +49,7 @@ public class GenerativeExplanations {
                 AnnotationType.AnnotationOfSpotInstance,
                 AnnotationType.AnnotationOfQuestionLanguage
         });
-        put(AnnotationType.AnnotationOfAnswerJSON, new AnnotationType[]{
+        put(AnnotationType.AnnotationOfAnswerJson, new AnnotationType[]{
                 AnnotationType.AnnotationOfAnswerSPARQL,
                 AnnotationType.AnnotationOfInstance,
                 AnnotationType.AnnotationOfRelation,
@@ -184,9 +184,9 @@ public class GenerativeExplanations {
                 dataSetAsString = dataSetAsString.replace(entry.getKey(), entry.getValue());
             }
             return dataSetAsString;
-        } catch (Exception e) {
-            logger.error(String.valueOf(e));
-            throw new Exception(e);
+        } catch (RuntimeException e) {
+            logger.error("{}", e.getMessage());
+            return "Empty dataset";
         }
     }
 
@@ -210,7 +210,6 @@ public class GenerativeExplanations {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
             query = query.replace("?annotationType", "qa:" + annotationType);
             ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
-
             if (!resultSet.hasNext())
                 throw new RuntimeException("Fetching triples failed, ResultSet is null");
             else

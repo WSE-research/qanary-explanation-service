@@ -25,6 +25,7 @@ public class QanaryRepository {
     private static String QANARY_PIPELINE_HOST;
     private static int QANARY_PIPELINE_PORT;
     private static RDFConnection connection;
+    private static String sparqlendpoint;
 
     public QanaryRepository() {
     }
@@ -53,6 +54,7 @@ public class QanaryRepository {
     }
 
     public static ResultSet selectWithResultSet(String sparql) {
+        logger.warn("Executing with SPARQL endpoint {}", sparqlendpoint);
         QueryExecution queryExecution = connection.query(sparql);
         return queryExecution.execSelect();
     }
@@ -69,6 +71,7 @@ public class QanaryRepository {
 
     @Value("${sparql.endpoint}")
     public void setVirtuosoEndpoint(String sparqlEndpoint) {
+        sparqlendpoint = sparqlEndpoint;
         connection = RDFConnection.connect(sparqlEndpoint);
     }
 

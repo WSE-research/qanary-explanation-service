@@ -361,7 +361,7 @@ public class ExplanationService {
         logger.info("Type: {}", type);
         String query = buildSparqlQuery(graphURI, componentURI, annotationsTypeAndQuery.get(type));
 
-        // For the first language that will be executed, for each annotation-type a component created
+        // For the first language that will be executed, for each annotation-type a component created // TODO: could be cached.
         if (!stringResultSetMap.containsKey(type))
             stringResultSetMap.put(type, QanaryRepository.selectWithResultSet(query));
 
@@ -479,9 +479,11 @@ public class ExplanationService {
     public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException, IndexOutOfBoundsException {
 
         List<String> createdExplanations = createSpecificExplanations(types.toArray(String[]::new), graphURI, lang, componentURI);
+        if(createdExplanations.size() == 0) {
+            return "The component " + componentURI + " inserted 0 annotations to the triplestore.";
+        }
 
         AtomicInteger i = new AtomicInteger();
-        // TODO: Handle 0 annotations !!
         List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
         stringResultSetMap.clear();
         return getResult(componentURI, lang, explanations, createdExplanations.get(0));
@@ -609,7 +611,7 @@ public class ExplanationService {
 
                 String generativeExplanation = generativeExplanationsService.sendPrompt(prompt, generativeExplanationRequest.getGptModel());
 
-                composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt, generativeExplanation);
+                composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt, generativeExplanation,generativeExplanationObject.getTestComponent().getDataSet());
             } catch (Exception e) {
                 logger.error("{}", e.toString());
             }
@@ -630,16 +632,16 @@ public class ExplanationService {
             ResultSet results = QanaryRepository.selectWithResultSet(query);
 
             QuerySolution querySolution = results.next(); // TODO: Add component to composedExplanation
-
+            String resultQuery = querySolution.get("body").toString();
             String generativeExplanation = generativeExplanationsService.createGenerativeExplanationInputDataForOneComponent(
                     component,
-                    querySolution,
+                    resultQuery,
                     composedExplanationDTO.getGenerativeExplanationRequest().getShots(),
                     composedExplanationDTO.getGenerativeExplanationRequest().getGptModel()
             );
 
             String templatebasedExplanation = createExplanationForQuery(querySolution, graph, component);
-            composedExplanation.addExplanationItem(component, templatebasedExplanation, "", generativeExplanation);
+            composedExplanation.addExplanationItem(component, templatebasedExplanation, "", generativeExplanation, resultQuery);
         }
         return composedExplanation;
 
