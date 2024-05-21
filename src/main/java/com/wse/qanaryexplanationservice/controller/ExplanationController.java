@@ -1,7 +1,10 @@
 package com.wse.qanaryexplanationservice.controller;
 
+import com.wse.qanaryexplanationservice.helper.GptModel;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
+import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.slf4j.Logger;
@@ -12,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 @RestController
 @ControllerAdvice
@@ -82,6 +86,33 @@ public class ExplanationController {
         return new ResponseEntity<>(this.explanationService.createInputExplanation(graphURI, componentURI), HttpStatus.OK);
     }
 
+    @CrossOrigin
+    @GetMapping(value = {"/outputdata/{graphURI}/{componentURI}"}, produces = {
+            "application/rdf+xml",
+            "text/turtle",
+            "application/ld+json",
+            "*/*"
+    })
+    @Operation(
+            summary = "Computes the rulebased explanation for a specific component",
+            description = """
+                    This endpoint doesn't require a body and only takes the graph and component as path variables.
+                    The component must include the prefixes, e.g. 'urn:qanary:'
+                    """
+    )
+    public ResponseEntity<?> getOutputExplanation(
+            @PathVariable String graphURI,
+            @PathVariable String componentURI,
+            @RequestHeader(value = "accept", required = false) String acceptHeader) {
+        try {
+            String explanationInFormattedString = explanationService.explainSpecificComponent(graphURI, componentURI, null);
+            return new ResponseEntity<>(explanationInFormattedString, HttpStatus.OK);
+        } catch(Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // Auth with an API Key
     @CrossOrigin
     @PostMapping(value = {"/composedexplanations/inputdata"}, produces = {
             "application/rdf+xml",
