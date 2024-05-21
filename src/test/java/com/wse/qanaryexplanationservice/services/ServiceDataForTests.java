@@ -29,6 +29,7 @@ public class ServiceDataForTests {
         put("start", ResourceFactory.createTypedLiteral("1", XSDDatatype.XSDinteger));
         put("end", ResourceFactory.createTypedLiteral("3", XSDDatatype.XSDinteger));
         put("hasTarget", ResourceFactory.createResource("questionID:123f3rt3jrskdf324f"));
+        put("value", ResourceFactory.createPlainLiteral("exampleJSON"));
     }};
     private final Map<String, String> convertedMapWithStringValues = new HashMap<>() {{
         put("hasBody", "http://dbpedia.org/resource/example");
@@ -39,6 +40,7 @@ public class ServiceDataForTests {
         put("start", "1");
         put("end", "3");
         put("hasTarget", "questionID:123f3rt3jrskdf324f");
+        put("value", "exampleJSON");
     }};
     
     private Logger logger = LoggerFactory.getLogger(ServiceDataForTests.class);

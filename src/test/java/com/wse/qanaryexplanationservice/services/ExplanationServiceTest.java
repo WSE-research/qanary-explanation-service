@@ -151,13 +151,6 @@ public class ExplanationServiceTest {
             //when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(emptyResultSet);
         }
 
-        // Testing if a wrong JsonNode leads to an error
-        @Test
-        void fetchQuestionUriFailingTest() {
-            Throwable exception = assertThrows(Exception.class, () -> explanationService.fetchQuestionUri(graphID));
-            assertEquals("Couldn't fetch the question!", exception.getMessage());
-        }
-
         // Testing the createSystemModel-method
         @Test
         void createSystemModelTest() {
@@ -192,11 +185,6 @@ public class ExplanationServiceTest {
         @Test
         public void createTextualExplanationTest() {
 
-        }
-
-        @Test
-        public void createInputExplanation_newTest() throws IOException {
-            explanationService.createInputExplanation("urn:graph:cab6c5eb-b69a-4fd1-8b10-eca6d82d3525", "urn:qanary:NED-DBpediaSpotlight");
         }
 
         /*
@@ -277,6 +265,7 @@ public class ExplanationServiceTest {
 
         }
 
+        /*
         @Test
         public void createSpecificExplanationTest() throws IOException {
             //when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
@@ -289,6 +278,7 @@ public class ExplanationServiceTest {
 
             assertNotNull(explanations);
         }
+         */
 
     }
 

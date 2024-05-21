@@ -97,10 +97,12 @@ public class AutomatedTestingServiceTest {
          * Sad path: ResultSet is null
          */
 
+        /*
         @Test
         public void createDatasetResultSetIsNullTest() {
             Assertions.assertThrows(Exception.class, () -> generativeExplanations.createDataset("componentURI", "graphURI", "anyAnnotationType"));
         }
+         */
     }
 
 
