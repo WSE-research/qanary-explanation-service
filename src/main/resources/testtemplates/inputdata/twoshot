@@ -1,0 +1,23 @@
+Given the following context: Here, we consider the data of a Question Answering system. The data describes a SPARQL query. As a user I'd like to understand what the query means and does. For this purpose a (text-based) explanation has to be computed.
+Here's an example explanation:
+The query:
+```
+"${ZEROSHOT_QUERY}"
+```
+The example explanation:
+"${ZEROSHOT_EXPLANATION}"
+
+Another example is the following:
+The query:
+```
+${ONESHOT_QUERY}
+```
+The 2nd example explanation:
+"${ONESHOT_EXPLANATION}"
+
+Now explain the following query, used by the component "${COMPONENT}":
+```
+${QUERY}
+```
+
+Don't use more than 3 sentences.

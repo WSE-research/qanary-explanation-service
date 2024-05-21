@@ -1,8 +1,0 @@
-PREFIX ex: <http://example#>
-
-SELECT *
-FROM ?graph
-WHERE {
-    ?usedComponent ex:hasAnnotationType ?annotationType .
-    ?annotationType ex:hasInputQuery ?inputQuery .
-}

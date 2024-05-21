@@ -1,6 +1,10 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.repositories.ExplanationSparqlRepository;
+import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
+import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
+import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
+import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
@@ -17,14 +21,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.util.ResourceUtils;
 
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -34,10 +36,10 @@ import java.util.stream.Collectors;
 @Service
 public class ExplanationService {
 
-    // Query files
+    protected static final String INPUT_DATA_SELECT_QUERY = "/queries/explanations/input_data/input_data_select.rq";
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
-    private static final String ANNOTATIONS_QUERY = "/queries/queries_for_annotation_types/fetch_all_annotation_types.rq";
-    private static final String INPUT_DATA_QUERY = "/queries/explanations/input_data/inputDataSelect.rq";
+    private static final String ANNOTATIONS_QUERY = "/queries/fetch_all_annotation_types.rq";
+    private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
@@ -75,11 +77,11 @@ public class ExplanationService {
     Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
     @Autowired
-    private ExplanationSparqlRepository explanationSparqlRepository;
-    @Autowired
-    private AnnotationsService annotationsService;
+    private GenerativeExplanationsService generativeExplanationsService;
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
+    @Value("${questionId.replacement}")
+    private String questionIdReplacement;
 
     public ExplanationService() {
     }
@@ -102,10 +104,6 @@ public class ExplanationService {
                     + prefix + ": " + StringUtils.join(explanations, " ");
         }
         return result;
-    }
-
-    protected void setRepository(ExplanationSparqlRepository explanationSparqlRepository) {
-        this.explanationSparqlRepository = explanationSparqlRepository;
     }
 
     /**
@@ -161,13 +159,13 @@ public class ExplanationService {
         // Create property 'hasExplanationForCreatedDataProperty'
         Property hasExplanationForCreatedDataProperty = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
         Property rdfsSubPropertyOf = model.createProperty(RDFS.getURI(), "subPropertyOf");
-        Property hasExplanation = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanation");
+        // Property hasExplanation = model.createProperty(EXPLANATION_NAMESPACE, "hasExplanation");
 
         // creates Resource, in this case the componentURI
         Resource componentUriResource = model.createResource(componentURI);
 
         // add triples to the model
-        model.add(hasExplanationForCreatedDataProperty, rdfsSubPropertyOf, hasExplanation);
+        // model.add(hasExplanationForCreatedDataProperty, rdfsSubPropertyOf, hasExplanation);
         model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentDeLiteral));
         model.add(model.createStatement(componentUriResource, hasExplanationForCreatedDataProperty, contentEnLiteral));
 
@@ -188,7 +186,7 @@ public class ExplanationService {
         return writer.toString();
     }
 
-    /**
+    /** TODO: RENAME!
      * @param rawQuery Query-String without set values
      * @return Query-String with set values
      */
@@ -212,7 +210,7 @@ public class ExplanationService {
      */
     public String explainQaSystem(String graphURI, String header) throws Exception {
 
-        List<String> components = annotationsService.getUsedComponents(graphURI);
+        List<String> components = getUsedComponents(graphURI);
         Map<String, Model> models = new HashMap<>();
 
         for (String component : components
@@ -226,10 +224,22 @@ public class ExplanationService {
         return convertToDesiredFormat(header, systemExplanationModel);
     }
 
+    public List<String> getUsedComponents(String graphID) throws IOException {
+        QuerySolutionMap bindings = new QuerySolutionMap();
+        bindings.add("graph", ResourceFactory.createResource(graphID));
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(COMPONENTS_SPARQL_QUERY, bindings);
+        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
+        List<String> components = new ArrayList<>();
+        while (resultSet.hasNext()) {
+            components.add(resultSet.next().get("component").toString());
+        }
+        return components;
+    }
+
     // get the origin questionURI for a graphURI
     public String fetchQuestionUri(String graphURI) throws Exception {
         String query = buildSparqlQuery(graphURI, null, QUESTION_QUERY);
-        ResultSet resultSet = explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
+        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
 
         try {
             String questionURI = resultSet.next().get("source").toString();
@@ -306,17 +316,17 @@ public class ExplanationService {
      * @return A list with all different annotation-types
      */
     public List<String> fetchAllAnnotations(String graphURI, String componentURI) throws IOException {
-        String query = buildSparqlQuery(graphURI, componentURI, ANNOTATIONS_QUERY);
+        String query = buildSparqlQuery(graphURI, componentURI, ANNOTATIONS_QUERY); // can be simplified by excluding with FILTER NOT ...
 
         ArrayList<String> types = new ArrayList<>();
-        ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
+        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
 
         // Iterate through the QuerySolutions and gather all annotation-types
         while (resultSet.hasNext()) {
             QuerySolution result = resultSet.next();
             RDFNode type = result.get("annotationType");
             String typeLocalName = type.asResource().getLocalName();
-            logger.info("Annotation-Type found: {}", typeLocalName);
+            logger.info("Annotation-Type found: {}", typeLocalName); //TODO: check this function; required?
             if (!Objects.equals(typeLocalName, "AnswerJson"))
                 types.add(typeLocalName.toLowerCase());
         }
@@ -331,11 +341,11 @@ public class ExplanationService {
      * @param lang      The language for the explanation
      * @return List with explanations. At the end it includes all explanations for every annotation type
      */
-    public List<String> createSpecificExplanations(String[] usedTypes, String graphURI, String lang, String componentURI) throws IOException {
-        List<String> explanations = new ArrayList<>();
+    public Map<String, List<String>> createSpecificExplanations(List<String> usedTypes, String graphURI, String lang, String componentURI) throws IOException {
+        Map<String, List<String>> explanations = new HashMap<>();
         for (String type : usedTypes
         ) {
-            explanations.addAll(createSpecificExplanation(type, graphURI, lang, componentURI));
+            explanations.put(type, createSpecificExplanation(type, graphURI, lang, componentURI));
         }
         return explanations;
     }
@@ -348,12 +358,11 @@ public class ExplanationService {
      * @return A list of explanation containing a prefix explanation and one entry for every annotation of the givent type
      */
     public List<String> createSpecificExplanation(String type, String graphURI, String lang, String componentURI) throws IOException {
-        logger.info("Type: {}", type);
         String query = buildSparqlQuery(graphURI, componentURI, annotationsTypeAndQuery.get(type));
 
-        // For the first language that will be executed, for each annotation-type a component created
+        // For the first language that will be executed, for each annotation-type a component created // TODO: could be cached.
         if (!stringResultSetMap.containsKey(type))
-            stringResultSetMap.put(type, this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query));
+            stringResultSetMap.put(type, QanaryRepository.selectWithResultSet(query));
 
         List<String> explanationsForCurrentType = addingExplanations(type, lang, stringResultSetMap.get(type));
 
@@ -391,8 +400,9 @@ public class ExplanationService {
     public String replaceProperties(Map<String, String> convertedMap, String template) {
 
         // Replace all placeholders with values from map
-        template = StringSubstitutor.replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
-
+        template = StringSubstitutor
+                .replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX)
+                .replace(questionIdReplacement + "/question/stored-question__text_", "questionID:");
         template = checkAndReplaceOuterPlaceholder(template);
 
         logger.info("Template with inserted params: {}", template);
@@ -448,15 +458,15 @@ public class ExplanationService {
      * @param path Given path
      * @return String with the file's content
      */
-    public String getStringFromFile(String path) throws IOException {
+    public String getStringFromFile(String path) throws RuntimeException {
         ClassPathResource cpr = new ClassPathResource(path);
         try {
             byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
             return new String(bdata, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("{}", e.getMessage());
+            throw new RuntimeException();
         }
-        throw new IOException();
     }
 
     /**
@@ -464,69 +474,188 @@ public class ExplanationService {
      *
      * @param lang Currently supported en_list_item and de_list_item
      * @return Complete explanation for the componentURI including all information to each annotation
+     * TODO later: Assemble explanations in a different way.
      */
     public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException, IndexOutOfBoundsException {
 
-        List<String> createdExplanations = createSpecificExplanations(types.toArray(String[]::new), graphURI, lang, componentURI);
+        if(types.size() == 0) { // Component did not add any Annotation
+            return "The component " + componentURI + " inserted 0 annotations to the triplestore.";
+        }
+
+        Map<String, List<String>> createdExplanations = createSpecificExplanations(types, graphURI, lang, componentURI);
 
         AtomicInteger i = new AtomicInteger();
-        // TODO: Handle 0 annotations !!
-        List<String> explanations = createdExplanations.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList();
+
+        createdExplanations.forEach((component, list) -> {
+            createdExplanations.put(component, list.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList());
+        });
+
         stringResultSetMap.clear();
-        return getResult(componentURI, lang, explanations, createdExplanations.get(0));
+        StringBuilder result = new StringBuilder();
+        createdExplanations.forEach((component, list) -> {
+            result.append(getResult(component, lang, list, list.get(0)));
+            result.append("\n\n");
+        });
+        return result.toString();
     }
 
+    /**
+     * Creates a rulebased explanation for the input data of the passed component
+     *
+     * @param graph     Knowledge graph where the data is stored
+     * @param component Component name (with prefixes!) for which the explanation is created
+     * @return Explanation as string
+     * @throws IOException If template selection from file fails
+     */
     public String createInputExplanation(String graph, String component) throws IOException {
         QuerySolutionMap bindings = new QuerySolutionMap();
-        bindings.add("graph",ResourceFactory.createResource(graph));
-        bindings.add("usedComponent", ResourceFactory.createResource(component));
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_QUERY,bindings);
+        bindings.add("graph", ResourceFactory.createResource(graph));
+        bindings.add("component", ResourceFactory.createResource(component));
 
-        // set RDFConnection to URL for Input-data triplestore @see https://github.com/dschiese/input-data-storage
-        this.explanationSparqlRepository.setSparqlEndpoint(new URL("http://localhost:8891/sparql"));
-        ResultSet resultSet = this.explanationSparqlRepository.executeSparqlQueryWithResultSet(query);
+        String queryTemplate = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_SELECT_QUERY, bindings);
+
         int resultSetSize = 0;
         List<String> explanationsForQueries = new ArrayList<>();
-
-        while(resultSet.hasNext()) {
-            QuerySolution currentSolution = resultSet.nextSolution();
-            resultSetSize++;
-            explanationsForQueries.add(createExplanationForQuery(currentSolution, graph, component));
+        ResultSet results = QanaryRepository.selectWithResultSet(queryTemplate);
+        if(!results.hasNext())
+            return "The component " + component + " hasn't used any queries.";
+        while (results.hasNext()) {
+            QuerySolution currentSolution = results.nextSolution();
+            try {
+                explanationsForQueries.add(createExplanationForQuery(currentSolution, graph, component));
+                resultSetSize++;
+            } catch (RuntimeException e) {
+            }
         }
 
         // create Prefix
         String prefix = getStringFromFile("/explanations/input_data/prefixes/en"); // adopt for any other languages
-        prefix = prefix.replace("${numberOfQueries}",String.valueOf(resultSetSize) +
+        prefix = prefix.replace("${numberOfQueries}", resultSetSize +
                 (resultSetSize == 1 ? " SPARQL query" : " SPARQL queries")
-                );
-        prefix = prefix.replace("${component}",component).replace("${graph}",graph);
+        );
+        prefix = prefix.replace("${component}", component).replace("${graph}", graph);
         // Zusammenbauen
 
-        logger.info("Items: {}", explanationsForQueries.toString());
+        logger.info("Items: {}", explanationsForQueries);
         logger.info("PREFIX: {}", prefix);
 
-        return composeExplanation(explanationsForQueries,prefix);
+        return composeExplanation(explanationsForQueries, prefix);
     }
 
     public String createExplanationForQuery(QuerySolution currentSolution, String graph, String component) throws IOException {
-        String annotationType = currentSolution.get("annotationType").toString();
-        Map<String,String> items = new HashMap<>() {{
-            put("graph",graph);
-            put("component",component);
+        String annotationType = disassembleAnnotationTypeFromQuery(currentSolution.get("body").toString());
+        Map<String, String> items = new HashMap<>() {{
+            put("graph", graph);
+            put("component", component);
             put("annotationType", annotationType);
         }};
         // for each language
-        String listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
-        return StringSubstitutor.replace(listItem,items,TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
+        String listItem = "";
+        try {
+            listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
+        } catch (RuntimeException e) {
+            logger.error("{}", e.getMessage());
+            listItem = "For annotation type " + annotationType + " no explanation is available.";
+        }
+        return StringSubstitutor.replace(listItem, items, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
+
+
+    }
+
+    public String disassembleAnnotationTypeFromQuery(String sparql) throws IOException {
+        BufferedReader reader = new BufferedReader(new StringReader(sparql));
+        String line = reader.readLine();
+        while (line != null) {
+            if (line.contains("AnnotationOf")) {
+                String modifiedLine = line.substring(line.indexOf("qa:AnnotationOf")); // Current String equals "AnnotationOfSOMEWHAT ...." -> Need to remove the last part
+                String annotationType = modifiedLine.replace(modifiedLine.substring(modifiedLine.indexOf(" "), modifiedLine.length()), "").replace("qa:", "");
+                logger.info("Found annotationType: {}", annotationType);
+                return annotationType;
+            }
+            line = reader.readLine();
+        }
+        logger.error("No template available for SPARQL query: {}", sparql);
+        throw new RuntimeException("No annotation type could be dissambled");
     }
 
     public String composeExplanation(List<String> listItems, String prefix) {
         StringBuilder finalExplanation = new StringBuilder();
         finalExplanation.append(prefix);
-        for(int i = 0; i < listItems.size(); i++) {
-            finalExplanation.append("\n").append(i+1).append(". ").append(listItems.get(i));
+        for (int i = 0; i < listItems.size(); i++) {
+            finalExplanation.append("\n").append(i + 1).append(". ").append(listItems.get(i));
         }
         return finalExplanation.toString();
+    }
+
+    /**
+     * Controller called method to start the process explaining several components with both approaches;
+     * the rulebased and the generative one.
+     *
+     * @param composedExplanationDTO
+     */
+    public ComposedExplanation composedExplanationsForOutputData(ComposedExplanationDTO composedExplanationDTO) {
+        logger.info("Request object: ", composedExplanationDTO);
+        ComposedExplanation composedExplanation = new ComposedExplanation();
+        GenerativeExplanationRequest generativeExplanationRequest = composedExplanationDTO.getGenerativeExplanationRequest();
+
+        generativeExplanationRequest.getQanaryComponents().forEach(component -> {
+            try {
+                List<String> annotationTypesUsedByComponent = this.fetchAllAnnotations(composedExplanationDTO.getGraphUri(), component.getComponentName());
+                String templatebased = this.createTextualExplanation(   // compute template based explanation
+                        composedExplanationDTO.getGraphUri(),
+                        "urn:qanary:" + component.getComponentName(),
+                        "en",
+                        annotationTypesUsedByComponent
+                );
+
+                GenerativeExplanationObject generativeExplanationObject = generativeExplanationsService.createGenerativeExplanation(
+                        component,
+                        generativeExplanationRequest.getShots(),
+                        composedExplanationDTO.getGraphUri()
+                );
+
+                String prompt = generativeExplanationsService.createPrompt(
+                        generativeExplanationRequest.getShots(),
+                        generativeExplanationObject
+                );
+
+                String generativeExplanation = generativeExplanationsService.sendPrompt(prompt, generativeExplanationRequest.getGptModel());
+
+                composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt, generativeExplanation,generativeExplanationObject.getTestComponent().getDataSet());
+            } catch (Exception e) {
+                logger.error("{}", e.toString());
+            }
+        });
+        return composedExplanation;
+    }
+
+    public ComposedExplanation composedExplanationForInputData(ComposedExplanationDTO composedExplanationDTO) throws Exception {
+        List<String> components = composedExplanationDTO.getGenerativeExplanationRequest().getQanaryComponents().stream().map(component -> component.getComponentName()).toList();
+        String graph = composedExplanationDTO.getGraphUri();
+        ComposedExplanation composedExplanation = new ComposedExplanation();
+        for (String component : components) {
+
+            QuerySolutionMap bindings = new QuerySolutionMap();
+            bindings.add("graph", ResourceFactory.createResource(graph));
+            bindings.add("component", ResourceFactory.createResource("urn:qanary:" + component));
+            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(ExplanationService.INPUT_DATA_SELECT_QUERY, bindings);
+            ResultSet results = QanaryRepository.selectWithResultSet(query);
+
+            QuerySolution querySolution = results.next(); // TODO: Add component to composedExplanation
+            String resultQuery = querySolution.get("body").toString();
+
+            String templatebasedExplanation = createExplanationForQuery(querySolution, graph, component);
+
+            String generativeExplanation = generativeExplanationsService.createGenerativeExplanationInputDataForOneComponent(
+                    component,
+                    resultQuery,
+                    composedExplanationDTO.getGenerativeExplanationRequest().getShots(),
+                    composedExplanationDTO.getGenerativeExplanationRequest().getGptModel()
+            );
+            composedExplanation.addExplanationItem(component, templatebasedExplanation, "", generativeExplanation, resultQuery);
+        }
+        return composedExplanation;
+
     }
 
 }

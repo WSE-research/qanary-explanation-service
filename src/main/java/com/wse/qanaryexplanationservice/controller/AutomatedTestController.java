@@ -1,7 +1,6 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.pojos.AutomatedTests.automatedTestingObject.automatedTestingObject.AutomatedTestRequestBody;
-import com.wse.qanaryexplanationservice.repositories.AutomatedTestingRepository;
+import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTestRequestBody;
 import com.wse.qanaryexplanationservice.services.AutomatedTestingService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AutomatedTestController {
 
-    private final String authToken = ""; // Provide via GitHub actions
+    private final String authToken = ""; // Todo
     @Autowired
     private AutomatedTestingService automatedTestingService;
-    @Autowired
-    private AutomatedTestingRepository automatedTestingRepository;
 
     // Note: Optional to the Path Variable "authToken", other approaches are possible too (CrossOrigin, Auth, ...)
     @PostMapping(value = "/automatedtesting/{doGptRequest}", consumes = {
@@ -46,7 +43,8 @@ public class AutomatedTestController {
             @PathVariable boolean doGptRequest
     ) {
         try {
-            return new ResponseEntity<>(automatedTestingService.createTestWorkflow(requestBody, doGptRequest), HttpStatus.OK);
+            //return new ResponseEntity<>(automatedTestingService.createTestWorkflow(requestBody, doGptRequest), HttpStatus.OK);
+            return new ResponseEntity<>(automatedTestingService.createTestWorkflow(requestBody, false), HttpStatus.OK); // deactivated for live deployment
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>("Invalid Annotation Type!", HttpStatus.BAD_REQUEST);
         } catch (Exception e) {

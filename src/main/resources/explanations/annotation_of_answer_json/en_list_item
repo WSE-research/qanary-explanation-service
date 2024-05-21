@@ -1,1 +1,1 @@
-on ${annotatedAt} a SPARQL-query was executed and returned the following JSON ' ${hasBody} ' &{with a confidence of ${score}}&
+on ${annotatedAt} a SPARQL-query was executed and returned the following JSON ' ${value} ' &{with a confidence of ${score}}&

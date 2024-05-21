@@ -1,7 +1,0 @@
-PREFIX ...
-
-INSERT {
-    GRAPH ?graphURI {
-    ?annotationID explanation:hasExplanationForCreatedData ?explanation
-    }
-}
