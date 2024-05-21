@@ -19,7 +19,7 @@ public class QuestionsRepository {
         return queryExecution.execSelect();
     }
 
-    @Value("${questions.triplestore.uri}")
+    @Value("${questions.triplestore.endpoint}")
     private void setConnection(String questionsTriplestoreUri) {
         connection = RDFConnection.connect(questionsTriplestoreUri);
     }
