@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      SECRETS_VIRTUOSO_PASSWORD: ${{ secrets.QANARY_PIPELINE_VIRTUOSO_PASSWORD }}
+      VIRTUOSO_TRIPLESTORE_PASSWORD: ${{ secrets.QANARY_PIPELINE_VIRTUOSO_PASSWORD }}
       CHATGPT_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       GPT_REQUEST_AUTH: ${{ secrets.GPT_REQUEST_AUTH }}
 
