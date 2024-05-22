@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,9 @@ public class ExplanationController {
     private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
     @Autowired
     private ExplanationService explanationService;
+
+    @Value("${gpt.request.auth}")
+    private String gptRequestAuthToken;
 
     /**
      * Computes the explanations for (currently) the output data for a specific graph and/or component
@@ -108,7 +112,6 @@ public class ExplanationController {
         }
     }
 
-    // Auth with an API Key
     @CrossOrigin
     @PostMapping(value = {"/composedexplanations/inputdata"}, produces = {
             "application/rdf+xml",
@@ -138,7 +141,9 @@ public class ExplanationController {
                             }
                     """
     )
-    public ResponseEntity<?> getComposedExplanationInputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
+    public ResponseEntity<?> getComposedExplanationInputData(@RequestBody ComposedExplanationDTO composedExplanationDTO, @RequestHeader("Authorization") String authToken) {
+        if (authToken != gptRequestAuthToken)
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         try {
             ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationForInputData(composedExplanationDTO);
             return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
@@ -173,7 +178,9 @@ public class ExplanationController {
                             }
                     """
     )
-    public ResponseEntity<?> getComposedExplanationOutputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
+    public ResponseEntity<?> getComposedExplanationOutputData(@RequestBody ComposedExplanationDTO composedExplanationDTO, @RequestHeader("Authorization") String authToken) {
+        if (authToken != gptRequestAuthToken)
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         try {
             ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationsForOutputData(composedExplanationDTO);
             return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
