@@ -8,6 +8,7 @@ jobs:
     env:
       SECRETS_VIRTUOSO_PASSWORD: ${{ secrets.QANARY_PIPELINE_VIRTUOSO_PASSWORD }}
       CHATGPT_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GPT_REQUEST_AUTH: ${{ secrets.GPT_REQUEST_AUTH }}
 
     steps:
       - uses: actions/checkout@v3
