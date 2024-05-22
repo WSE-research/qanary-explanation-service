@@ -57,7 +57,7 @@ public class AutomatedTestingService {
 
     public String selectComponent(AnnotationType annotationType, AutomatedTest automatedTest, Example example) {
 
-        String[] componentsList = generativeExplanations.typeAndComponents.get(annotationType.name());
+        String[] componentsList = generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name());
 
         // Case if example is null, e.g. when the testing data is calculated
         if (example == null || !example.getUniqueComponent()) {
@@ -67,7 +67,7 @@ public class AutomatedTestingService {
         // Case if component should be unique in the whole test-case
         else {
             ArrayList<String> usedComponentsInTest = fetchUsedComponents(automatedTest);
-            ArrayList<String> componentList = new ArrayList<>(List.of(generativeExplanations.typeAndComponents.get(annotationType.name())));
+            ArrayList<String> componentList = new ArrayList<>(List.of(generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name())));
             String component;
             try {
                 do {
@@ -148,7 +148,7 @@ public class AutomatedTestingService {
             // Select component
             logger.info("Selecting component");
             Integer selectedComponentAsInt = selectComponentAsInt(givenAnnotationType);
-            String selectedComponent = generativeExplanations.typeAndComponents.get(givenAnnotationType.name())[selectedComponentAsInt];
+            String selectedComponent = generativeExplanations.TYPE_AND_COMPONENTS.get(givenAnnotationType.name())[selectedComponentAsInt];
 
             // Selection Question
             logger.info("Selecting question");
@@ -157,7 +157,7 @@ public class AutomatedTestingService {
 
             // Resolve dependencies and select random components
             logger.info("Resolve dependencies and select components");
-            ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(generativeExplanations.dependencyMapForAnnotationTypes.get(givenAnnotationType)));
+            ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(generativeExplanations.DEPENDENCY_MAP_FOR_ANNOTATION_TYPES.get(givenAnnotationType)));
             List<String> componentListForQanaryPipeline = generativeExplanations.selectRandomComponents(annotationTypes);
             componentListForQanaryPipeline.add(selectedComponent); // Seperation of concerns, add this to the selectRandomComps method
 
@@ -173,7 +173,7 @@ public class AutomatedTestingService {
 
             // Create Explanation for selected component
             logger.info("Create explanation");
-            String explanation = generativeExplanations.getExplanation(graphURI, selectedComponent);
+            String explanation = generativeExplanationsService.getTemplateExplanation(graphURI, selectedComponent);
             return new TestDataObject(
                     givenAnnotationType,
                     givenAnnotationType.ordinal(),
@@ -252,7 +252,7 @@ public class AutomatedTestingService {
     }
 
     public Integer selectComponentAsInt(AnnotationType annotationType) {
-        return random.nextInt(generativeExplanations.typeAndComponents.get(annotationType.name()).length);
+        return random.nextInt(generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name()).length);
     }
 
 }

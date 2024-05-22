@@ -4,19 +4,19 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
+import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.GptModel;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
-import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
-import org.apache.jena.query.QuerySolution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +32,7 @@ import java.util.Random;
  * This service is used to create [...]
  */
 @Service
+@Lazy
 public class GenerativeExplanationsService {
 
 
@@ -39,6 +40,7 @@ public class GenerativeExplanationsService {
     private final Logger logger = LoggerFactory.getLogger(GenerativeExplanationsService.class);
 
     private final Random random = new Random();
+    private final TemplateExplanationsService tmplExpService;
     @Autowired
     private GenerativeExplanations generativeExplanations;
     @Autowired
@@ -46,8 +48,8 @@ public class GenerativeExplanationsService {
     @Value("${questionId.replacement}")
     private String questionIdReplacement;
 
-    public GenerativeExplanationsService() {
-
+    public GenerativeExplanationsService(TemplateExplanationsService tmplExpService) {
+        this.tmplExpService = tmplExpService;
     }
 
     /**
@@ -65,7 +67,7 @@ public class GenerativeExplanationsService {
                 AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
                 component.getComponentName(),
                 null,
-                generativeExplanations.getExplanation(graphUri, component.getComponentName()),
+                tmplExpService.getExplanation(graphUri, component.getComponentName()),
                 generativeExplanations.createDataset(component.getComponentName(), graphUri, component.getComponentMainType()),
                 graphUri,
                 null, null, null, null
@@ -113,7 +115,7 @@ public class GenerativeExplanationsService {
             String dataset = generativeExplanations.createDataset(component.getComponentName(), graphURI, component.getComponentMainType());
             // Create Explanation for selected component
             logger.info("Create explanation");
-            String explanation = generativeExplanations.getExplanation(graphURI, component.getComponentName());
+            String explanation = tmplExpService.getExplanation(graphURI, component.getComponentName());
             return new TestDataObject(
                     AnnotationType.valueOf(component.getComponentMainType()),
                     AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
@@ -143,7 +145,7 @@ public class GenerativeExplanationsService {
     }
 
     public String selectRandomComponentWithAnnotationType(String annotationType) {
-        String[] components = generativeExplanations.typeAndComponents.get(annotationType);
+        String[] components = generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType);
         return components[random.nextInt(components.length)];
     }
 
@@ -204,5 +206,8 @@ public class GenerativeExplanationsService {
         return sendPrompt(prompt, gptModel);
     }
 
+    public String getTemplateExplanation(String graphUri, String componentUri) throws IOException {
+        return tmplExpService.getExplanation(graphUri, componentUri);
+    }
 
 }

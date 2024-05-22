@@ -1,10 +1,7 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.helper.GptModel;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.slf4j.Logger;
@@ -15,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 @RestController
 @ControllerAdvice
@@ -53,13 +49,13 @@ public class ExplanationController {
             @PathVariable(required = false) String componentURI,
             @RequestHeader(value = "accept", required = false) String acceptHeader) throws Exception {
         if (componentURI == null) {
-            String result = explanationService.explainQaSystem(graphURI, acceptHeader);
+            String result = explanationService.getQaSystemExplanation(graphURI, acceptHeader);
             if (result != null)
                 return new ResponseEntity<>(result, HttpStatus.OK);
             else
                 return new ResponseEntity<>(null, HttpStatus.NOT_ACCEPTABLE);
         } else {
-            String result = this.explanationService.explainSpecificComponent(graphURI, componentURI, acceptHeader);
+            String result = this.explanationService.getTemplateComponentExplanation(graphURI, componentURI, acceptHeader);
             if (result != null)
                 return new ResponseEntity<>(result, HttpStatus.OK);
             else
@@ -83,7 +79,7 @@ public class ExplanationController {
     public ResponseEntity<?> getInputExplanation(
             @PathVariable String graphURI,
             @PathVariable(required = false) String componentURI) throws IOException {
-        return new ResponseEntity<>(this.explanationService.createInputExplanation(graphURI, componentURI), HttpStatus.OK);
+        return new ResponseEntity<>(this.explanationService.getTemplateComponentInputExplanation(graphURI, componentURI), HttpStatus.OK);
     }
 
     @CrossOrigin
@@ -105,9 +101,9 @@ public class ExplanationController {
             @PathVariable String componentURI,
             @RequestHeader(value = "accept", required = false) String acceptHeader) {
         try {
-            String explanationInFormattedString = explanationService.explainSpecificComponent(graphURI, componentURI, null);
+            String explanationInFormattedString = explanationService.getTemplateComponentExplanation(graphURI, componentURI, null);
             return new ResponseEntity<>(explanationInFormattedString, HttpStatus.OK);
-        } catch(Exception e) {
+        } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }

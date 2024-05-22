@@ -11,13 +11,9 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.apache.jena.rdf.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -33,9 +29,8 @@ import java.util.*;
 public class GenerativeExplanations {
 
     protected static final ArrayList<InputQueryExample> INPUT_QUERIES_AND_EXAMPLE = InputQueryExample.queryExamplesList();
-    private final static String DATASET_QUERY = "/queries/evaluation_dataset_query.rq";
-    protected final Map<String, String[]> typeAndComponents = new HashMap<>();
-    protected final Map<AnnotationType, AnnotationType[]> dependencyMapForAnnotationTypes = new TreeMap<>() {{
+    protected static final Map<String, String[]> TYPE_AND_COMPONENTS = new HashMap<>();
+    protected static final Map<AnnotationType, AnnotationType[]> DEPENDENCY_MAP_FOR_ANNOTATION_TYPES = new TreeMap<>() {{
         put(AnnotationType.AnnotationOfInstance, new AnnotationType[]{});
         put(AnnotationType.AnnotationOfRelation, new AnnotationType[]{
                 AnnotationType.AnnotationOfQuestionLanguage
@@ -57,8 +52,9 @@ public class GenerativeExplanations {
                 AnnotationType.AnnotationOfQuestionLanguage
         });
     }};
-    protected final int QADO_DATASET_QUESTION_COUNT = 394;
-    private final Map<String, String> prefixes = new HashMap<>() {{
+    protected static final int QADO_DATASET_QUESTION_COUNT = 394;
+    private static final String DATASET_QUERY = "/queries/evaluation_dataset_query.rq";
+    private static final Map<String, String> PREFIXES = new HashMap<>() {{
         put("http://www.w3.org/ns/openannotation/core/", "oa:");
         put("http://www.wdaqua.eu/qa#", "qa:");
         put("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:");
@@ -69,33 +65,31 @@ public class GenerativeExplanations {
         put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
         put("^^http://www.w3.org/2001/XMLSchema#float", "");
     }};
-    private final Map<Integer, String> exampleCountAndTemplate = new HashMap<>() {{
+    private static final Map<Integer, String> EXAMPLE_COUNT_AND_TEMPLATE = new HashMap<>() {{
         put(1, "/testtemplates/oneshot");
         put(2, "/testtemplates/twoshot");
         put(3, "/testtemplates/threeshot");
     }};
 
-    private final Map<Integer, String> exampleCountAndTemplateInputData = new HashMap<>() {{
+    private static final Map<Integer, String> EXAMPLE_COUNT_AND_TEMPLATE_INPUT_DATA = new HashMap<>() {{
         put(1, "/testtemplates/inputdata/oneshot");
         put(2, "/testtemplates/inputdata/twoshot");
         put(0, "/testtemplates/inputdata/zeroshot");
     }};
-    private final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
-    private final String QUESTION_QUERY = "/queries/random_question_query.rq";
-    private final Logger logger = LoggerFactory.getLogger(GenerativeExplanations.class);
-    @Autowired
-    private ExplanationService explanationService;
+    private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
+    private static final String QUESTION_QUERY = "/queries/random_question_query.rq";
+    private static final Logger logger = LoggerFactory.getLogger(GenerativeExplanations.class);
 
     public GenerativeExplanations(Environment environment) {
         for (AnnotationType annType : AnnotationType.values()
         ) {
-            typeAndComponents.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
+            TYPE_AND_COMPONENTS.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
         }
     }
 
     @Value("${questionId.replacement}")
     public void setQuestionIdReplacement(String questionIdUri) {
-        this.prefixes.put(questionIdUri + "/question/stored-question__text_", "questionID:");
+        this.PREFIXES.put(questionIdUri + "/question/stored-question__text_", "questionID:");
     }
 
     /**
@@ -153,7 +147,7 @@ public class GenerativeExplanations {
 
         for (AnnotationType annType : list
         ) {
-            String[] componentsList = this.typeAndComponents.get(annType.name());
+            String[] componentsList = this.TYPE_AND_COMPONENTS.get(annType.name());
             int selectedComponentAsInt = random.nextInt(componentsList.length);
             componentList.add(componentsList[selectedComponentAsInt]);
         }
@@ -179,8 +173,8 @@ public class GenerativeExplanations {
             }
             String dataSetAsString = dataSet.toString();
 
-            // Replace prefixes
-            for (Map.Entry<String, String> entry : prefixes.entrySet()) {
+            // Replace PREFIXES
+            for (Map.Entry<String, String> entry : PREFIXES.entrySet()) {
                 dataSetAsString = dataSetAsString.replace(entry.getKey(), entry.getValue());
             }
             return dataSetAsString;
@@ -192,7 +186,7 @@ public class GenerativeExplanations {
 
     public AnnotationType[] getDependencyList(String annotationType) {
         logger.info("Type: {}", annotationType);
-        return this.dependencyMapForAnnotationTypes.get(AnnotationType.valueOf(annotationType));
+        return this.DEPENDENCY_MAP_FOR_ANNOTATION_TYPES.get(AnnotationType.valueOf(annotationType));
     }
 
     /**
@@ -220,27 +214,12 @@ public class GenerativeExplanations {
         }
     }
 
-    /**
-     * Creates the explanation and returns the english one
-     *
-     * @return The explanation for given graphURI and componentURI
-     */
-    public String getExplanation(String graphURI, String componentURI) throws IOException, IndexOutOfBoundsException {
-
-        Model explanationModel = explanationService.createModel(graphURI, "urn:qanary:" + componentURI);
-        explanationModel.setNsPrefix("explanations", EXPLANATION_NAMESPACE);
-        Property hasExplanationForCreatedDataProperty = explanationModel.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
-        Statement statement = explanationModel.getRequiredProperty(ResourceFactory.createResource("urn:qanary:" + componentURI), hasExplanationForCreatedDataProperty, "en");
-
-        return statement.getString();
-    }
-
     public String getPromptTemplate(int shots) {
-        return this.exampleCountAndTemplate.get(shots);
+        return this.EXAMPLE_COUNT_AND_TEMPLATE.get(shots);
     }
 
     public String getPromptTemplateInputData(int shots) {
-        return this.exampleCountAndTemplateInputData.get(shots);
+        return this.EXAMPLE_COUNT_AND_TEMPLATE_INPUT_DATA.get(shots);
     }
 
 }

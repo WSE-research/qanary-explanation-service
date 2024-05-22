@@ -2,10 +2,8 @@ package com.wse.qanaryexplanationservice.controller;
 
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,7 +18,6 @@ import java.nio.file.Files;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,12 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class ExplanationControllerTest {
 
-    @MockBean
-    private ExplanationService explanationService;
+    private final String testRdfDataPath = "testRdfData.rdf";
     @Autowired
     MockMvc mockMvc;
-    private final String testRdfDataPath = "testRdfData.rdf";
     String testRdfData;
+    @MockBean
+    private ExplanationService explanationService;
     private ClassLoader classLoader = this.getClass().getClassLoader();
 
     @BeforeEach
@@ -52,42 +49,42 @@ public class ExplanationControllerTest {
 
     @Test
     public void explanationsForComponentResultNotNull() throws Exception {
-        when(explanationService.explainSpecificComponent(any(),any(),any())).thenReturn(testRdfData);
+        when(explanationService.getTemplateComponentExplanation(any(), any(), any())).thenReturn(testRdfData);
 
         MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI/componentURI"))
-                        .andReturn();
+                .andReturn();
 
         assertEquals(200, mvcResult.getResponse().getStatus());
         assertEquals(testRdfData, mvcResult.getResponse().getContentAsString());
-        verify(explanationService, times(1)).explainSpecificComponent(any(), any(), any());
+        verify(explanationService, times(1)).getTemplateComponentExplanation(any(), any(), any());
     }
 
     @Test
     public void explanationsForSystemResultNotNull() throws Exception {
-        when(explanationService.explainQaSystem(any(),any())).thenReturn(testRdfData);
+        when(explanationService.getQaSystemExplanation(any(), any())).thenReturn(testRdfData);
 
         MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI"))
                 .andReturn();
 
         assertEquals(200, mvcResult.getResponse().getStatus());
         assertEquals(testRdfData, mvcResult.getResponse().getContentAsString());
-        verify(explanationService, times(1)).explainQaSystem(any(),any());
+        verify(explanationService, times(1)).getQaSystemExplanation(any(), any());
     }
 
     @Test
     public void explanationsForComponentResultIsNull() throws Exception {
-        when(explanationService.explainSpecificComponent(any(),any(),any())).thenReturn(null);
+        when(explanationService.getTemplateComponentExplanation(any(), any(), any())).thenReturn(null);
 
         MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI/componentURI"))
                 .andReturn();
 
         assertEquals(400, mvcResult.getResponse().getStatus());
-        assertEquals("",mvcResult.getResponse().getContentAsString());
+        assertEquals("", mvcResult.getResponse().getContentAsString());
     }
 
     @Test
     public void explanationsForSystemResultIsNull() throws Exception {
-        when(explanationService.explainQaSystem(any(),any())).thenReturn(null);
+        when(explanationService.getQaSystemExplanation(any(), any())).thenReturn(null);
 
         MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI"))
                 .andReturn();
