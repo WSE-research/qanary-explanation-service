@@ -30,16 +30,13 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
-public class ExplanationServiceTest {
+public class TemplateExplanationsServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
     private final ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
-    Logger logger = LoggerFactory.getLogger(ExplanationServiceTest.class);
+    Logger logger = LoggerFactory.getLogger(TemplateExplanationsServiceTest.class);
 
     @Nested
     class ExplanationAsRdfTurtle {
@@ -50,7 +47,7 @@ public class ExplanationServiceTest {
         String sparqlQuery;
         String queryPrefixes = "PREFIX explanation: <" + EXPLANATION_NAMESPACE + ">";
         @Autowired
-        ExplanationService explanationService;
+        TemplateExplanationsService tmplExpService;
 
         @BeforeEach
         void setup() {
@@ -61,7 +58,7 @@ public class ExplanationServiceTest {
 
         @Test
         void createRdfRepresentationTest() {
-            String result = explanationService.convertToDesiredFormat(null, explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String result = tmplExpService.convertToDesiredFormat(null, tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertAll("String contains content elements as well as componentURI",
                     () -> assertTrue(result.contains(languageContentProvider.getContentDe())),
@@ -94,10 +91,10 @@ public class ExplanationServiceTest {
         @Test
         public void compareRepresentationModels() {
             // Create Strings with different format (plain == turtle, turtle, rdfxml,jsonld)
-            String resultEmptyHeader = explanationService.convertToDesiredFormat(null, explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultTurtleHeader = explanationService.convertToDesiredFormat("text/turtle", explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultRDFXMLHeader = explanationService.convertToDesiredFormat("application/rdf+xml", explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultJSONLDHeader = explanationService.convertToDesiredFormat("application/ld+json", explanationService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultEmptyHeader = tmplExpService.convertToDesiredFormat(null, tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultTurtleHeader = tmplExpService.convertToDesiredFormat("text/turtle", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultRDFXMLHeader = tmplExpService.convertToDesiredFormat("application/rdf+xml", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultJSONLDHeader = tmplExpService.convertToDesiredFormat("application/ld+json", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
 
             assertEquals(resultEmptyHeader, resultTurtleHeader);
             assertAll("Check different result-string",
@@ -141,7 +138,7 @@ public class ExplanationServiceTest {
         ControllerDataForTests controllerDataForTests;
         ObjectMapper objectMapper = new ObjectMapper();
         @Autowired
-        ExplanationService explanationService;
+        TemplateExplanationsService tmplExpService;
         List<String> components;
         Map<String, Model> models;
 
@@ -159,7 +156,7 @@ public class ExplanationServiceTest {
             // Get the expected model from the test data
             Model expectedModel = controllerDataForTests.getExpectedModelForQaSystemExplanation();
             // call method to create model from Models and components
-            Model computedModel = explanationService.createSystemModel(models, components, questionURI, graphID);
+            Model computedModel = tmplExpService.createSystemModel(models, components, questionURI, graphID);
 
             assertTrue(expectedModel.isIsomorphicWith(computedModel));
         }
@@ -180,7 +177,7 @@ public class ExplanationServiceTest {
         }};
         private final ResultSet resultSet = serviceDataForTests.createResultSet(serviceDataForTests.getQuerySolutionMapList());
         @SpyBean
-        private ExplanationService explanationService;
+        private TemplateExplanationsService tmplExpService;
 
         @Test
         public void createTextualExplanationTest() {
@@ -195,7 +192,7 @@ public class ExplanationServiceTest {
             Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
             Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
 
-            Map<String, String> comparedMap = explanationService.convertRdfNodeToStringValue(toBeConvertedMap);
+            Map<String, String> comparedMap = tmplExpService.convertRdfNodeToStringValue(toBeConvertedMap);
 
             assertEquals(comparingMap, comparedMap);
         }
@@ -223,14 +220,14 @@ public class ExplanationServiceTest {
 
             assertAll("Testing correct replacement for templates",
                     () -> {
-                        String computedTemplate = explanationService.replaceProperties(convertedMap, explanationService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
+                        String computedTemplate = tmplExpService.replaceProperties(convertedMap, tmplExpService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/de_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
                         assertEquals(expectedOutcome, computedTemplate);
                     },
                     () -> {
-                        String computedTemplate = explanationService.replaceProperties(convertedMap, explanationService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
+                        String computedTemplate = tmplExpService.replaceProperties(convertedMap, tmplExpService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/en_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
@@ -253,7 +250,7 @@ public class ExplanationServiceTest {
                 })
         public void addingExplanationsTest(String type) throws IOException {
 
-            List<String> computedExplanations = explanationService.addingExplanations(type, "de", resultSet);
+            List<String> computedExplanations = tmplExpService.addingExplanations(type, "de", resultSet);
 
             // Should contain the (if existing) prefix (is an empty element) and one explanation
             assertEquals(2, computedExplanations.size());
@@ -270,11 +267,11 @@ public class ExplanationServiceTest {
         public void createSpecificExplanationTest() throws IOException {
             //when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
 
-            List<String> explanations = explanationService.createSpecificExplanation("annotationofinstance", "graphURI", "de", "componentuRI");
+            List<String> explanations = tmplExpService.createSpecificExplanation("annotationofinstance", "graphURI", "de", "componentuRI");
 
             //verify(explanationSparqlRepository, times(1)).executeSparqlQueryWithResultSet(any());
-            verify(explanationService, times(1)).buildSparqlQuery(any(), any(), any());
-            verify(explanationService, times(1)).addingExplanations(any(), any(), any());
+            verify(tmplExpService, times(1)).buildSparqlQuery(any(), any(), any());
+            verify(tmplExpService, times(1)).addingExplanations(any(), any(), any());
 
             assertNotNull(explanations);
         }
