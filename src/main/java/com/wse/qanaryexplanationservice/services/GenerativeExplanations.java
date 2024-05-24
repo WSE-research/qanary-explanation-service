@@ -203,16 +203,16 @@ public class GenerativeExplanations {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
         bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
         bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:" + componentURI));
-        bindingsForQuery.add("annotatedBy", ResourceFactory.createResource("urn:qanary:" + componentURI));
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
-            query = query.replace("?annotationType", "qa:" + annotationType);
+            if (annotationType != null)
+                query = query.replace("?annotationType", "qa:" + annotationType);
             ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
             if (!resultSet.hasNext())
                 throw new RuntimeException("Fetching triples failed, ResultSet is null");
             else
                 return resultSet;
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Error while fetching triples: {}", e.getMessage());
             throw new Exception(e);
         }

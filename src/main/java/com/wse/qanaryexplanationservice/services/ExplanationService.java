@@ -56,7 +56,7 @@ public class ExplanationService {
                 List<String> annotationTypesUsedByComponent = tmplExpService.fetchAllAnnotations(composedExplanationDTO.getGraphUri(), component.getComponentName());
                 String templatebased = tmplExpService.createTextualExplanation(   // compute template based explanation
                         composedExplanationDTO.getGraphUri(),
-                        "urn:qanary:" + component.getComponentName(),
+                        component.getComponentName(),
                         "en",
                         annotationTypesUsedByComponent
                 );
@@ -76,6 +76,7 @@ public class ExplanationService {
 
                 composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt, generativeExplanation, generativeExplanationObject.getTestComponent().getDataSet());
             } catch (Exception e) {
+                e.printStackTrace();
                 logger.error("{}", e.toString());
             }
         });

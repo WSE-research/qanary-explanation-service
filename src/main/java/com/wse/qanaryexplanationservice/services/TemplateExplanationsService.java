@@ -120,8 +120,9 @@ public class TemplateExplanationsService {
     public Model createModel(String graphUri, String componentUri) throws IOException {
 
         List<String> types = new ArrayList<>();
-        if (stringResultSetMap.isEmpty())
+        if (stringResultSetMap.isEmpty()) {
             types = fetchAllAnnotations(graphUri, componentUri);
+    }
         String contentDE = createTextualExplanation(graphUri, componentUri, "de", types);
         String contentEN = createTextualExplanation(graphUri, componentUri, "en", types);
 
@@ -188,7 +189,7 @@ public class TemplateExplanationsService {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graph", ResourceFactory.createResource(graphURI));
         if (componentUri != null)    // Extension for compatibility w/ explanation for specific component
-            bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource(componentUri));
+            bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource("urn:qanary:" + componentUri));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
 
@@ -237,7 +238,6 @@ public class TemplateExplanationsService {
 
         try {
             String questionURI = resultSet.next().get("source").toString();
-            logger.info("QuestionURI = {}", questionURI);
             return questionURI;
         } catch (Exception e) {
             throw new Exception("Couldn't fetch the question!", e);

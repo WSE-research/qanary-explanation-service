@@ -63,8 +63,8 @@ public class GenerativeExplanationsService {
     public GenerativeExplanationObject createGenerativeExplanation(QanaryComponent component, int shots, String graphUri) throws Exception {
         GenerativeExplanationObject generativeExplanationObject = new GenerativeExplanationObject();
         TestDataObject testObject = new TestDataObject(
-                AnnotationType.valueOf(component.getComponentMainType()),
-                AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
+                component.getComponentMainType() == null ? null : AnnotationType.valueOf(component.getComponentMainType()),
+                component.getComponentMainType() == null ? null : AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
                 component.getComponentName(),
                 null,
                 tmplExpService.getExplanation(graphUri, component.getComponentName()),
@@ -72,7 +72,6 @@ public class GenerativeExplanationsService {
                 graphUri,
                 null, null, null, null
         );
-        logger.warn("Dataset for test object: {}", testObject.getDataSet());
         generativeExplanationObject.setTestComponent(testObject);
         for (int i = 0; i < shots; i++) {
             TestDataObject example = computeSingleTestObject(null);
