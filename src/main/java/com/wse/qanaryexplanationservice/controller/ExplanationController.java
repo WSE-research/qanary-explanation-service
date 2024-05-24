@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
 @ControllerAdvice
@@ -141,9 +142,7 @@ public class ExplanationController {
                             }
                     """
     )
-    public ResponseEntity<?> getComposedExplanationInputData(@RequestBody ComposedExplanationDTO composedExplanationDTO, @RequestHeader("Authorization") String authToken) {
-        if (authToken != gptRequestAuthToken)
-            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<?> getComposedExplanationInputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
         try {
             ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationForInputData(composedExplanationDTO);
             return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
@@ -178,9 +177,7 @@ public class ExplanationController {
                             }
                     """
     )
-    public ResponseEntity<?> getComposedExplanationOutputData(@RequestBody ComposedExplanationDTO composedExplanationDTO, @RequestHeader("Authorization") String authToken) {
-        if (authToken != gptRequestAuthToken)
-            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<?> getComposedExplanationOutputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
         try {
             ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationsForOutputData(composedExplanationDTO);
             return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
