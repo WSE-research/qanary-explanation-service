@@ -13,6 +13,11 @@ public class QanaryComponent {
     public QanaryComponent() {
 
     }
+
+    public QanaryComponent(String componentName) {
+        this.componentName = componentName;
+    }
+
     public QanaryComponent(String componentName, String componentMainType) {
         this.componentMainType = componentMainType;
         this.componentName = componentName;
