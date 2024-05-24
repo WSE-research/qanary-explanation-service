@@ -111,6 +111,10 @@ public class GenerativeExplanations {
             String errorMessage = "Error while fetching a random question";
             logger.error("Error: {}", errorMessage);
             throw new IOException(errorMessage);
+        } catch (IndexOutOfBoundsException e) {
+            String errorMessage = "The executed SPARQL query returned zero results";
+            logger.error(errorMessage);
+            throw new RuntimeException(errorMessage);
         }
     }
 
