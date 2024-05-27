@@ -2,6 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QuestionsRepository;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
@@ -20,8 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 
@@ -30,9 +29,9 @@ import static org.mockito.Mockito.mockStatic;
 public class GenerativeExplanationsTest {
 
     private static final String EXAMPLE_QUESTION = "A question about the universe";
+    private final ServiceDataForTests testData = new ServiceDataForTests();
     @Autowired
     private GenerativeExplanations generativeExplanations;
-    private ServiceDataForTests testData = new ServiceDataForTests();
     private MockedStatic<QuestionsRepository> repositoryMockedStatic;
 
     @BeforeEach
@@ -52,7 +51,7 @@ public class GenerativeExplanationsTest {
     ////////// getRandomQuestion ///////////
 
     @Test
-    public void getRandomQuestionTestSuccessful() throws IOException, IOException {
+    public void getRandomQuestionTestSuccessful() throws IOException {
         QuerySolutionMap querySolutionMap = new QuerySolutionMap();
         querySolutionMap.add("hasQuestion", ResourceFactory.createStringLiteral(EXAMPLE_QUESTION));
         ArrayList<QuerySolutionMap> querySolutionMapList = new ArrayList<>() {{
@@ -68,22 +67,22 @@ public class GenerativeExplanationsTest {
 
     @Test
     public void selectRandomComponentsTestNull() {
-        List<String> comps = generativeExplanations.selectRandomComponents(null);
-        assertEquals(new ArrayList<>(), comps);
+        List<QanaryComponent> comps = generativeExplanations.selectRandomComponents(null);
+        Assertions.assertEquals(new ArrayList<>(), comps);
     }
 
     @Test
     public void selectRandomComponentsTestEmpty() {
-        List<String> comps = generativeExplanations.selectRandomComponents(new ArrayList<>());
-        assertEquals(new ArrayList<>(), comps);
+        List<QanaryComponent> comps = generativeExplanations.selectRandomComponents(new ArrayList<>());
+        Assertions.assertEquals(new ArrayList<>(), comps);
     }
 
     @Test
     public void selectRandomComponentsTestNotEmpty() {
-        List<String> comps = generativeExplanations.selectRandomComponents(new ArrayList<>() {{
+        List<QanaryComponent> comps = generativeExplanations.selectRandomComponents(new ArrayList<>() {{
             add(AnnotationType.AnnotationOfInstance);
         }});
-        assertTrue(!comps.isEmpty());
+        Assertions.assertFalse(comps.isEmpty());
     }
 
     @Test

@@ -79,8 +79,8 @@ public class ExplanationController {
     )
     public ResponseEntity<?> getInputExplanation(
             @PathVariable String graphURI,
-            @PathVariable(required = false) String componentURI) throws IOException {
-        return new ResponseEntity<>(this.explanationService.getTemplateComponentInputExplanation(graphURI, componentURI), HttpStatus.OK);
+            @PathVariable(required = false) QanaryComponent component) throws IOException {
+        return new ResponseEntity<>(this.explanationService.getTemplateComponentInputExplanation(graphURI, component), HttpStatus.OK);
     }
 
     @CrossOrigin

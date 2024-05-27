@@ -123,7 +123,7 @@ public class ExplanationDataService {
 
         // Add items to object
         resource.addProperty(rdfType, ResourceFactory.createProperty(QANARY_VOCAB + testDataObject.getAnnotationType().name()));
-        resource.addProperty(usedComponent, ResourceFactory.createPlainLiteral(testDataObject.getUsedComponent()));
+        resource.addProperty(usedComponent, ResourceFactory.createPlainLiteral(testDataObject.getUsedComponent().getPrefixedComponentName()));
         resource.addProperty(usedComponentAsNum, ResourceFactory.createPlainLiteral(String.valueOf(testDataObject.getComponentNumber())));
         resource.addProperty(dataset, ResourceFactory.createPlainLiteral(testDataObject.getDataSet()));
         resource.addProperty(graphId, ResourceFactory.createPlainLiteral(testDataObject.getGraphID()));
@@ -152,7 +152,6 @@ public class ExplanationDataService {
     public String createSequenceForExperimentSelection(ExperimentSelectionDTO experimentSelectionDTO) {
         String[] list = experimentSelectionDTO.getAnnotationTypes();
         StringBuilder stringBuilder = new StringBuilder();
-        logger.info("{}", experimentSelectionDTO.getShots());
         for (int i = 0; i < experimentSelectionDTO.getShots(); i++) {
             stringBuilder.append("rdfs:_" + (i + 1) + "[ rdf:type qa:" + list[i] + "]");
             if (i + 1 != experimentSelectionDTO.getShots()) {

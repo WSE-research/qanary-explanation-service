@@ -39,8 +39,8 @@ public class ExplanationService {
         return tmplExpService.explainComponentAsRdf(graphUri, component, header);
     }
 
-    public String getTemplateComponentInputExplanation(String graphUri, String componentUri) throws IOException {
-        return tmplExpService.createInputExplanation(graphUri, componentUri);
+    public String getTemplateComponentInputExplanation(String graphUri, QanaryComponent component) throws IOException {
+        return tmplExpService.createInputExplanation(graphUri, component);
     }
 
     /**
@@ -55,7 +55,7 @@ public class ExplanationService {
             try {
                 String templatebased = tmplExpService.explainComponentAsText(   // compute template based explanation
                         composedExplanationDTO.getGraphUri(),
-                        component.getComponentName(),
+                        component,
                         "en"
                 );
 
@@ -87,26 +87,34 @@ public class ExplanationService {
         ComposedExplanation composedExplanation = new ComposedExplanation();
         for (QanaryComponent component : components) {
 
-            QuerySolutionMap bindings = new QuerySolutionMap();
-            bindings.add("graph", ResourceFactory.createResource(graph));
-            bindings.add("component", ResourceFactory.createResource(component.getPrefixedComponentName()));
-            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(TemplateExplanationsService.INPUT_DATA_SELECT_QUERY, bindings);
-            ResultSet results = qanaryRepository.selectWithResultSet(query);
+            String sparqlQuery = bindingForGraphAndComponent(graph, component, TemplateExplanationsService.INPUT_DATA_SELECT_QUERY);
+            ResultSet results = qanaryRepository.selectWithResultSet(sparqlQuery);
+            String query = getBodyFromResultSet(results);
 
-            QuerySolution querySolution = results.next(); // TODO: Add component to composedExplanation
-            String resultQuery = querySolution.get("body").toString();
-
-            String templatebasedExplanation = tmplExpService.createExplanationForQuery(querySolution, graph, component.getComponentName());
+            String templatebasedExplanation = tmplExpService.createExplanationForQuery(query, graph, component);
 
             String prompt = genExpService.getInputDataExplanationPrompt(
-                    component.getComponentName(),
-                    resultQuery,
+                    component,
+                    query,
                     composedExplanationDTO.getGenerativeExplanationRequest().getShots()
             );
             String gptExplanation = genExpService.sendPrompt(prompt, composedExplanationDTO.getGenerativeExplanationRequest().getGptModel());
-            composedExplanation.addExplanationItem(component.getComponentName(), templatebasedExplanation, prompt, gptExplanation, resultQuery);
+            composedExplanation.addExplanationItem(component.getComponentName(), templatebasedExplanation, prompt, gptExplanation, query);
         }
         return composedExplanation;
+    }
+
+    // TODO: Later, refactor existing methods which add bindings (and execute the query?)
+    public String bindingForGraphAndComponent(String graph, QanaryComponent component, String plainQueryPath) throws IOException {
+        QuerySolutionMap bindings = new QuerySolutionMap();
+        bindings.add("graph", ResourceFactory.createResource(graph));
+        bindings.add("component", ResourceFactory.createResource(component.getPrefixedComponentName()));
+        return QanaryTripleStoreConnector.readFileFromResourcesWithMap(plainQueryPath, bindings);
+    }
+
+    public String getBodyFromResultSet(ResultSet resultSet) {
+        QuerySolution querySolution = resultSet.next();
+        return querySolution.get("body").toString();
     }
 
 }

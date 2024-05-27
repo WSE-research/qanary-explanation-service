@@ -9,6 +9,7 @@ import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTes
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTestRequestBody;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.Example;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -54,9 +55,9 @@ public class AutomatedTestingService {
         this.random = new Random();
     }
 
-    public String selectComponent(AnnotationType annotationType, AutomatedTest automatedTest, Example example) {
+    public QanaryComponent selectComponent(AnnotationType annotationType, AutomatedTest automatedTest, Example example) {
 
-        String[] componentsList = generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name());
+        QanaryComponent[] componentsList = GenerativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name());
 
         // Case if example is null, e.g. when the testing data is calculated
         if (example == null || !example.getUniqueComponent()) {
@@ -64,9 +65,9 @@ public class AutomatedTestingService {
         }
         // Case if component should be unique in the whole test-case
         else {
-            ArrayList<String> usedComponentsInTest = fetchUsedComponents(automatedTest);
-            ArrayList<String> componentList = new ArrayList<>(List.of(generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name())));
-            String component;
+            ArrayList<QanaryComponent> usedComponentsInTest = fetchUsedComponents(automatedTest);
+            ArrayList<QanaryComponent> componentList = new ArrayList<>(List.of(GenerativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name())));
+            QanaryComponent component;
             try {
                 do {
                     int rnd = this.random.nextInt(componentList.size());
@@ -81,13 +82,13 @@ public class AutomatedTestingService {
         }
     }
 
-    public String selectRandomComponentFromComponentList(String[] componentsList) {
+    public QanaryComponent selectRandomComponentFromComponentList(QanaryComponent[] componentsList) {
         int selectedComponentAsInt = random.nextInt(componentsList.length);
         return componentsList[selectedComponentAsInt];
     }
 
-    public ArrayList<String> fetchUsedComponents(AutomatedTest automatedTest) {
-        ArrayList<String> list = new ArrayList<>();
+    public ArrayList<QanaryComponent> fetchUsedComponents(AutomatedTest automatedTest) {
+        ArrayList<QanaryComponent> list = new ArrayList<>();
         list.add(automatedTest.getTestData().getUsedComponent()); // Adds test-data component
         ArrayList<TestDataObject> listExamples = automatedTest.getExampleData();
 
@@ -151,22 +152,22 @@ public class AutomatedTestingService {
             // Select component
             logger.info("Selecting component");
             Integer selectedComponentAsInt = selectComponentAsInt(givenAnnotationType);
-            String selectedComponent = generativeExplanations.TYPE_AND_COMPONENTS.get(givenAnnotationType.name())[selectedComponentAsInt];
+            QanaryComponent selectedComponent = GenerativeExplanations.TYPE_AND_COMPONENTS.get(givenAnnotationType.name())[selectedComponentAsInt];
 
             // Selection Question
             logger.info("Selecting question");
-            Integer randomQuestionID = random.nextInt(generativeExplanations.QADO_DATASET_QUESTION_COUNT);
+            Integer randomQuestionID = random.nextInt(GenerativeExplanations.QADO_DATASET_QUESTION_COUNT);
             String question = generativeExplanations.getRandomQuestion(randomQuestionID);
 
             // Resolve dependencies and select random components
             logger.info("Resolve dependencies and select components");
-            ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(generativeExplanations.DEPENDENCY_MAP_FOR_ANNOTATION_TYPES.get(givenAnnotationType)));
-            List<String> componentListForQanaryPipeline = generativeExplanations.selectRandomComponents(annotationTypes);
+            ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(GenerativeExplanations.DEPENDENCY_MAP_FOR_ANNOTATION_TYPES.get(givenAnnotationType)));
+            List<QanaryComponent> componentListForQanaryPipeline = generativeExplanations.selectRandomComponents(annotationTypes);
             componentListForQanaryPipeline.add(selectedComponent); // Seperation of concerns, add this to the selectRandomComps method
 
             // Execute Qanary pipeline and store graphURI + questionID
             logger.info("Execute Qanary pipeline");
-            QanaryResponseObject qanaryResponse = generativeExplanations.executeQanaryPipeline(question, componentListForQanaryPipeline);
+            QanaryResponseObject qanaryResponse = generativeExplanations.executeQanaryPipeline(question, componentListForQanaryPipeline.stream().map(QanaryComponent::getComponentName).toList());
             String graphURI = qanaryResponse.getOutGraph();
             String questionID = qanaryResponse.getQuestion().replace(QUESTION_ID_REPLACEMENT + "/question/stored-question__text_", "questionID:");
 
@@ -254,7 +255,7 @@ public class AutomatedTestingService {
     }
 
     public Integer selectComponentAsInt(AnnotationType annotationType) {
-        return random.nextInt(generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name()).length);
+        return random.nextInt(GenerativeExplanations.TYPE_AND_COMPONENTS.get(annotationType.name()).length);
     }
 
 }

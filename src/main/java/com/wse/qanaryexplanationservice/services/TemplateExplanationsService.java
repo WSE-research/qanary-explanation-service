@@ -90,16 +90,16 @@ public class TemplateExplanationsService {
     public String explainComponentAsRdf(String graphUri, QanaryComponent component, String header) throws IOException {
         logger.info("Passed header: {}", header);
         Model model = createModelForSpecificComponent(
-                explainComponentAsText(graphUri, component.getPrefixedComponentName(), "de"),
-                explainComponentAsText(graphUri, component.getPrefixedComponentName(), "en"),
-                component.getPrefixedComponentName()
+                explainComponentAsText(graphUri, component, "de"),
+                explainComponentAsText(graphUri, component, "en"),
+                component
         );
         return convertToDesiredFormat(header, model);
     }
 
-    public String explainComponentAsText(String graphUri, String componentUri, String lang) throws IOException {
-        List<String> types = fetchAllAnnotations(graphUri, componentUri);
-        return createTextualExplanation(graphUri, componentUri, lang, types);
+    public String explainComponentAsText(String graphUri, QanaryComponent component, String lang) throws IOException {
+        List<String> types = fetchAllAnnotations(graphUri, component);
+        return createTextualExplanation(graphUri, component, lang, types);
     }
 
     /**
@@ -109,8 +109,9 @@ public class TemplateExplanationsService {
      * @param prefix       Text phrase between intro and items, can be an empty string
      * @return Explanation as String
      */
-    private String composeExplanations(String componentURI, String lang, List<String> explanations, String prefix) {
+    private String composeExplanations(QanaryComponent component, String lang, List<String> explanations, String prefix) {
         String result = "";
+        String componentURI = component.getComponentName();
         explanations.remove(0); // remove prefix
         if (Objects.equals(lang, "en")) {
             result = "The component " + componentURI + " has added " + (explanations.size() == 5 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
@@ -128,25 +129,24 @@ public class TemplateExplanationsService {
      *
      * @return Model including
      */
-    public Model createModel(String graphUri, String componentUri) throws IOException {
+    public Model createModel(String graphUri, QanaryComponent component) throws IOException {
 
-        List<String> types = fetchAllAnnotations(graphUri, componentUri); // Can be cached
-        String contentDE = createTextualExplanation(graphUri, componentUri, "de", types);
-        String contentEN = createTextualExplanation(graphUri, componentUri, "en", types);
+        List<String> types = fetchAllAnnotations(graphUri, component); // Can be cached
+        String contentDE = createTextualExplanation(graphUri, component, "de", types);
+        String contentEN = createTextualExplanation(graphUri, component, "en", types);
 
-        return createModelForSpecificComponent(contentDE, contentEN, componentUri);
+        return createModelForSpecificComponent(contentDE, contentEN, component);
     }
 
     /**
      * Creates an explanation model for a specific componentURI.
      *
-     * @param contentDe    Textual representation of the explanation in german
-     * @param contentEn    Textual representation of the explanation in english
-     * @param componentURI componentURI
+     * @param contentDe Textual representation of the explanation in german
+     * @param contentEn Textual representation of the explanation in english
      * @return Model with explanations as statements
      */
-    public Model createModelForSpecificComponent(String contentDe, String contentEn, String componentURI) {
-
+    public Model createModelForSpecificComponent(String contentDe, String contentEn, QanaryComponent component) {
+        String componentURI = component.getPrefixedComponentName();
         Model model = ModelFactory.createDefaultModel();
 
         // set Prefixes
@@ -191,11 +191,11 @@ public class TemplateExplanationsService {
      * @param rawQuery Query-String without set values
      * @return Query-String with set values
      */
-    public String buildSparqlQuery(String graphURI, String componentUri, String rawQuery) throws IOException {
+    public String buildSparqlQuery(String graphURI, QanaryComponent component, String rawQuery) throws IOException {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graph", ResourceFactory.createResource(graphURI));
-        if (componentUri != null)    // Extension for compatibility w/ explanation for specific component
-            bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource(componentUri));
+        if (component != null)    // Extension for compatibility w/ explanation for specific component
+            bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource(component.getPrefixedComponentName()));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
 
@@ -211,12 +211,12 @@ public class TemplateExplanationsService {
      */
     public String explainQaSystem(String graphURI, String header) throws Exception {
 
-        List<String> components = getUsedComponents(graphURI);
+        List<QanaryComponent> components = getUsedComponents(graphURI);
         Map<String, Model> models = new HashMap<>();
 
-        for (String component : components
+        for (QanaryComponent component : components
         ) {
-            models.put(component, createModel(graphURI, component));
+            models.put(component.getComponentName(), createModel(graphURI, component));
         }
 
         String questionURI = fetchQuestionUri(graphURI);
@@ -225,14 +225,14 @@ public class TemplateExplanationsService {
         return convertToDesiredFormat(header, systemExplanationModel);
     }
 
-    public List<String> getUsedComponents(String graphID) throws IOException {
+    public List<QanaryComponent> getUsedComponents(String graphID) throws IOException {
         QuerySolutionMap bindings = new QuerySolutionMap();
         bindings.add("graph", ResourceFactory.createResource(graphID));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(COMPONENTS_SPARQL_QUERY, bindings);
         ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
-        List<String> components = new ArrayList<>();
+        List<QanaryComponent> components = new ArrayList<>();
         while (resultSet.hasNext()) {
-            components.add(resultSet.next().get("component").toString());
+            components.add(new QanaryComponent(resultSet.next().get("component").toString()));
         }
         return components;
     }
@@ -257,7 +257,7 @@ public class TemplateExplanationsService {
      * @param components Array of involved components
      * @return an explanation model for a system explanation
      */
-    public Model createSystemModel(Map<String, Model> models, List<String> components, String questionURI, String graphURI) {
+    public Model createSystemModel(Map<String, Model> models, List<QanaryComponent> components, String questionURI, String graphURI) {
 
         Model systemExplanationModel = ModelFactory.createDefaultModel();
 
@@ -287,7 +287,7 @@ public class TemplateExplanationsService {
         for (int i = 0; i < components.size(); i++) {
             int j = 1;
             // get the model for the component at position "i" in component list // remember: models is Map with componentUri as key
-            Model model = models.get(components.get(i));
+            Model model = models.get(components.get(i).getComponentName());
             // creating inner Sequence for the reified statements
             Resource innerSequence = systemExplanationModel.createResource();
             // adding the inner Sequence as a property to the outer sequence / the resource questionResource
@@ -314,8 +314,8 @@ public class TemplateExplanationsService {
      *
      * @return A list with all different annotation-types
      */
-    public List<String> fetchAllAnnotations(String graphURI, String componentURI) throws IOException {
-        String query = buildSparqlQuery(graphURI, componentURI, ANNOTATIONS_QUERY); // can be simplified by excluding with FILTER NOT ...
+    public List<String> fetchAllAnnotations(String graphURI, QanaryComponent component) throws IOException {
+        String query = buildSparqlQuery(graphURI, component, ANNOTATIONS_QUERY); // can be simplified by excluding with FILTER NOT ...
 
         ArrayList<String> types = new ArrayList<>();
         ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
@@ -340,11 +340,11 @@ public class TemplateExplanationsService {
      * @param lang      The language for the explanation
      * @return Map with the Annotation type as Key and it's explanations as Value (List)
      */
-    public Map<String, List<String>> createSpecificExplanations(List<String> usedTypes, String graphURI, String lang, String componentURI) throws IOException {
+    public Map<String, List<String>> createSpecificExplanations(List<String> usedTypes, String graphURI, String lang, QanaryComponent component) throws IOException {
         Map<String, List<String>> explanations = new HashMap<>();
         for (String type : usedTypes
         ) {
-            explanations.put(type, createSpecificExplanation(type, graphURI, lang, componentURI));
+            explanations.put(type, createSpecificExplanation(type, graphURI, lang, component));
         }
         return explanations;
     }
@@ -356,8 +356,8 @@ public class TemplateExplanationsService {
      * @param lang The language for the explanation
      * @return A list of explanation containing a prefix explanation and one entry for every annotation of the givent type
      */
-    public List<String> createSpecificExplanation(String type, String graphURI, String lang, String componentURI) throws IOException {
-        String query = buildSparqlQuery(graphURI, componentURI, annotationsTypeAndQuery.get(type));
+    public List<String> createSpecificExplanation(String type, String graphURI, String lang, QanaryComponent component) throws IOException {
+        String query = buildSparqlQuery(graphURI, component, annotationsTypeAndQuery.get(type));
 
         // TODO: Cache the ResultSet as map for further usage w/ different languages
 
@@ -476,17 +476,17 @@ public class TemplateExplanationsService {
      * @param lang Currently supported en_list_item and de_list_item
      * @return Complete explanation for the componentURI including all information to each annotation
      */
-    public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException, IndexOutOfBoundsException {
+    public String createTextualExplanation(String graphURI, QanaryComponent component, String lang, List<String> types) throws IOException, IndexOutOfBoundsException {
 
         if (types.isEmpty()) { // Component did not add any Annotation
-            return "The component " + componentURI + " inserted 0 annotations to the triplestore.";
+            return "The component " + component.getComponentName() + " inserted 0 annotations to the triplestore.";
         }
 
-        Map<String, List<String>> createdExplanations = createSpecificExplanations(types, graphURI, lang, componentURI);
+        Map<String, List<String>> createdExplanations = createSpecificExplanations(types, graphURI, lang, component);
 
         StringBuilder result = new StringBuilder();
-        createdExplanations.forEach((component, list) -> {
-            result.append(composeExplanations(componentURI, lang, list, list.get(0)));
+        createdExplanations.forEach((type, list) -> {
+            result.append(composeExplanations(component, lang, list, list.get(0)));
             result.append("\n\n");
         });
         return result.toString();
@@ -501,10 +501,10 @@ public class TemplateExplanationsService {
      * @return Explanation as string
      * @throws IOException If template selection from file fails
      */
-    public String createInputExplanation(String graph, String component) throws IOException {
+    public String createInputExplanation(String graph, QanaryComponent component) throws IOException {
         QuerySolutionMap bindings = new QuerySolutionMap();
         bindings.add("graph", ResourceFactory.createResource(graph));
-        bindings.add("component", ResourceFactory.createResource(component));
+        bindings.add("component", ResourceFactory.createResource(component.getPrefixedComponentName()));
 
         String queryTemplate = QanaryTripleStoreConnector.readFileFromResourcesWithMap(INPUT_DATA_SELECT_QUERY, bindings);
 
@@ -516,7 +516,7 @@ public class TemplateExplanationsService {
         while (results.hasNext()) {
             QuerySolution currentSolution = results.nextSolution();
             try {
-                explanationsForQueries.add(createExplanationForQuery(currentSolution, graph, component));
+                explanationsForQueries.add(createExplanationForQuery(currentSolution.get("body").toString(), graph, component));
                 resultSetSize++;
             } catch (RuntimeException e) {
             }
@@ -527,7 +527,7 @@ public class TemplateExplanationsService {
         prefix = prefix.replace("${numberOfQueries}", resultSetSize +
                 (resultSetSize == 1 ? " SPARQL query" : " SPARQL queries")
         );
-        prefix = prefix.replace("${component}", component).replace("${graph}", graph);
+        prefix = prefix.replace("${component}", component.getPrefixedComponentName()).replace("${graph}", graph);
         // Zusammenbauen
 
         logger.info("Items: {}", explanationsForQueries);
@@ -545,11 +545,11 @@ public class TemplateExplanationsService {
         return finalExplanation.toString();
     }
 
-    public String createExplanationForQuery(QuerySolution currentSolution, String graph, String component) throws IOException {
-        String annotationType = disassembleAnnotationTypeFromQuery(currentSolution.get("body").toString());
+    public String createExplanationForQuery(String query, String graph, QanaryComponent component) throws IOException {
+        String annotationType = disassembleAnnotationTypeFromQuery(query);
         Map<String, String> items = new HashMap<>() {{
             put("graph", graph);
-            put("component", component);
+            put("component", component.getPrefixedComponentName());
             put("annotationType", annotationType);
         }};
         // for each language
