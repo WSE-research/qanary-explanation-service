@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +25,6 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -70,7 +70,6 @@ public class TemplateExplanationsService {
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
-    private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
     @Autowired
     private QanaryRepository qanaryRepository;
     @Value("${explanations.dataset.limit}")
@@ -84,24 +83,23 @@ public class TemplateExplanationsService {
     /**
      * Computes a textual explanation for a specific component on a specific graphURI
      *
-     * @param graphUri     specific graphURI
-     * @param componentUri specific componentURI
+     * @param graphUri  specific graphURI
+     * @param component @see QanaryComponent
      * @return Explanation in accepted format, default: Turtle
      */
-    public String explainComponentAsRdf(String graphUri, String componentUri, String header) throws IOException {
+    public String explainComponentAsRdf(String graphUri, QanaryComponent component, String header) throws IOException {
         logger.info("Passed header: {}", header);
         Model model = createModelForSpecificComponent(
-                explainComponentAsText(graphUri, componentUri, "de"),
-                explainComponentAsText(graphUri, componentUri, "en"),
-                "urn:qanary:" + componentUri
+                explainComponentAsText(graphUri, component.getPrefixedComponentName(), "de"),
+                explainComponentAsText(graphUri, component.getPrefixedComponentName(), "en"),
+                component.getPrefixedComponentName()
         );
         return convertToDesiredFormat(header, model);
     }
 
     public String explainComponentAsText(String graphUri, String componentUri, String lang) throws IOException {
-        String component = "urn:qanary:" + componentUri;
-        List<String> types = fetchAllAnnotations(graphUri, component);
-        return createTextualExplanation(graphUri, component, lang, types);
+        List<String> types = fetchAllAnnotations(graphUri, componentUri);
+        return createTextualExplanation(graphUri, componentUri, lang, types);
     }
 
     /**
@@ -132,10 +130,7 @@ public class TemplateExplanationsService {
      */
     public Model createModel(String graphUri, String componentUri) throws IOException {
 
-        List<String> types = new ArrayList<>();
-        if (stringResultSetMap.isEmpty()) {
-            types = fetchAllAnnotations(graphUri, componentUri);
-        }
+        List<String> types = fetchAllAnnotations(graphUri, componentUri); // Can be cached
         String contentDE = createTextualExplanation(graphUri, componentUri, "de", types);
         String contentEN = createTextualExplanation(graphUri, componentUri, "en", types);
 
@@ -488,10 +483,6 @@ public class TemplateExplanationsService {
         }
 
         Map<String, List<String>> createdExplanations = createSpecificExplanations(types, graphURI, lang, componentURI);
-
-        AtomicInteger i = new AtomicInteger();
-
-        // createdExplanations.forEach((component, list) -> createdExplanations.put(component, list.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList()));
 
         StringBuilder result = new StringBuilder();
         createdExplanations.forEach((component, list) -> {

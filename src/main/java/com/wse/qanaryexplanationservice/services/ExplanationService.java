@@ -35,8 +35,8 @@ public class ExplanationService {
         return tmplExpService.explainQaSystem(header, graphUri);
     }
 
-    public String getTemplateComponentExplanation(String graphUri, String componentUri, String header) throws Exception {
-        return tmplExpService.explainComponentAsRdf(graphUri, componentUri, header);
+    public String getTemplateComponentExplanation(String graphUri, QanaryComponent component, String header) throws Exception {
+        return tmplExpService.explainComponentAsRdf(graphUri, component, header);
     }
 
     public String getTemplateComponentInputExplanation(String graphUri, String componentUri) throws IOException {
@@ -82,29 +82,29 @@ public class ExplanationService {
     }
 
     public ComposedExplanation composedExplanationForInputData(ComposedExplanationDTO composedExplanationDTO) throws Exception {
-        List<String> components = composedExplanationDTO.getGenerativeExplanationRequest().getQanaryComponents().stream().map(QanaryComponent::getComponentName).toList();
+        List<QanaryComponent> components = composedExplanationDTO.getGenerativeExplanationRequest().getQanaryComponents();
         String graph = composedExplanationDTO.getGraphUri();
         ComposedExplanation composedExplanation = new ComposedExplanation();
-        for (String component : components) {
+        for (QanaryComponent component : components) {
 
             QuerySolutionMap bindings = new QuerySolutionMap();
             bindings.add("graph", ResourceFactory.createResource(graph));
-            bindings.add("component", ResourceFactory.createResource("urn:qanary:" + component));
+            bindings.add("component", ResourceFactory.createResource(component.getPrefixedComponentName()));
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(TemplateExplanationsService.INPUT_DATA_SELECT_QUERY, bindings);
             ResultSet results = qanaryRepository.selectWithResultSet(query);
 
             QuerySolution querySolution = results.next(); // TODO: Add component to composedExplanation
             String resultQuery = querySolution.get("body").toString();
 
-            String templatebasedExplanation = tmplExpService.createExplanationForQuery(querySolution, graph, component);
+            String templatebasedExplanation = tmplExpService.createExplanationForQuery(querySolution, graph, component.getComponentName());
 
             String prompt = genExpService.getInputDataExplanationPrompt(
-                    component,
+                    component.getComponentName(),
                     resultQuery,
                     composedExplanationDTO.getGenerativeExplanationRequest().getShots()
             );
             String gptExplanation = genExpService.sendPrompt(prompt, composedExplanationDTO.getGenerativeExplanationRequest().getGptModel());
-            composedExplanation.addExplanationItem(component, templatebasedExplanation, prompt, gptExplanation, resultQuery);
+            composedExplanation.addExplanationItem(component.getComponentName(), templatebasedExplanation, prompt, gptExplanation, resultQuery);
         }
         return composedExplanation;
     }
