@@ -1,13 +1,12 @@
 package com.wse.qanaryexplanationservice.helper.pojos;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 
 public class QanaryComponent {
 
     @NotNull
     private String componentName;
-    @NotNull
+    private String prefixedComponentName;
     private String componentMainType;
 
     public QanaryComponent() {
@@ -15,12 +14,22 @@ public class QanaryComponent {
     }
 
     public QanaryComponent(String componentName) {
-        this.componentName = componentName;
+        setComponentNames(componentName);
     }
 
     public QanaryComponent(String componentName, String componentMainType) {
         this.componentMainType = componentMainType;
         this.componentName = componentName;
+    }
+
+    private void setComponentNames(String componentName) {
+        if (componentName.contains("urn:qanary:")) {
+            this.componentName = componentName.replace("urn:qanary:", "");
+            this.prefixedComponentName = componentName;
+        } else {
+            this.componentName = componentName;
+            this.prefixedComponentName = "urn:qanary:" + componentName;
+        }
     }
 
     public String getComponentMainType() {
@@ -37,5 +46,9 @@ public class QanaryComponent {
 
     public void setComponentName(String componentName) {
         this.componentName = componentName;
+    }
+
+    public String getPrefixedComponentName() {
+        return prefixedComponentName;
     }
 }

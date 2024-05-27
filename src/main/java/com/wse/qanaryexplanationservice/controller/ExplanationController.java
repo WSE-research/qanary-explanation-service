@@ -2,6 +2,7 @@ package com.wse.qanaryexplanationservice.controller;
 
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.slf4j.Logger;
@@ -24,12 +25,12 @@ public class ExplanationController {
     /**
      * Computes the explanations for (currently) the output data for a specific graph and/or component
      *
-     * @param componentURI ComponentURI with its prefixes
+     * @param component    @see QanaryComponent
      * @param acceptHeader The answer is formatted as RDF, possibly in RDF/XML, TTL or JSON-LD.
      * @return Explanation for system or component as RDF
      */
     @CrossOrigin
-    @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{componentURI}"}, produces = {
+    @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{component}"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
@@ -46,16 +47,16 @@ public class ExplanationController {
     )
     public ResponseEntity<?> getExplanations(
             @PathVariable String graphURI,
-            @PathVariable(required = false) String componentURI,
+            @PathVariable(required = false) QanaryComponent component,
             @RequestHeader(value = "accept", required = false) String acceptHeader) throws Exception {
-        if (componentURI == null) {
+        if (component == null) {
             String result = explanationService.getQaSystemExplanation(graphURI, acceptHeader);
             if (result != null)
                 return new ResponseEntity<>(result, HttpStatus.OK);
             else
                 return new ResponseEntity<>(null, HttpStatus.NOT_ACCEPTABLE);
         } else {
-            String result = this.explanationService.getTemplateComponentExplanation(graphURI, componentURI, acceptHeader);
+            String result = this.explanationService.getTemplateComponentExplanation(graphURI, component, acceptHeader);
             if (result != null)
                 return new ResponseEntity<>(result, HttpStatus.OK);
             else
@@ -98,10 +99,10 @@ public class ExplanationController {
     )
     public ResponseEntity<?> getOutputExplanation(
             @PathVariable String graphURI,
-            @PathVariable String componentURI,
+            @PathVariable QanaryComponent component,
             @RequestHeader(value = "accept", required = false) String acceptHeader) {
         try {
-            String explanationInFormattedString = explanationService.getTemplateComponentExplanation(graphURI, componentURI, acceptHeader);
+            String explanationInFormattedString = explanationService.getTemplateComponentExplanation(graphURI, component, acceptHeader);
             return new ResponseEntity<>(explanationInFormattedString, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);

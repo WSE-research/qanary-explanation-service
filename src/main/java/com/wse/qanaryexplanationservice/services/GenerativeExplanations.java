@@ -210,12 +210,10 @@ public class GenerativeExplanations {
             if (annotationType != null)
                 query = query.replace("?annotationType", "qa:" + annotationType);
             ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
-            if (resultSet.hasNext())
-                return resultSet;
-            else {
+            if (!resultSet.hasNext()) {
                 logger.warn("The resultSet for the component {} is null, empty dataset is returned.", componentURI);
-                return resultSet;
             }
+            return resultSet;
         } catch (IOException e) {
             logger.error("Exception while passing values to plain query: {}", e.getLocalizedMessage());
             throw new Exception(e);
