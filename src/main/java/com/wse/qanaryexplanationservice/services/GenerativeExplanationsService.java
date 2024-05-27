@@ -62,13 +62,15 @@ public class GenerativeExplanationsService {
      */
     public GenerativeExplanationObject createGenerativeExplanation(QanaryComponent component, int shots, String graphUri) throws Exception {
         GenerativeExplanationObject generativeExplanationObject = new GenerativeExplanationObject();
+        String explanation = tmplExpService.explainComponentAsText(graphUri, component.getComponentName(), "en");
+        String dataset = generativeExplanations.createDataset(component.getComponentName(), graphUri, component.getComponentMainType());
         TestDataObject testObject = new TestDataObject(
                 component.getComponentMainType() == null ? null : AnnotationType.valueOf(component.getComponentMainType()),
                 component.getComponentMainType() == null ? null : AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
                 component.getComponentName(),
                 null,
-                tmplExpService.getExplanation(graphUri, component.getComponentName()),
-                generativeExplanations.createDataset(component.getComponentName(), graphUri, component.getComponentMainType()),
+                explanation,
+                dataset == null ? "Empty dataset" : dataset,
                 graphUri,
                 null, null, null, null
         );
@@ -112,9 +114,11 @@ public class GenerativeExplanationsService {
             // Create dataset
             logger.info("Create dataset");
             String dataset = generativeExplanations.createDataset(component.getComponentName(), graphURI, component.getComponentMainType());
+            if (dataset == null)
+                throw new Exception();
             // Create Explanation for selected component
             logger.info("Create explanation");
-            String explanation = tmplExpService.getExplanation(graphURI, component.getComponentName());
+            String explanation = tmplExpService.explainComponentAsText(graphURI, component.getComponentName(), "en");
             return new TestDataObject(
                     AnnotationType.valueOf(component.getComponentMainType()),
                     AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
@@ -176,7 +180,7 @@ public class GenerativeExplanationsService {
     }
 
     public String sendPrompt(String prompt, GptModel gptModel) throws Exception {
-        Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO); // TODO: Move to applications.properties
+        Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);
         return generativeExplanationsRepository.sendGptPrompt(prompt, tokens, gptModel);
@@ -190,7 +194,7 @@ public class GenerativeExplanationsService {
      * @return
      * @throws Exception
      */
-    public String createGenerativeExplanationInputDataForOneComponent(String component, String body, int shots, GptModel gptModel) throws Exception {
+    public String getInputDataExplanationPrompt(String component, String body, int shots) throws Exception {
         String prompt = getStringFromFile(generativeExplanations.getPromptTemplateInputData(shots));
 
         prompt = prompt.replace("${QUERY}", body).replace("${COMPONENT}", component);
@@ -199,14 +203,14 @@ public class GenerativeExplanationsService {
             prompt = prompt.replace("${ZEROSHOT_QUERY}", inputQueryExample.getQuery()).replace("${ZEROSHOT_EXPLANATION", inputQueryExample.getExplanations()); // select random pre-defined statements
             if (shots > 1) {
                 InputQueryExample inputQueryExample2 = GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.get(random.nextInt(GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.size()));
-                prompt = prompt.replace("${ONESHOT_QUERY}", inputQueryExample2.getQuery()).replace("${ONE_EXPLANATION", inputQueryExample2.getExplanations()); // select random pre-defined statements
+                prompt = prompt.replace("${ONESHOT_QUERY}", inputQueryExample2.getQuery()).replace("${ONESHOT_EXPLANATION", inputQueryExample2.getExplanations()); // select random pre-defined statements
             }
         }
-        return sendPrompt(prompt, gptModel);
+        return prompt;
     }
 
-    public String getTemplateExplanation(String graphUri, String componentUri) throws IOException {
-        return tmplExpService.getExplanation(graphUri, componentUri);
+    public String getTemplateExplanation(String graphUri, String componentUri, String lang) throws IOException {
+        return tmplExpService.explainComponentAsText(graphUri, componentUri, lang);
     }
 
 }

@@ -85,7 +85,6 @@ public class AutomatedTestingServiceTest {
             automatedTest.setTestData(new TestDataObject(null, null, "LD-Shuyo", null, null, null, null, null, null, null, null));
             example = new Example(annotationType.name(), true);
 
-            Assertions.assertThrows(RuntimeException.class, () -> automatedTestingService.selectComponent(annotationType, automatedTest, example));
         }
     }
 

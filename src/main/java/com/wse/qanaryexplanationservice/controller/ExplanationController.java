@@ -7,13 +7,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Map;
 
 @RestController
 @ControllerAdvice
@@ -22,9 +20,6 @@ public class ExplanationController {
     private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
     @Autowired
     private ExplanationService explanationService;
-
-    @Value("${gpt.request.auth}")
-    private String gptRequestAuthToken;
 
     /**
      * Computes the explanations for (currently) the output data for a specific graph and/or component
@@ -106,7 +101,7 @@ public class ExplanationController {
             @PathVariable String componentURI,
             @RequestHeader(value = "accept", required = false) String acceptHeader) {
         try {
-            String explanationInFormattedString = explanationService.getTemplateComponentExplanation(graphURI, componentURI, null);
+            String explanationInFormattedString = explanationService.getTemplateComponentExplanation(graphURI, componentURI, acceptHeader);
             return new ResponseEntity<>(explanationInFormattedString, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);

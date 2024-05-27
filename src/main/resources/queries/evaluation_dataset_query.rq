@@ -13,28 +13,28 @@ FROM ?graphURI
 WHERE
 {
 	{
-		SELECT ?id ?p ?o {
-    	    ?id oa:annotatedBy ?componentURI.
-    		?id rdf:type ?annotationType .
-		    FILTER NOT EXISTS {?id rdf:type qa:AnnotationOfLogQuery}
-	        ?id ?p ?o .
+		SELECT ?s ?p ?o {
+    	    ?s oa:annotatedBy ?componentURI.
+    		?s rdf:type ?annotationType .
+		    FILTER NOT EXISTS {?s rdf:type qa:AnnotationOfLogQuery}
+	        ?s ?p ?o .
     	}
   	}
   	UNION {
-	    SELECT (?o1 AS ?id) (?p2 AS ?p) (?o2 AS ?o) {
-    		?id1 oa:annotatedBy ?componentURI .
-    		?id1 rdf:type ?annotationType .
-	  		FILTER NOT EXISTS {?id1 rdf:type qa:AnnotationOfLogQuery}
-    		?id1 ?p1 ?o1 .
+	    SELECT (?o1 AS ?s) (?p2 AS ?p) (?o2 AS ?o) {
+    		?s1 oa:annotatedBy ?componentURI .
+    		?s1 rdf:type ?annotationType .
+	  		FILTER NOT EXISTS {?s1 rdf:type qa:AnnotationOfLogQuery}
+    		?s1 ?p1 ?o1 .
 			?o1 ?p2 ?o2 .
   		}
   	}
   	UNION {
-	    SELECT (?o2 AS ?id) (?p3 AS ?p) (?o3 AS ?o) {
-    		?id1 oa:annotatedBy ?componentURI .
-    		?id1 rdf:type ?annotationType .
-            FILTER NOT EXISTS {?id1 rdf:type qa:AnnotationOfLogQuery}
-      		?id1 ?p1 ?o1 .
+	    SELECT (?o2 AS ?s) (?p3 AS ?p) (?o3 AS ?o) {
+    		?s1 oa:annotatedBy ?componentURI .
+    		?s1 rdf:type ?annotationType .
+            FILTER NOT EXISTS {?s1 rdf:type qa:AnnotationOfLogQuery}
+      		?s1 ?p1 ?o1 .
 			?o1 ?p2 ?o2 .
       		?o2 ?p3 ?o3
   		}

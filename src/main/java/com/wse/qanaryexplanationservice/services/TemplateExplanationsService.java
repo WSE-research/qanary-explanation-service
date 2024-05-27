@@ -12,6 +12,7 @@ import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -70,6 +71,8 @@ public class TemplateExplanationsService {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
     private Map<String, ResultSet> stringResultSetMap = new HashMap<>();
+    @Autowired
+    private QanaryRepository qanaryRepository;
     @Value("${explanations.dataset.limit}")
     private int EXPLANATIONS_DATASET_LIMIT;
     @Value("${questionId.replacement}")
@@ -79,15 +82,38 @@ public class TemplateExplanationsService {
     }
 
     /**
+     * Computes a textual explanation for a specific component on a specific graphURI
+     *
+     * @param graphUri     specific graphURI
+     * @param componentUri specific componentURI
+     * @return Explanation in accepted format, default: Turtle
+     */
+    public String explainComponentAsRdf(String graphUri, String componentUri, String header) throws IOException {
+        logger.info("Passed header: {}", header);
+        Model model = createModelForSpecificComponent(
+                explainComponentAsText(graphUri, componentUri, "de"),
+                explainComponentAsText(graphUri, componentUri, "en"),
+                "urn:qanary:" + componentUri
+        );
+        return convertToDesiredFormat(header, model);
+    }
+
+    public String explainComponentAsText(String graphUri, String componentUri, String lang) throws IOException {
+        String component = "urn:qanary:" + componentUri;
+        List<String> types = fetchAllAnnotations(graphUri, component);
+        return createTextualExplanation(graphUri, component, lang, types);
+    }
+
+    /**
      * Collects list of explanations and creates the complete explanation including intro, prefix and items
      *
      * @param explanations List of explanations following the used templates
      * @param prefix       Text phrase between intro and items, can be an empty string
      * @return Explanation as String
      */
-    private String getResult(String componentURI, String lang, List<String> explanations, String prefix) {
-        String result = null;
-        logger.info("Explanations {}", explanations.size());
+    private String composeExplanations(String componentURI, String lang, List<String> explanations, String prefix) {
+        String result = "";
+        explanations.remove(0); // remove prefix
         if (Objects.equals(lang, "en")) {
             result = "The component " + componentURI + " has added " + (explanations.size() == 5 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
                     + prefix + ": " + StringUtils.join(explanations, " ");
@@ -99,21 +125,8 @@ public class TemplateExplanationsService {
     }
 
     /**
-     * Computes a textual explanation for a specific component on a specific graphURI
-     *
-     * @param graphUri     specific graphURI
-     * @param componentUri specific componentURI
-     * @return Explanation in accepted format, default: Turtle
-     */
-    public String explainSpecificComponent(String graphUri, String componentUri, String header) throws Exception {
-        logger.info("Passed header: {}", header);
-        Model model = createModel(graphUri, componentUri);
-
-        return convertToDesiredFormat(header, model);
-    }
-
-    /**
      * Creates language-specific explanations and computes explanation model
+     * TODO: soon deprecated
      *
      * @return Model including
      */
@@ -122,7 +135,7 @@ public class TemplateExplanationsService {
         List<String> types = new ArrayList<>();
         if (stringResultSetMap.isEmpty()) {
             types = fetchAllAnnotations(graphUri, componentUri);
-    }
+        }
         String contentDE = createTextualExplanation(graphUri, componentUri, "de", types);
         String contentEN = createTextualExplanation(graphUri, componentUri, "en", types);
 
@@ -180,8 +193,6 @@ public class TemplateExplanationsService {
     }
 
     /**
-     * TODO: RENAME!
-     *
      * @param rawQuery Query-String without set values
      * @return Query-String with set values
      */
@@ -189,7 +200,7 @@ public class TemplateExplanationsService {
         QuerySolutionMap bindingsForSparqlQuery = new QuerySolutionMap();
         bindingsForSparqlQuery.add("graph", ResourceFactory.createResource(graphURI));
         if (componentUri != null)    // Extension for compatibility w/ explanation for specific component
-            bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource("urn:qanary:" + componentUri));
+            bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource(componentUri));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
 
@@ -223,7 +234,7 @@ public class TemplateExplanationsService {
         QuerySolutionMap bindings = new QuerySolutionMap();
         bindings.add("graph", ResourceFactory.createResource(graphID));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(COMPONENTS_SPARQL_QUERY, bindings);
-        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
+        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
         List<String> components = new ArrayList<>();
         while (resultSet.hasNext()) {
             components.add(resultSet.next().get("component").toString());
@@ -234,11 +245,10 @@ public class TemplateExplanationsService {
     // get the origin questionURI for a graphURI
     public String fetchQuestionUri(String graphURI) throws Exception {
         String query = buildSparqlQuery(graphURI, null, QUESTION_QUERY);
-        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
+        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
 
         try {
-            String questionURI = resultSet.next().get("source").toString();
-            return questionURI;
+            return resultSet.next().get("source").toString();
         } catch (Exception e) {
             throw new Exception("Couldn't fetch the question!", e);
         }
@@ -313,7 +323,7 @@ public class TemplateExplanationsService {
         String query = buildSparqlQuery(graphURI, componentURI, ANNOTATIONS_QUERY); // can be simplified by excluding with FILTER NOT ...
 
         ArrayList<String> types = new ArrayList<>();
-        ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
+        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
 
         // Iterate through the QuerySolutions and gather all annotation-types
         while (resultSet.hasNext()) {
@@ -333,7 +343,7 @@ public class TemplateExplanationsService {
      *
      * @param usedTypes Includes all annotation types the given componentURI has created
      * @param lang      The language for the explanation
-     * @return List with explanations. At the end it includes all explanations for every annotation type
+     * @return Map with the Annotation type as Key and it's explanations as Value (List)
      */
     public Map<String, List<String>> createSpecificExplanations(List<String> usedTypes, String graphURI, String lang, String componentURI) throws IOException {
         Map<String, List<String>> explanations = new HashMap<>();
@@ -354,23 +364,25 @@ public class TemplateExplanationsService {
     public List<String> createSpecificExplanation(String type, String graphURI, String lang, String componentURI) throws IOException {
         String query = buildSparqlQuery(graphURI, componentURI, annotationsTypeAndQuery.get(type));
 
-        // For the first language that will be executed, for each annotation-type a component created // TODO: could be cached.
-        if (!stringResultSetMap.containsKey(type))
-            stringResultSetMap.put(type, QanaryRepository.selectWithResultSet(query));
+        // TODO: Cache the ResultSet as map for further usage w/ different languages
 
-        List<String> explanationsForCurrentType = addingExplanations(type, lang, stringResultSetMap.get(type));
+        ResultSet results = qanaryRepository.selectWithResultSet(query);
+
+        List<String> explanationsForCurrentType = addingExplanations(type, lang, results);
 
         logger.info("Created explanations: {}", explanationsForCurrentType);
         return explanationsForCurrentType;
     }
 
     /**
+     * Uses the passed ResultSet to create explanations with their corresponding templates
+     *
      * @param type    The actual type for which the explanation is being generated, relevant for selection of correct template
      * @param lang    The actual language the explanation is created for
      * @param results The ResultSet for the actual type
      * @return A list of explanations for the given type in the given language
      */
-    public List<String> addingExplanations(String type, String lang, ResultSet results) throws IOException {
+    public List<String> addingExplanations(String type, String lang, ResultSet results) {
 
         List<String> explanationsForCurrentType = new ArrayList<>();
         String langExplanationPrefix = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_prefix");
@@ -464,30 +476,14 @@ public class TemplateExplanationsService {
     }
 
     /**
-     * Creates the explanation and returns the english one
-     *
-     * @return The explanation for given graphURI and componentURI
-     */
-    public String getExplanation(String graphURI, String componentURI) throws IOException, IndexOutOfBoundsException {
-
-        Model explanationModel = this.createModel(graphURI, "urn:qanary:" + componentURI);
-        explanationModel.setNsPrefix("explanations", EXPLANATION_NAMESPACE);
-        Property hasExplanationForCreatedDataProperty = explanationModel.createProperty(EXPLANATION_NAMESPACE, "hasExplanationForCreatedData");
-        Statement statement = explanationModel.getRequiredProperty(ResourceFactory.createResource("urn:qanary:" + componentURI), hasExplanationForCreatedDataProperty, "en");
-
-        return statement.getString();
-    }
-
-    /**
      * Creates a textual explanation for all annotations made by the componentURI for a language lang. The explanation for the annotations are formatted as a list
      *
      * @param lang Currently supported en_list_item and de_list_item
      * @return Complete explanation for the componentURI including all information to each annotation
-     * TODO later: Assemble explanations in a different way.
      */
     public String createTextualExplanation(String graphURI, String componentURI, String lang, List<String> types) throws IOException, IndexOutOfBoundsException {
 
-        if (types.size() == 0) { // Component did not add any Annotation
+        if (types.isEmpty()) { // Component did not add any Annotation
             return "The component " + componentURI + " inserted 0 annotations to the triplestore.";
         }
 
@@ -495,14 +491,11 @@ public class TemplateExplanationsService {
 
         AtomicInteger i = new AtomicInteger();
 
-        createdExplanations.forEach((component, list) -> {
-            createdExplanations.put(component, list.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList());
-        });
+        // createdExplanations.forEach((component, list) -> createdExplanations.put(component, list.stream().skip(1).map((explanation) -> i.incrementAndGet() + ". " + explanation).toList()));
 
-        stringResultSetMap.clear();
         StringBuilder result = new StringBuilder();
         createdExplanations.forEach((component, list) -> {
-            result.append(getResult(component, lang, list, list.get(0)));
+            result.append(composeExplanations(componentURI, lang, list, list.get(0)));
             result.append("\n\n");
         });
         return result.toString();
@@ -526,7 +519,7 @@ public class TemplateExplanationsService {
 
         int resultSetSize = 0;
         List<String> explanationsForQueries = new ArrayList<>();
-        ResultSet results = QanaryRepository.selectWithResultSet(queryTemplate);
+        ResultSet results = qanaryRepository.selectWithResultSet(queryTemplate);
         if (!results.hasNext())
             return "The component " + component + " hasn't used any queries.";
         while (results.hasNext()) {
@@ -569,7 +562,7 @@ public class TemplateExplanationsService {
             put("annotationType", annotationType);
         }};
         // for each language
-        String listItem = "";
+        String listItem;
         try {
             listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
         } catch (RuntimeException e) {

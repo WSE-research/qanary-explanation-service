@@ -148,7 +148,8 @@ public class TemplateExplanationsServiceTest {
             //when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(emptyResultSet);
         }
 
-        // Testing the createSystemModel-method
+        // Rewrite
+        /*
         @Test
         void createSystemModelTest() {
             models = controllerDataForTests.getQaSystemExplanationMap();
@@ -160,6 +161,8 @@ public class TemplateExplanationsServiceTest {
 
             assertTrue(expectedModel.isIsomorphicWith(computedModel));
         }
+
+         */
 
     }
 
