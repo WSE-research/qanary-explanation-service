@@ -174,8 +174,6 @@ public class GenerativeExplanationsService {
 
     public String getStringFromFile(String path) throws IOException {
         return QanaryTripleStoreConnector.readFileFromResources(path);
-        // File file = new ClassPathResource(path).getFile();
-        // return new String(Files.readAllBytes(file.toPath()));
     }
 
     public String sendPrompt(String prompt, GptModel gptModel) throws Exception {
