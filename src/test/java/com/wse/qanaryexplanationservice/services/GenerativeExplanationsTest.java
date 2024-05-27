@@ -2,32 +2,26 @@ package com.wse.qanaryexplanationservice.services;
 
 
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
-import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTest;
-import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.Example;
-import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
-import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import com.wse.qanaryexplanationservice.repositories.QuestionsRepository;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.env.Environment;
-import org.springframework.test.context.event.annotation.BeforeTestClass;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 
@@ -35,17 +29,17 @@ import static org.mockito.Mockito.mockStatic;
 @SpringBootTest
 public class GenerativeExplanationsTest {
 
+    private static final String EXAMPLE_QUESTION = "A question about the universe";
     @Autowired
     private GenerativeExplanations generativeExplanations;
     private ServiceDataForTests testData = new ServiceDataForTests();
-
-    private static final String EXAMPLE_QUESTION = "A question about the universe";
     private MockedStatic<QuestionsRepository> repositoryMockedStatic;
 
     @BeforeEach
     public void beforeEach() {
         repositoryMockedStatic = mockStatic(QuestionsRepository.class);
     }
+
     @AfterEach
     public void afterEach() {
         repositoryMockedStatic.close();
@@ -61,22 +55,13 @@ public class GenerativeExplanationsTest {
     public void getRandomQuestionTestSuccessful() throws IOException, IOException {
         QuerySolutionMap querySolutionMap = new QuerySolutionMap();
         querySolutionMap.add("hasQuestion", ResourceFactory.createStringLiteral(EXAMPLE_QUESTION));
-        ArrayList<QuerySolutionMap> querySolutionMapList = new ArrayList<>() {{add(querySolutionMap);}};
+        ArrayList<QuerySolutionMap> querySolutionMapList = new ArrayList<>() {{
+            add(querySolutionMap);
+        }};
         ResultSet testResultSet = testData.createResultSet(querySolutionMapList);
         setupRandomTest(testResultSet);
         String question = generativeExplanations.getRandomQuestion(23);
-        Assertions.assertEquals(question,EXAMPLE_QUESTION);
-    }
-
-    @Test
-    public void getRandomQuestionTestFaiuĺure() throws IOException {
-        ArrayList<QuerySolutionMap> querySolutionMapList = new ArrayList<>();
-        ResultSet testResultSet = testData.createResultSet(querySolutionMapList);
-        setupRandomTest(testResultSet);
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            generativeExplanations.getRandomQuestion(23);
-        });
-        assertEquals(exception.getMessage(),"The executed SPARQL query returned zero results");
+        Assertions.assertEquals(question, EXAMPLE_QUESTION);
     }
 
     ////////// selectRandomComponents ////////////
@@ -86,14 +71,18 @@ public class GenerativeExplanationsTest {
         List<String> comps = generativeExplanations.selectRandomComponents(null);
         assertEquals(new ArrayList<>(), comps);
     }
+
     @Test
     public void selectRandomComponentsTestEmpty() {
         List<String> comps = generativeExplanations.selectRandomComponents(new ArrayList<>());
         assertEquals(new ArrayList<>(), comps);
     }
+
     @Test
     public void selectRandomComponentsTestNotEmpty() {
-        List<String> comps = generativeExplanations.selectRandomComponents(new ArrayList<>() {{add(AnnotationType.AnnotationOfInstance);}});
+        List<String> comps = generativeExplanations.selectRandomComponents(new ArrayList<>() {{
+            add(AnnotationType.AnnotationOfInstance);
+        }});
         assertTrue(!comps.isEmpty());
     }
 

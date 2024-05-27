@@ -8,12 +8,14 @@ import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import com.wse.qanaryexplanationservice.repositories.QuestionsRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.query.QueryException;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -66,19 +68,22 @@ public class GenerativeExplanations {
         put("^^http://www.w3.org/2001/XMLSchema#float", "");
     }};
     private static final Map<Integer, String> EXAMPLE_COUNT_AND_TEMPLATE = new HashMap<>() {{
-        put(1, "/testtemplates/oneshot");
-        put(2, "/testtemplates/twoshot");
-        put(3, "/testtemplates/threeshot");
+        put(1, "/prompt_templates/outputdata/oneshot");
+        put(2, "/prompt_templates/outputdata/twoshot");
+        put(3, "/prompt_templates/outputdata/threeshot");
     }};
 
     private static final Map<Integer, String> EXAMPLE_COUNT_AND_TEMPLATE_INPUT_DATA = new HashMap<>() {{
-        put(1, "/testtemplates/inputdata/oneshot");
-        put(2, "/testtemplates/inputdata/twoshot");
-        put(0, "/testtemplates/inputdata/zeroshot");
+        put(1, "/prompt_templates/inputdata/oneshot");
+        put(2, "/prompt_templates/inputdata/twoshot");
+        put(0, "/prompt_templates/inputdata/zeroshot");
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private static final String QUESTION_QUERY = "/queries/random_question_query.rq";
     private static final Logger logger = LoggerFactory.getLogger(GenerativeExplanations.class);
+
+    @Autowired
+    private QanaryRepository qanaryRepository;
 
     public GenerativeExplanations(Environment environment) {
         for (AnnotationType annType : AnnotationType.values()
@@ -89,7 +94,7 @@ public class GenerativeExplanations {
 
     @Value("${questionId.replacement}")
     public void setQuestionIdReplacement(String questionIdUri) {
-        this.PREFIXES.put(questionIdUri + "/question/stored-question__text_", "questionID:");
+        PREFIXES.put(questionIdUri + "/question/stored-question__text_", "questionID:");
     }
 
     /**
@@ -111,10 +116,6 @@ public class GenerativeExplanations {
             String errorMessage = "Error while fetching a random question";
             logger.error("Error: {}", errorMessage);
             throw new IOException(errorMessage);
-        } catch (IndexOutOfBoundsException e) {
-            String errorMessage = "The executed SPARQL query returned zero results";
-            logger.error(errorMessage);
-            throw new RuntimeException(errorMessage);
         }
     }
 
@@ -128,7 +129,7 @@ public class GenerativeExplanations {
         QanaryRequestObject qanaryRequestObject = new QanaryRequestObject(question, null, null, randomComponents);
 
         try {
-            return QanaryRepository.executeQanaryPipeline(qanaryRequestObject);
+            return qanaryRepository.executeQanaryPipeline(qanaryRequestObject);
         } catch (WebClientResponseException e) {
             String errorMessage = "Error while executing Qanary pipeline, Error message: " + e.getMessage();
             logger.error(errorMessage);
@@ -151,7 +152,7 @@ public class GenerativeExplanations {
 
         for (AnnotationType annType : list
         ) {
-            String[] componentsList = this.TYPE_AND_COMPONENTS.get(annType.name());
+            String[] componentsList = TYPE_AND_COMPONENTS.get(annType.name());
             int selectedComponentAsInt = random.nextInt(componentsList.length);
             componentList.add(componentsList[selectedComponentAsInt]);
         }
@@ -165,37 +166,38 @@ public class GenerativeExplanations {
      */
     public String createDataset(String componentURI, String graphURI, String annotationType) throws Exception {
 
-        try {
-            ResultSet triples = fetchTriples(graphURI, componentURI, annotationType);
-            StringBuilder dataSet = new StringBuilder();
-            while (triples.hasNext()) {
-                QuerySolution querySolution = triples.next();
-                dataSet.append(querySolution.getResource("s"))
-                        .append(" ").append(querySolution.getResource("p"))
-                        .append(" ").append(querySolution.get("o"))
-                        .append(" .\n");
-            }
-            String dataSetAsString = dataSet.toString();
+        ResultSet triples = fetchTriples(graphURI, componentURI, annotationType);
+        StringBuilder dataSet = new StringBuilder();
 
-            // Replace PREFIXES
-            for (Map.Entry<String, String> entry : PREFIXES.entrySet()) {
-                dataSetAsString = dataSetAsString.replace(entry.getKey(), entry.getValue());
-            }
-            return dataSetAsString;
-        } catch (RuntimeException e) {
-            logger.error("{}", e.getMessage());
-            return "Empty dataset";
+        if (!triples.hasNext()) {
+            logger.warn("Empty dataset for component: {}", componentURI);
+            return null;
         }
+        while (triples.hasNext()) {
+            QuerySolution querySolution = triples.next();
+            dataSet.append(querySolution.getResource("s"))
+                    .append(" ").append(querySolution.getResource("p"))
+                    .append(" ").append(querySolution.get("o"))
+                    .append(" .\n");
+        }
+        String dataSetAsString = dataSet.toString();
+
+        // Replace PREFIXES
+        for (Map.Entry<String, String> entry : PREFIXES.entrySet()) {
+            dataSetAsString = dataSetAsString.replace(entry.getKey(), entry.getValue());
+        }
+        return dataSetAsString;
     }
 
     public AnnotationType[] getDependencyList(String annotationType) {
         logger.info("Type: {}", annotationType);
-        return this.DEPENDENCY_MAP_FOR_ANNOTATION_TYPES.get(AnnotationType.valueOf(annotationType));
+        return DEPENDENCY_MAP_FOR_ANNOTATION_TYPES.get(AnnotationType.valueOf(annotationType));
     }
 
     /**
      * Fetches triples for specific graph + component
      *
+     * @param annotationType Can be null, then, the annotation type is omitted
      * @return Triples as ResultSet
      * @throws Exception If a component hasn't made any annotations to the graph the query will result in an empty ResultSet
      */
@@ -203,27 +205,30 @@ public class GenerativeExplanations {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
         bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
         bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:" + componentURI));
-        bindingsForQuery.add("annotatedBy", ResourceFactory.createResource("urn:qanary:" + componentURI));
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
-            query = query.replace("?annotationType", "qa:" + annotationType);
-            ResultSet resultSet = QanaryRepository.selectWithResultSet(query);
-            if (!resultSet.hasNext())
-                throw new RuntimeException("Fetching triples failed, ResultSet is null");
-            else
-                return resultSet;
+            if (annotationType != null)
+                query = query.replace("?annotationType", "qa:" + annotationType);
+            ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
+            if (!resultSet.hasNext()) {
+                logger.warn("The resultSet for the component {} is null, empty dataset is returned.", componentURI);
+            }
+            return resultSet;
         } catch (IOException e) {
-            logger.error("Error while fetching triples: {}", e.getMessage());
+            logger.error("Exception while passing values to plain query: {}", e.getLocalizedMessage());
+            throw new Exception(e);
+        } catch (QueryException e) {
+            logger.error("Exception while parsing the query: {}", e.getLocalizedMessage());
             throw new Exception(e);
         }
     }
 
     public String getPromptTemplate(int shots) {
-        return this.EXAMPLE_COUNT_AND_TEMPLATE.get(shots);
+        return EXAMPLE_COUNT_AND_TEMPLATE.get(shots);
     }
 
     public String getPromptTemplateInputData(int shots) {
-        return this.EXAMPLE_COUNT_AND_TEMPLATE_INPUT_DATA.get(shots);
+        return EXAMPLE_COUNT_AND_TEMPLATE_INPUT_DATA.get(shots);
     }
 
 }

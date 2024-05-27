@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -34,13 +33,13 @@ public class AutomatedTestingService {
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
     // stores the correct template for different x-shot approaches
     private final Map<Integer, String> exampleCountAndTemplate = new HashMap<>() {{
-        put(1, "/testtemplates/oneshot");
-        put(2, "/testtemplates/twoshot");
-        put(3, "/testtemplates/threeshot");
+        put(1, "/prompt_templates/outputdata/oneshot");
+        put(2, "/prompt_templates/outputdata/twoshot");
+        put(3, "/prompt_templates/outputdata/threeshot");
     }};
-
-
     private final Random random;
+    @Value("${questionId.replacement}")
+    private String QUESTION_ID_REPLACEMENT;
     @Autowired
     private GenerativeExplanations generativeExplanations;
     @Value("${explanations.dataset.limit}")
@@ -51,7 +50,7 @@ public class AutomatedTestingService {
     private ExplanationDataService explanationDataService;
 
     // CONSTRUCTOR(s)
-    public AutomatedTestingService(Environment environment) {
+    public AutomatedTestingService() {
         this.random = new Random();
     }
 
@@ -61,8 +60,7 @@ public class AutomatedTestingService {
 
         // Case if example is null, e.g. when the testing data is calculated
         if (example == null || !example.getUniqueComponent()) {
-            int selectedComponentAsInt = random.nextInt(componentsList.length);
-            return componentsList[selectedComponentAsInt];
+            return selectRandomComponentFromComponentList(componentsList);
         }
         // Case if component should be unique in the whole test-case
         else {
@@ -76,10 +74,16 @@ public class AutomatedTestingService {
                     componentList.remove(rnd);  // Remove visited item -> list.size()-1 -> prevent infinite loop
                 } while (usedComponentsInTest.contains(component));
             } catch (Exception e) {
-                throw new RuntimeException("There is no other unique and unused component for type " + annotationType.name());
+                logger.error("There is no other unique and unused component for type {}, select other component...", annotationType.name());
+                return selectRandomComponentFromComponentList(componentsList);
             }
             return component;
         }
+    }
+
+    public String selectRandomComponentFromComponentList(String[] componentsList) {
+        int selectedComponentAsInt = random.nextInt(componentsList.length);
+        return componentsList[selectedComponentAsInt];
     }
 
     public ArrayList<String> fetchUsedComponents(AutomatedTest automatedTest) {
@@ -90,7 +94,6 @@ public class AutomatedTestingService {
         for (TestDataObject item : listExamples) { // Adds every currently known component to the list
             list.add(item.getUsedComponent());
         }
-
         return list;
     }
 
@@ -165,7 +168,7 @@ public class AutomatedTestingService {
             logger.info("Execute Qanary pipeline");
             QanaryResponseObject qanaryResponse = generativeExplanations.executeQanaryPipeline(question, componentListForQanaryPipeline);
             String graphURI = qanaryResponse.getOutGraph();
-            String questionID = qanaryResponse.getQuestion().replace("http://localhost:8080/question/stored-question__text_", "questionID:");
+            String questionID = qanaryResponse.getQuestion().replace(QUESTION_ID_REPLACEMENT + "/question/stored-question__text_", "questionID:");
 
             // Create dataset
             logger.info("Create dataset");
@@ -173,7 +176,7 @@ public class AutomatedTestingService {
 
             // Create Explanation for selected component
             logger.info("Create explanation");
-            String explanation = generativeExplanationsService.getTemplateExplanation(graphURI, selectedComponent);
+            String explanation = generativeExplanationsService.getTemplateExplanation(graphURI, selectedComponent, "en");
             return new TestDataObject(
                     givenAnnotationType,
                     givenAnnotationType.ordinal(),
@@ -231,7 +234,6 @@ public class AutomatedTestingService {
         AutomatedTest test;
 
         while (jsonArray.length() < requestBody.getRuns()) {
-            logger.info("CURRENT RUN: {}", jsonArray.length() + 1);
             test = createTest(requestBody); // null if not successful
             if (test != null) {
                 if (doGptCall) {
@@ -240,7 +242,7 @@ public class AutomatedTestingService {
                 }
                 JSONObject finishedTest = new JSONObject(test);
                 jsonArray.put(finishedTest); // Add test to Json-Array
-                explanationDataService.insertDataset(test);
+                explanationDataService.insertDataset(test, doGptCall);
             } else
                 logger.info("Skipped run due to null-ResultSet");
         }
@@ -256,8 +258,6 @@ public class AutomatedTestingService {
     }
 
 }
-
-// TODO: don't retry already used combinations
 
 
 
