@@ -2,6 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.controller.ControllerDataForTests;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
@@ -41,7 +42,7 @@ public class TemplateExplanationsServiceTest {
     @Nested
     class ExplanationAsRdfTurtle {
 
-        static final String componentURI = "urn:qanary:QB-SimpleRealNameOfSuperHero";
+        private final QanaryComponent component = new QanaryComponent("urn:qanary:QB-SimpleRealNameOfSuperHero");
         LanguageContentProvider languageContentProvider;
         Model model;
         String sparqlQuery;
@@ -58,12 +59,12 @@ public class TemplateExplanationsServiceTest {
 
         @Test
         void createRdfRepresentationTest() {
-            String result = tmplExpService.convertToDesiredFormat(null, tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String result = tmplExpService.convertToDesiredFormat(null, tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
 
             assertAll("String contains content elements as well as componentURI",
                     () -> assertTrue(result.contains(languageContentProvider.getContentDe())),
                     () -> assertTrue(result.contains(languageContentProvider.getContentEn())),
-                    () -> assertTrue(result.contains(componentURI))
+                    () -> assertTrue(result.contains(component.getComponentName()))
             );
 
             model.read(new java.io.StringReader(result), null, "Turtle");
@@ -91,10 +92,10 @@ public class TemplateExplanationsServiceTest {
         @Test
         public void compareRepresentationModels() {
             // Create Strings with different format (plain == turtle, turtle, rdfxml,jsonld)
-            String resultEmptyHeader = tmplExpService.convertToDesiredFormat(null, tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultTurtleHeader = tmplExpService.convertToDesiredFormat("text/turtle", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultRDFXMLHeader = tmplExpService.convertToDesiredFormat("application/rdf+xml", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
-            String resultJSONLDHeader = tmplExpService.convertToDesiredFormat("application/ld+json", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), componentURI));
+            String resultEmptyHeader = tmplExpService.convertToDesiredFormat(null, tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
+            String resultTurtleHeader = tmplExpService.convertToDesiredFormat("text/turtle", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
+            String resultRDFXMLHeader = tmplExpService.convertToDesiredFormat("application/rdf+xml", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
+            String resultJSONLDHeader = tmplExpService.convertToDesiredFormat("application/ld+json", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
 
             assertEquals(resultEmptyHeader, resultTurtleHeader);
             assertAll("Check different result-string",

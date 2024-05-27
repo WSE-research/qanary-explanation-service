@@ -4,6 +4,7 @@ import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.Example;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @ExtendWith(SpringExtension.class)
@@ -26,7 +28,7 @@ import java.util.Map;
 public class AutomatedTestingServiceTest {
 
     private final Logger logger = LoggerFactory.getLogger(AutomatedTestingService.class);
-    private final Map<String, String[]> typeAndComponents = new HashMap<>();
+    private final Map<String, QanaryComponent[]> typeAndComponents = new HashMap<>();
     @Autowired
     private AutomatedTestingService automatedTestingService;
     @Autowired
@@ -36,7 +38,7 @@ public class AutomatedTestingServiceTest {
     public AutomatedTestingServiceTest(Environment environment) {
         for (AnnotationType annType : AnnotationType.values()
         ) {
-            typeAndComponents.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
+            typeAndComponents.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), QanaryComponent[].class));
         }
     }
 
@@ -49,9 +51,9 @@ public class AutomatedTestingServiceTest {
         @ParameterizedTest
         @EnumSource(AnnotationType.class)
         public void selectComponentExampleNullTest(AnnotationType annotationType) {
-            String component = automatedTestingService.selectComponent(annotationType, automatedTest, null);
-            logger.info("Selected component: {}", component);
-            Assertions.assertTrue(Arrays.stream(typeAndComponents.get(annotationType.name())).toList().contains(component));
+            QanaryComponent component = automatedTestingService.selectComponent(annotationType, automatedTest, null);
+            List<String> comps = Arrays.stream(typeAndComponents.get(annotationType.name())).toList().stream().map(QanaryComponent::getComponentName).toList();
+            Assertions.assertTrue(comps.contains(component.getComponentName()));
             Assertions.assertNotNull(component);
         }
 
@@ -60,9 +62,9 @@ public class AutomatedTestingServiceTest {
         public void selectComponentNotUniqueTest(AnnotationType annotationType) {
             example = new Example(annotationType.name(), false);
 
-            String component = automatedTestingService.selectComponent(annotationType, automatedTest, example);
-            logger.info("Selected component: {}", component);
-            Assertions.assertTrue(Arrays.stream(typeAndComponents.get(annotationType.name())).toList().contains(component));
+            QanaryComponent component = automatedTestingService.selectComponent(annotationType, automatedTest, example);
+            List<String> comps = Arrays.stream(typeAndComponents.get(annotationType.name())).toList().stream().map(QanaryComponent::getComponentName).toList();
+            Assertions.assertTrue(comps.contains(component.getComponentName()));
         }
 
         @Test
@@ -71,18 +73,19 @@ public class AutomatedTestingServiceTest {
 
             // Set up Automated Test without any existing examples
             automatedTest = new AutomatedTest();
-            automatedTest.setTestData(new TestDataObject(null, null, "DandelionNED", null, null, null, null, null, null, null, null));
+            automatedTest.setTestData(new TestDataObject(null, null, new QanaryComponent("DandelionNED"), null, null, null, null, null, null, null, null));
             example = new Example(annotationType.name(), true);
 
-            String component = automatedTestingService.selectComponent(annotationType, automatedTest, example);
-            Assertions.assertTrue(Arrays.stream(typeAndComponents.get(annotationType.name())).toList().contains(component));
+            QanaryComponent component = automatedTestingService.selectComponent(annotationType, automatedTest, example);
+            List<String> comps = Arrays.stream(typeAndComponents.get(annotationType.name())).toList().stream().map(QanaryComponent::getComponentName).toList();
+            Assertions.assertTrue(comps.contains(component.getComponentName()));
         }
 
         @Test
         public void selectComponentUniqueAndExisting() {
             AnnotationType annotationType = AnnotationType.AnnotationOfQuestionLanguage;
             automatedTest = new AutomatedTest();
-            automatedTest.setTestData(new TestDataObject(null, null, "LD-Shuyo", null, null, null, null, null, null, null, null));
+            automatedTest.setTestData(new TestDataObject(null, null, new QanaryComponent("LD-Shuyo"), null, null, null, null, null, null, null, null));
             example = new Example(annotationType.name(), true);
 
         }

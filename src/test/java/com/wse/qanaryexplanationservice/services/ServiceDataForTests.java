@@ -43,8 +43,8 @@ public class ServiceDataForTests {
         put("hasTarget", "questionID:123f3rt3jrskdf324f");
         put("value", "exampleJSON");
     }};
-    
-    private Logger logger = LoggerFactory.getLogger(ServiceDataForTests.class);
+
+    private final Logger logger = LoggerFactory.getLogger(ServiceDataForTests.class);
     private List<QuerySolutionMap> querySolutionMapList;
 
     public List<QuerySolutionMap> getQuerySolutionMapList() {

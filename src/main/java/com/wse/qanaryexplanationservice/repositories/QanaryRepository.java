@@ -65,8 +65,7 @@ public class QanaryRepository {
             initConnection();
         Query query = QueryFactory.create(sparql);
         VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(query, this.connection);
-        ResultSetRewindable results = ResultSetFactory.makeRewindable(vqe.execSelect());
-        return results;
+        return ResultSetFactory.makeRewindable(vqe.execSelect());
     }
 
     public void initConnection() {

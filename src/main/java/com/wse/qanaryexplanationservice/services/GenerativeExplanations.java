@@ -4,6 +4,7 @@ import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import com.wse.qanaryexplanationservice.repositories.QuestionsRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -31,7 +32,7 @@ import java.util.*;
 public class GenerativeExplanations {
 
     protected static final ArrayList<InputQueryExample> INPUT_QUERIES_AND_EXAMPLE = InputQueryExample.queryExamplesList();
-    protected static final Map<String, String[]> TYPE_AND_COMPONENTS = new HashMap<>();
+    protected static final Map<String, QanaryComponent[]> TYPE_AND_COMPONENTS = new HashMap<>();
     protected static final Map<AnnotationType, AnnotationType[]> DEPENDENCY_MAP_FOR_ANNOTATION_TYPES = new TreeMap<>() {{
         put(AnnotationType.AnnotationOfInstance, new AnnotationType[]{});
         put(AnnotationType.AnnotationOfRelation, new AnnotationType[]{
@@ -88,7 +89,7 @@ public class GenerativeExplanations {
     public GenerativeExplanations(Environment environment) {
         for (AnnotationType annType : AnnotationType.values()
         ) {
-            TYPE_AND_COMPONENTS.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), String[].class));
+            TYPE_AND_COMPONENTS.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), QanaryComponent[].class));
         }
     }
 
@@ -141,18 +142,18 @@ public class GenerativeExplanations {
      * @param list List of annotation-types - in the usual workflow this comes from the dependency resolver
      * @return List of components in the order of their annotation type (and therefore their dependencies)
      */
-    public List<String> selectRandomComponents(ArrayList<AnnotationType> list) {
+    public List<QanaryComponent> selectRandomComponents(ArrayList<AnnotationType> list) {
         Random random = new Random();
         // Is null when no dependencies were resolved and therefore only one component shall be executed
         if (list == null)
             return new ArrayList<>();
 
         Collections.sort(list); // sorts them by the enum definition, which equals the dependency tree (the last is the target-component)
-        List<String> componentList = new ArrayList<>();
+        List<QanaryComponent> componentList = new ArrayList<>();
 
         for (AnnotationType annType : list
         ) {
-            String[] componentsList = TYPE_AND_COMPONENTS.get(annType.name());
+            QanaryComponent[] componentsList = TYPE_AND_COMPONENTS.get(annType.name());
             int selectedComponentAsInt = random.nextInt(componentsList.length);
             componentList.add(componentsList[selectedComponentAsInt]);
         }
@@ -164,13 +165,13 @@ public class GenerativeExplanations {
      *
      * @return Dataset as String
      */
-    public String createDataset(String componentURI, String graphURI, String annotationType) throws Exception {
+    public String createDataset(QanaryComponent component, String graphURI, String annotationType) throws Exception {
 
-        ResultSet triples = fetchTriples(graphURI, componentURI, annotationType);
+        ResultSet triples = fetchTriples(graphURI, component, annotationType);
         StringBuilder dataSet = new StringBuilder();
 
         if (!triples.hasNext()) {
-            logger.warn("Empty dataset for component: {}", componentURI);
+            logger.warn("Empty dataset for component: {}", component.getComponentName());
             return null;
         }
         while (triples.hasNext()) {
@@ -201,17 +202,17 @@ public class GenerativeExplanations {
      * @return Triples as ResultSet
      * @throws Exception If a component hasn't made any annotations to the graph the query will result in an empty ResultSet
      */
-    public ResultSet fetchTriples(String graphURI, String componentURI, String annotationType) throws Exception {
+    public ResultSet fetchTriples(String graphURI, QanaryComponent component, String annotationType) throws Exception {
         QuerySolutionMap bindingsForQuery = new QuerySolutionMap();
         bindingsForQuery.add("graphURI", ResourceFactory.createResource(graphURI));
-        bindingsForQuery.add("componentURI", ResourceFactory.createResource("urn:qanary:" + componentURI));
+        bindingsForQuery.add("componentURI", ResourceFactory.createResource(component.getPrefixedComponentName()));
         try {
             String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(DATASET_QUERY, bindingsForQuery);
             if (annotationType != null)
                 query = query.replace("?annotationType", "qa:" + annotationType);
             ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
             if (!resultSet.hasNext()) {
-                logger.warn("The resultSet for the component {} is null, empty dataset is returned.", componentURI);
+                logger.warn("The resultSet for the component {} is null, empty dataset is returned.", component.getComponentName());
             }
             return resultSet;
         } catch (IOException e) {

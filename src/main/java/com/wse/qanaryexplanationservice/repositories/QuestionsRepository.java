@@ -11,8 +11,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class QuestionsRepository {
 
+    private static final Logger logger = LoggerFactory.getLogger(QuestionsRepository.class);
     private static RDFConnection connection;
-    private static Logger logger = LoggerFactory.getLogger(QuestionsRepository.class);
 
     public static ResultSet selectQuestion(String sparql) {
         QueryExecution queryExecution = connection.query(sparql);

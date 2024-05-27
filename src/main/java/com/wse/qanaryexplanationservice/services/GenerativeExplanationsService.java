@@ -60,12 +60,12 @@ public class GenerativeExplanationsService {
      */
     public GenerativeExplanationObject createGenerativeExplanation(QanaryComponent component, int shots, String graphUri) throws Exception {
         GenerativeExplanationObject generativeExplanationObject = new GenerativeExplanationObject();
-        String explanation = tmplExpService.explainComponentAsText(graphUri, component.getComponentName(), "en");
-        String dataset = generativeExplanations.createDataset(component.getComponentName(), graphUri, component.getComponentMainType());
+        String explanation = tmplExpService.explainComponentAsText(graphUri, component, "en");
+        String dataset = generativeExplanations.createDataset(component, graphUri, component.getComponentMainType());
         TestDataObject testObject = new TestDataObject(
                 component.getComponentMainType() == null ? null : AnnotationType.valueOf(component.getComponentMainType()),
                 component.getComponentMainType() == null ? null : AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
-                component.getComponentName(),
+                component,
                 null,
                 explanation,
                 dataset == null ? "Empty dataset" : dataset,
@@ -99,28 +99,28 @@ public class GenerativeExplanationsService {
             logger.info("Resolve dependencies and select components");
             ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(generativeExplanations.getDependencyList(component.getComponentMainType())));
             logger.info("Annotation List: {}", annotationTypes);
-            List<String> componentListForQanaryPipeline = generativeExplanations.selectRandomComponents(annotationTypes);
-            componentListForQanaryPipeline.add(component.getComponentName()); // Separation of concerns, add this to the selectRandomComps method
+            List<QanaryComponent> componentListForQanaryPipeline = generativeExplanations.selectRandomComponents(annotationTypes);
+            componentListForQanaryPipeline.add(component); // Separation of concerns, add this to the selectRandomComps method
             logger.info("List of comps: {}", componentListForQanaryPipeline);
 
             // Execute Qanary pipeline and store graphURI + questionID
             logger.info("Execute Qanary pipeline");
-            QanaryResponseObject qanaryResponse = generativeExplanations.executeQanaryPipeline(question, componentListForQanaryPipeline);
+            QanaryResponseObject qanaryResponse = generativeExplanations.executeQanaryPipeline(question, componentListForQanaryPipeline.stream().map(item -> item.getComponentName()).toList());
             String graphURI = qanaryResponse.getOutGraph();
             String questionID = replaceQuestionId(qanaryResponse.getQuestion());
 
             // Create dataset
             logger.info("Create dataset");
-            String dataset = generativeExplanations.createDataset(component.getComponentName(), graphURI, component.getComponentMainType());
+            String dataset = generativeExplanations.createDataset(component, graphURI, component.getComponentMainType());
             if (dataset == null)
                 throw new Exception();
             // Create Explanation for selected component
             logger.info("Create explanation");
-            String explanation = tmplExpService.explainComponentAsText(graphURI, component.getComponentName(), "en");
+            String explanation = tmplExpService.explainComponentAsText(graphURI, component, "en");
             return new TestDataObject(
                     AnnotationType.valueOf(component.getComponentMainType()),
                     AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
-                    component.getComponentName(),
+                    component,
                     question,
                     explanation,
                     dataset,
@@ -141,12 +141,13 @@ public class GenerativeExplanationsService {
 
     public QanaryComponent createRandomQanaryComponent() {
         AnnotationType type = AnnotationType.values()[random.nextInt(AnnotationType.values().length)];
-        String component = selectRandomComponentWithAnnotationType(type.name());
-        return new QanaryComponent(component, type.name());
+        QanaryComponent qanaryComponent = selectRandomComponentWithAnnotationType(type.name());
+        qanaryComponent.setComponentMainType(type.name());
+        return qanaryComponent;
     }
 
-    public String selectRandomComponentWithAnnotationType(String annotationType) {
-        String[] components = generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType);
+    public QanaryComponent selectRandomComponentWithAnnotationType(String annotationType) {
+        QanaryComponent[] components = generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType);
         return components[random.nextInt(components.length)];
     }
 
@@ -191,10 +192,10 @@ public class GenerativeExplanationsService {
      * @return
      * @throws Exception
      */
-    public String getInputDataExplanationPrompt(String component, String body, int shots) throws Exception {
+    public String getInputDataExplanationPrompt(QanaryComponent component, String body, int shots) throws Exception {
         String prompt = getStringFromFile(generativeExplanations.getPromptTemplateInputData(shots));
 
-        prompt = prompt.replace("${QUERY}", body).replace("${COMPONENT}", component);
+        prompt = prompt.replace("${QUERY}", body).replace("${COMPONENT}", component.getPrefixedComponentName());
         if (shots > 0) {
             InputQueryExample inputQueryExample = GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.get(random.nextInt(GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.size()));
             prompt = prompt.replace("${ZEROSHOT_QUERY}", inputQueryExample.getQuery()).replace("${ZEROSHOT_EXPLANATION", inputQueryExample.getExplanations()); // select random pre-defined statements
@@ -206,8 +207,8 @@ public class GenerativeExplanationsService {
         return prompt;
     }
 
-    public String getTemplateExplanation(String graphUri, String componentUri, String lang) throws IOException {
-        return tmplExpService.explainComponentAsText(graphUri, componentUri, lang);
+    public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
+        return tmplExpService.explainComponentAsText(graphUri, component, lang);
     }
 
 }
