@@ -14,8 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class AutomatedTestController {
-
-    private final String authToken = ""; // Todo
+    
     @Autowired
     private AutomatedTestingService automatedTestingService;
 

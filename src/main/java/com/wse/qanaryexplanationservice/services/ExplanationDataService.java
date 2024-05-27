@@ -79,12 +79,11 @@ public class ExplanationDataService {
      *
      * @param automatedTest Object which will be parsed to a model and inserted to the triplestore
      */
-    public void insertDataset(AutomatedTest automatedTest) {
+    public void insertDataset(AutomatedTest automatedTest, boolean isGptCall) {
 
         String uuid = UUID.randomUUID().toString();
-        List<Statement> statementList = createSpecificStatementList(automatedTest, uuid);
+        List<Statement> statementList = createSpecificStatementList(automatedTest, uuid, isGptCall);
         model.add(statementList);
-        // TODO: Move connection details (e.g. application.properties / ...)
         VirtModel virtModel = VirtModel.openDatabaseModel("urn:aex:" + uuid, VIRTUOSO_TRIPLESTORE_ENDPOINT, VIRTUOSO_TRIPLESTORE_USERNAME, VIRTUOSO_TRIPLESTORE_PASSWORD);
         virtModel.add(model); // TODO: Auslagern des VirtModel Aufrufs
         virtModel.close();
@@ -98,14 +97,14 @@ public class ExplanationDataService {
      * @param uuid          graph identifier
      * @return List of Statements (= triples)
      */
-    public List<Statement> createSpecificStatementList(AutomatedTest automatedTest, String uuid) {
+    public List<Statement> createSpecificStatementList(AutomatedTest automatedTest, String uuid, boolean isGptCall) {
         List<Statement> statementList = new ArrayList<>();
         Resource experimentId = model.createResource(uuid);
         logger.info("Experiment ID: {}", experimentId);
 
-
         statementList.add(ResourceFactory.createStatement(experimentId, prompt, ResourceFactory.createPlainLiteral(automatedTest.getPrompt())));
-        //statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral(automatedTest.getGptExplanation())));
+        if (isGptCall)
+            statementList.add(ResourceFactory.createStatement(experimentId, gptExplanation, ResourceFactory.createPlainLiteral(automatedTest.getGptExplanation())));
         statementList.add(ResourceFactory.createStatement(experimentId, testData, setUpTestObject(automatedTest.getTestData())));
         statementList.add(ResourceFactory.createStatement(experimentId, exampleData, setupExampleData(automatedTest.getExampleData())));
 

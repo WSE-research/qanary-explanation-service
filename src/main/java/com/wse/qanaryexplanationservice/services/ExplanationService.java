@@ -4,6 +4,7 @@ import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolution;
@@ -27,13 +28,15 @@ public class ExplanationService {
     private TemplateExplanationsService tmplExpService;
     @Autowired
     private GenerativeExplanationsService genExpService;
+    @Autowired
+    private QanaryRepository qanaryRepository;
 
     public String getQaSystemExplanation(String header, String graphUri) throws Exception {
         return tmplExpService.explainQaSystem(header, graphUri);
     }
 
     public String getTemplateComponentExplanation(String graphUri, String componentUri, String header) throws Exception {
-        return tmplExpService.explainSpecificComponent(graphUri, componentUri, header);
+        return tmplExpService.explainComponentAsRdf(graphUri, componentUri, header);
     }
 
     public String getTemplateComponentInputExplanation(String graphUri, String componentUri) throws IOException {
@@ -43,22 +46,17 @@ public class ExplanationService {
     /**
      * Controller called method to start the process explaining several components with both approaches;
      * the rulebased and the generative one.
-     *
-     * @param composedExplanationDTO
      */
     public ComposedExplanation composedExplanationsForOutputData(ComposedExplanationDTO composedExplanationDTO) {
-        logger.info("Request object: ", composedExplanationDTO);
         ComposedExplanation composedExplanation = new ComposedExplanation();
         GenerativeExplanationRequest generativeExplanationRequest = composedExplanationDTO.getGenerativeExplanationRequest();
 
         generativeExplanationRequest.getQanaryComponents().forEach(component -> {
             try {
-                List<String> annotationTypesUsedByComponent = tmplExpService.fetchAllAnnotations(composedExplanationDTO.getGraphUri(), component.getComponentName());
-                String templatebased = tmplExpService.createTextualExplanation(   // compute template based explanation
+                String templatebased = tmplExpService.explainComponentAsText(   // compute template based explanation
                         composedExplanationDTO.getGraphUri(),
-                        "urn:qanary:" + component.getComponentName(),
-                        "en",
-                        annotationTypesUsedByComponent
+                        component.getComponentName(),
+                        "en"
                 );
 
                 GenerativeExplanationObject generativeExplanationObject = genExpService.createGenerativeExplanation(
@@ -76,6 +74,7 @@ public class ExplanationService {
 
                 composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt, generativeExplanation, generativeExplanationObject.getTestComponent().getDataSet());
             } catch (Exception e) {
+                e.printStackTrace();
                 logger.error("{}", e.toString());
             }
         });
@@ -83,7 +82,7 @@ public class ExplanationService {
     }
 
     public ComposedExplanation composedExplanationForInputData(ComposedExplanationDTO composedExplanationDTO) throws Exception {
-        List<String> components = composedExplanationDTO.getGenerativeExplanationRequest().getQanaryComponents().stream().map(component -> component.getComponentName()).toList();
+        List<String> components = composedExplanationDTO.getGenerativeExplanationRequest().getQanaryComponents().stream().map(QanaryComponent::getComponentName).toList();
         String graph = composedExplanationDTO.getGraphUri();
         ComposedExplanation composedExplanation = new ComposedExplanation();
         for (String component : components) {
@@ -91,24 +90,23 @@ public class ExplanationService {
             QuerySolutionMap bindings = new QuerySolutionMap();
             bindings.add("graph", ResourceFactory.createResource(graph));
             bindings.add("component", ResourceFactory.createResource("urn:qanary:" + component));
-            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(tmplExpService.INPUT_DATA_SELECT_QUERY, bindings);
-            ResultSet results = QanaryRepository.selectWithResultSet(query);
+            String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(TemplateExplanationsService.INPUT_DATA_SELECT_QUERY, bindings);
+            ResultSet results = qanaryRepository.selectWithResultSet(query);
 
             QuerySolution querySolution = results.next(); // TODO: Add component to composedExplanation
             String resultQuery = querySolution.get("body").toString();
 
             String templatebasedExplanation = tmplExpService.createExplanationForQuery(querySolution, graph, component);
 
-            String generativeExplanation = genExpService.createGenerativeExplanationInputDataForOneComponent(
+            String prompt = genExpService.getInputDataExplanationPrompt(
                     component,
                     resultQuery,
-                    composedExplanationDTO.getGenerativeExplanationRequest().getShots(),
-                    composedExplanationDTO.getGenerativeExplanationRequest().getGptModel()
+                    composedExplanationDTO.getGenerativeExplanationRequest().getShots()
             );
-            composedExplanation.addExplanationItem(component, templatebasedExplanation, "", generativeExplanation, resultQuery);
+            String gptExplanation = genExpService.sendPrompt(prompt, composedExplanationDTO.getGenerativeExplanationRequest().getGptModel());
+            composedExplanation.addExplanationItem(component, templatebasedExplanation, prompt, gptExplanation, resultQuery);
         }
         return composedExplanation;
-
     }
 
 }

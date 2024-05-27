@@ -1,3 +1,4 @@
+PREFIX urn: <http://fliqz.com/>
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX qa: <http://www.wdaqua.eu/qa#>
@@ -7,24 +8,35 @@ PREFIX annotationID: <tag:stardog:api:>
 PREFIX questionID: <http://195.90.200.248:8090/question/stored-question__text_>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 
-SELECT DISTINCT ?s ?p ?o
+SELECT *
 FROM ?graphURI
-WHERE {
-    ?id oa:annotatedBy ?componentURI .
-    ?id rdf:type ?annotationType .
-          {
-    ?id ?p ?o .
-          ?s ?p ?o .
-          }
-    UNION
-    {
-        ?id ?parentPredicate ?s .
-        ?s ?p ?o .
-    }
-    UNION
-          {
-            ?id ?parentPredicatae2 ?o2 .
-                  ?o2 ?p1 ?s .
-                  ?s ?p ?o .
-          }
+WHERE
+{
+	{
+		SELECT ?s ?p ?o {
+    	    ?s oa:annotatedBy ?componentURI.
+    		?s rdf:type ?annotationType .
+		    FILTER NOT EXISTS {?s rdf:type qa:AnnotationOfLogQuery}
+	        ?s ?p ?o .
+    	}
+  	}
+  	UNION {
+	    SELECT (?o1 AS ?s) (?p2 AS ?p) (?o2 AS ?o) {
+    		?s1 oa:annotatedBy ?componentURI .
+    		?s1 rdf:type ?annotationType .
+	  		FILTER NOT EXISTS {?s1 rdf:type qa:AnnotationOfLogQuery}
+    		?s1 ?p1 ?o1 .
+			?o1 ?p2 ?o2 .
+  		}
+  	}
+  	UNION {
+	    SELECT (?o2 AS ?s) (?p3 AS ?p) (?o3 AS ?o) {
+    		?s1 oa:annotatedBy ?componentURI .
+    		?s1 rdf:type ?annotationType .
+            FILTER NOT EXISTS {?s1 rdf:type qa:AnnotationOfLogQuery}
+      		?s1 ?p1 ?o1 .
+			?o1 ?p2 ?o2 .
+      		?o2 ?p3 ?o3
+  		}
+  	}
 }

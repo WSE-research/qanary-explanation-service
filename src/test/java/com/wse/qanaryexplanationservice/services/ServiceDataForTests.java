@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class ServiceDataForTests {
 
@@ -94,6 +95,11 @@ public class ServiceDataForTests {
             public QuerySolution next() {
                 rowIndex++;
                 return querySolutionMaps.get(rowIndex);
+            }
+
+            @Override
+            public void forEachRemaining(Consumer<? super QuerySolution> action) {
+
             }
 
             @Override
