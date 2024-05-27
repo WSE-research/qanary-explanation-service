@@ -12,17 +12,15 @@ import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject
 import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
+import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -175,8 +173,7 @@ public class GenerativeExplanationsService {
     }
 
     public String getStringFromFile(String path) throws IOException {
-        File file = new ClassPathResource(path).getFile();
-        return new String(Files.readAllBytes(file.toPath()));
+        return QanaryTripleStoreConnector.readFileFromResources(path);
     }
 
     public String sendPrompt(String prompt, GptModel gptModel) throws Exception {
