@@ -26,20 +26,23 @@ public class QanaryRepository {
 
     private final WebClient webClient = WebClient.builder().clientConnector(new ReactorClientHttpConnector(HttpClient.create().responseTimeout(Duration.ofSeconds(60)))).build();
     private final Logger logger = LoggerFactory.getLogger(QanaryRequestObject.class);
-    private final String QANARY_PIPELINE_HOST;
-    private final int QANARY_PIPELINE_PORT;
+    @Value("${qanary.pipeline.host}")
+    private String QANARY_PIPELINE_HOST;
+    @Value("${qanary.pipeline.port}")
+    private int QANARY_PIPELINE_PORT;
     private VirtGraph connection;
+    @Value("${virtuoso.triplestore.endpoint}")
+    private String virtuosoEndpoint;
+    @Value("${virtuoso.triplestore.username}")
+    private String virtuosoUser;
+    @Value("${virtuoso.triplestore.password}")
+    private String virtuosoPassword;
+    @Value("${qanary.pipeline.host}")
+    private String qanaryHost;
+    @Value("${qanary.pipeline.port}")
+    private int qanaryPort;
 
-    public QanaryRepository(
-            @Value("${virtuoso.triplestore.endpoint}") String virtuosoEndpoint,
-            @Value("${virtuoso.triplestore.username}") String virtuosoUser,
-            @Value("${virtuoso.triplestore.password}") String virtuosoPassword,
-            @Value("${qanary.pipeline.host}") String qanaryHost,
-            @Value("${qanary.pipeline.port}") int qanaryPort
-    ) {
-        this.initConnection(virtuosoEndpoint, virtuosoUser, virtuosoPassword);
-        this.QANARY_PIPELINE_HOST = qanaryHost;
-        this.QANARY_PIPELINE_PORT = qanaryPort;
+    public QanaryRepository() {
     }
 
     public QanaryResponseObject executeQanaryPipeline(QanaryRequestObject qanaryRequestObject) {
@@ -58,15 +61,17 @@ public class QanaryRepository {
     }
 
     public ResultSet selectWithResultSet(String sparql) throws QueryException {
+        if (connection == null)
+            initConnection();
         Query query = QueryFactory.create(sparql);
         VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(query, this.connection);
         ResultSetRewindable results = ResultSetFactory.makeRewindable(vqe.execSelect());
         return results;
     }
 
-    public void initConnection(String virtEndpoint, String virtUser, String virtPassword) {
-        logger.info("Init connection for Qanary repository: {}", virtEndpoint);
-        connection = new VirtGraph(virtEndpoint, virtUser, virtPassword);
+    public void initConnection() {
+        logger.info("Init connection for Qanary repository: {}", this.virtuosoEndpoint);
+        connection = new VirtGraph(this.virtuosoEndpoint, this.virtuosoUser, this.virtuosoPassword);
     }
 
 }
