@@ -1,12 +1,13 @@
 package com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject;
 
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 
 public abstract class AbstractData {
 
     private AnnotationType annotationType;
     private Integer annotationTypeAsInt;
-    private String usedComponent;
+    private QanaryComponent usedComponent;
     private String question;
     private String explanation;
     private String dataSet;
@@ -23,7 +24,7 @@ public abstract class AbstractData {
     public AbstractData(
             AnnotationType annotationType,
             Integer annotationTypeAsInt,
-            String usedComponent,
+            QanaryComponent usedComponent,
             String question,
             String explanation,
             String dataSet,
@@ -118,11 +119,11 @@ public abstract class AbstractData {
         this.explanation = explanation;
     }
 
-    public String getUsedComponent() {
+    public QanaryComponent getUsedComponent() {
         return usedComponent;
     }
 
-    public void setUsedComponent(String usedComponent) {
+    public void setUsedComponent(QanaryComponent usedComponent) {
         this.usedComponent = usedComponent;
     }
 
