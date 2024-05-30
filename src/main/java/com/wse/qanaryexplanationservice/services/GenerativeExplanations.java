@@ -67,6 +67,7 @@ public class GenerativeExplanations {
         put("^^http://www.w3.org/2001/XMLSchema#dateTime", "");
         put("^^http://www.w3.org/2001/XMLSchema#decimal", "");
         put("^^http://www.w3.org/2001/XMLSchema#float", "");
+        put("^^http://www.w3.org/2001/XMLSchema#double", "");
     }};
     private static final Map<Integer, String> EXAMPLE_COUNT_AND_TEMPLATE = new HashMap<>() {{
         put(1, "/prompt_templates/outputdata/oneshot");
