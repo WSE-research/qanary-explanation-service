@@ -117,4 +117,8 @@ public class ExplanationService {
         return querySolution.get("body").toString();
     }
 
+    public void setUpComponentExplanationGraphs(String qaProcessGraph, QanaryComponent startingComponent) {
+
+    }
+
 }

@@ -183,4 +183,12 @@ public class ExplanationController {
         }
     }
 
+    @RequestMapping(value = "/tobeterminedKGFilling")
+    public ResponseEntity<?> tobeterminedKGFilling(
+            @RequestParam String qaProcessGraphUri,
+            @RequestParam QanaryComponent component
+    ) {
+        
+    }
+
 }
