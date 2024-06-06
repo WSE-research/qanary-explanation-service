@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wse.qanaryexplanationservice.controller.ControllerDataForTests;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import org.apache.jena.query.*;
-import org.apache.jena.rdf.model.Literal;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,10 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TemplateExplanationsServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
     private final ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
+    protected ClassLoader classLoader = this.getClass().getClassLoader();
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsServiceTest.class);
 
     @Nested
@@ -135,6 +130,7 @@ public class TemplateExplanationsServiceTest {
 
         final String graphID = "http://exampleQuestionURI.a/question";
         final String questionURI = "http://question-example.com/123/32a";
+
         ResultSet emptyResultSet = serviceDataForTests.createResultSet(serviceDataForTests.getEmptyQuerySolutionMapList());
         ControllerDataForTests controllerDataForTests;
         ObjectMapper objectMapper = new ObjectMapper();
@@ -220,7 +216,7 @@ public class TemplateExplanationsServiceTest {
         public void replacePropertiesTest(String type) {
 
             Map<String, String> convertedMap = serviceDataForTests.getConvertedMapWithStringValues();
-            ClassLoader classLoader = this.getClass().getClassLoader();
+
 
             assertAll("Testing correct replacement for templates",
                     () -> {
@@ -264,6 +260,33 @@ public class TemplateExplanationsServiceTest {
                 assertFalse(expl.contains("$"));
             }
 
+        }
+
+        @Test
+        public void pipelineInputExplanationTest() throws IOException {
+            String question = "When was Konrad Zuse born?";
+            String explanation = tmplExpService.getPipelineInputExplanation(question);
+            File file = new File(Objects.requireNonNull(classLoader.getResource("expected_explanations/pipeline_input")).getFile());
+            String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+            assertEquals(expectedOutcome, explanation);
+        }
+
+        @Test
+        public void pipelineOutputExplanationTest() throws IOException {
+            QuerySolutionMap querySolutionMap1 = new QuerySolutionMap();
+            querySolutionMap1.add("component", ResourceFactory.createResource("DBpedia"));
+            QuerySolutionMap querySolutionMap2 = new QuerySolutionMap();
+            querySolutionMap2.add("component", ResourceFactory.createResource("DBpedia2"));
+            List<QuerySolutionMap> querySolutionMapList = new ArrayList<>() {{
+                add(querySolutionMap1);
+                add(querySolutionMap2);
+            }};
+            ResultSet results = serviceDataForTests.createResultSet(querySolutionMapList);
+            String graph = "test-graph";
+            String explanation = tmplExpService.getPipelineOutputExplanation(results, graph);
+            File file = new File(Objects.requireNonNull(classLoader.getResource("expected_explanations/pipeline_output")).getFile());
+            String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+            assertEquals(expectedOutcome, explanation);
         }
 
         /*

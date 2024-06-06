@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,7 +24,7 @@ import java.util.List;
 public class ExplanationService {
 
     private final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
-
+    private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
     @Autowired
     private TemplateExplanationsService tmplExpService;
     @Autowired
@@ -117,8 +118,32 @@ public class ExplanationService {
         return querySolution.get("body").toString();
     }
 
-    public void setUpComponentExplanationGraphs(String qaProcessGraph, QanaryComponent startingComponent) {
+    /**
+     * Similar to a system's explanation
+     */
+    public String explainPipelineOutput(String graphUri) throws IOException {
+        ResultSet results = getPipelineInformation(graphUri);
+        return tmplExpService.getPipelineOutputExplanation(results, graphUri);
+    }
 
+    public String explainPipelineInput(String graphUri) throws IOException {
+        ResultSet results = getPipelineInformation(graphUri);
+        String questionId = "";
+        while (results.hasNext()) {
+            QuerySolution result = results.next();
+            if (result.contains("questionId"))
+                questionId = result.get("questionId").asLiteral().getString();
+        }
+        WebClient webClient = WebClient.builder().baseUrl(questionId).build();
+        return tmplExpService.getPipelineInputExplanation(webClient.get().retrieve().bodyToMono(String.class).block());
+    }
+
+    // Caching candidate
+    public ResultSet getPipelineInformation(String graphUri) throws IOException {
+        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
+        querySolutionMap.add("graph", ResourceFactory.createResource(graphUri));
+        String sparql = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_PIPELINE_INFORMATION, querySolutionMap);
+        return qanaryRepository.selectWithResultSet(sparql);
     }
 
 }

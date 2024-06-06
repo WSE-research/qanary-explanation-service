@@ -1,0 +1,8 @@
+PREFIX oa: <>
+
+SELECT ?component ?questionId
+FROM ?graph
+WHERE {
+    ?s oa:annotatedBy ?component ;
+       oa:hasTarget ?questionId;
+}

@@ -80,7 +80,15 @@ public class ExplanationController {
     public ResponseEntity<?> getInputExplanation(
             @PathVariable String graphURI,
             @PathVariable(required = false) QanaryComponent component) throws IOException {
-        return new ResponseEntity<>(this.explanationService.getTemplateComponentInputExplanation(graphURI, component), HttpStatus.OK);
+        if (component != null) {
+            return new ResponseEntity<>(this.explanationService.getTemplateComponentInputExplanation(graphURI, component), HttpStatus.OK);
+        } else
+            try {
+                String explanation = explanationService.explainPipelineInput(graphURI);
+                return new ResponseEntity<>(explanation, HttpStatus.OK);
+            } catch (Exception e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            }
     }
 
     @CrossOrigin
@@ -99,14 +107,22 @@ public class ExplanationController {
     )
     public ResponseEntity<?> getOutputExplanation(
             @PathVariable String graphURI,
-            @PathVariable QanaryComponent component,
+            @PathVariable(required = false) QanaryComponent component,
             @RequestHeader(value = "accept", required = false) String acceptHeader) {
-        try {
-            String explanationInFormattedString = explanationService.getTemplateComponentExplanation(graphURI, component, acceptHeader);
-            return new ResponseEntity<>(explanationInFormattedString, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
+        if (component != null) {
+            try {
+                String explanationInFormattedString = explanationService.getTemplateComponentExplanation(graphURI, component, acceptHeader);
+                return new ResponseEntity<>(explanationInFormattedString, HttpStatus.OK);
+            } catch (Exception e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            }
+        } else
+            try {
+                String explanation = explanationService.explainPipelineOutput(graphURI);
+                return new ResponseEntity<>(explanation, HttpStatus.OK);
+            } catch (Exception e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            }
     }
 
     @CrossOrigin
@@ -181,14 +197,6 @@ public class ExplanationController {
             logger.error("{}", e.toString());
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
-    }
-
-    @RequestMapping(value = "/tobeterminedKGFilling")
-    public ResponseEntity<?> tobeterminedKGFilling(
-            @RequestParam String qaProcessGraphUri,
-            @RequestParam QanaryComponent component
-    ) {
-        
     }
 
 }

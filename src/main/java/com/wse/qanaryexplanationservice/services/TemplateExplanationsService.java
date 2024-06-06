@@ -579,4 +579,20 @@ public class TemplateExplanationsService {
         throw new RuntimeException("No annotation type could be dissambled");
     }
 
+    public String getPipelineInputExplanation(String question) {
+        String explanation = getStringFromFile("/explanations/input_data/pipeline/en");
+        return explanation.replace("${question}", question);
+    }
+
+    public String getPipelineOutputExplanation(ResultSet results, String graphUri) {
+        String explanation = getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
+        String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
+        List<String> explanations = new ArrayList<>();
+        while (results.hasNext()) {
+            QuerySolution querySolution = results.next();
+            explanations.add(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate));
+        }
+        return explanation + " " + StringUtils.join(explanations, ", ");
+    }
+
 }
