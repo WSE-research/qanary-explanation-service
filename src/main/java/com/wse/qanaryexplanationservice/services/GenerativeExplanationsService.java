@@ -60,7 +60,7 @@ public class GenerativeExplanationsService {
      */
     public GenerativeExplanationObject createGenerativeExplanation(QanaryComponent component, int shots, String graphUri) throws Exception {
         GenerativeExplanationObject generativeExplanationObject = new GenerativeExplanationObject();
-        String explanation = tmplExpService.explainComponentAsText(graphUri, component, "en");
+        String explanation = tmplExpService.createOutputExplanation(graphUri, component, "en");
         String dataset = generativeExplanations.createDataset(component, graphUri, component.getComponentMainType());
         TestDataObject testObject = new TestDataObject(
                 component.getComponentMainType() == null ? null : AnnotationType.valueOf(component.getComponentMainType()),
@@ -116,7 +116,7 @@ public class GenerativeExplanationsService {
                 throw new Exception();
             // Create Explanation for selected component
             logger.info("Create explanation");
-            String explanation = tmplExpService.explainComponentAsText(graphURI, component, "en");
+            String explanation = tmplExpService.createOutputExplanation(graphURI, component, "en");
             return new TestDataObject(
                     AnnotationType.valueOf(component.getComponentMainType()),
                     AnnotationType.valueOf(component.getComponentMainType()).ordinal(),
@@ -208,7 +208,7 @@ public class GenerativeExplanationsService {
     }
 
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
-        return tmplExpService.explainComponentAsText(graphUri, component, lang);
+        return tmplExpService.createOutputExplanation(graphUri, component, lang);
     }
 
 }

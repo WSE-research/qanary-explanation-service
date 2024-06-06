@@ -199,4 +199,17 @@ public class ExplanationController {
         }
     }
 
+    @GetMapping(value = "/explain/{graph}/{component}")
+    @Operation()
+    public ResponseEntity<?> getComposedExplanation(
+            @RequestParam(required = true) String graph,
+            @RequestParam(required = false) String component) throws IOException {
+        try {
+            String explanation = explanationService.getComposedExplanation(graph, component);
+            return new ResponseEntity<>(explanation, HttpStatus.OK);
+        } catch (IOException e) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+    }
+
 }

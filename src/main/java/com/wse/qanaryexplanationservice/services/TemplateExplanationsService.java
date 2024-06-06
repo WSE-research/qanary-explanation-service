@@ -69,6 +69,7 @@ public class TemplateExplanationsService {
         put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
+    private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation";
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
     @Autowired
     private QanaryRepository qanaryRepository;
@@ -90,14 +91,14 @@ public class TemplateExplanationsService {
     public String explainComponentAsRdf(String graphUri, QanaryComponent component, String header) throws IOException {
         logger.info("Passed header: {}", header);
         Model model = createModelForSpecificComponent(
-                explainComponentAsText(graphUri, component, "de"),
-                explainComponentAsText(graphUri, component, "en"),
+                createOutputExplanation(graphUri, component, "de"),
+                createOutputExplanation(graphUri, component, "en"),
                 component
         );
         return convertToDesiredFormat(header, model);
     }
 
-    public String explainComponentAsText(String graphUri, QanaryComponent component, String lang) throws IOException {
+    public String createOutputExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
         List<String> types = fetchAllAnnotations(graphUri, component);
         return createTextualExplanation(graphUri, component, lang, types);
     }
@@ -593,6 +594,17 @@ public class TemplateExplanationsService {
             explanations.add(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate));
         }
         return explanation + " " + StringUtils.join(explanations, ", ");
+    }
+
+    public String composeInputAndOutputExplanations(String inputExplanation, String outputExplanation, String componentUri) throws IOException {
+        String explanationTemplate = getStringFromFile(COMPOSED_EXPLANATION_TEMPLATE);
+        String component = componentUri == null ? "pipeline" : "component " + componentUri;
+
+        String explanation = explanationTemplate
+                .replace("${component}", component)
+                .replace("${inputExplanation", inputExplanation)
+                .replace("${outputExplanation", outputExplanation);
+        return explanation;
     }
 
 }

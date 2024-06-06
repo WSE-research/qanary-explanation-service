@@ -54,7 +54,7 @@ public class ExplanationService {
 
         generativeExplanationRequest.getQanaryComponents().forEach(component -> {
             try {
-                String templatebased = tmplExpService.explainComponentAsText(   // compute template based explanation
+                String templatebased = tmplExpService.createOutputExplanation(   // compute template based explanation
                         composedExplanationDTO.getGraphUri(),
                         component,
                         "en"
@@ -144,6 +144,22 @@ public class ExplanationService {
         querySolutionMap.add("graph", ResourceFactory.createResource(graphUri));
         String sparql = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_PIPELINE_INFORMATION, querySolutionMap);
         return qanaryRepository.selectWithResultSet(sparql);
+    }
+
+    public String getComposedExplanation(String graph, String component) throws IOException {
+        String explanation = null;
+        String inputExplanation = null;
+        String outputExplanation = null;
+        if (component != null) {
+            inputExplanation = explainPipelineInput(graph);
+            outputExplanation = explainPipelineOutput(graph);
+        } else {
+            // TODO: Add wrapper method for component explanations (output)
+            QanaryComponent qanaryComponent = new QanaryComponent(component);
+            inputExplanation = getTemplateComponentInputExplanation(graph, qanaryComponent);
+            outputExplanation = ""; // HERE: TODO!
+        }
+        return tmplExpService.composeInputAndOutputExplanations(inputExplanation, outputExplanation, component);
     }
 
 }
