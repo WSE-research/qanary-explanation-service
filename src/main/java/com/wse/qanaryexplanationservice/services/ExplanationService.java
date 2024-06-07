@@ -134,8 +134,8 @@ public class ExplanationService {
             if (result.contains("questionId"))
                 questionId = result.get("questionId").asLiteral().getString();
         }
-        WebClient webClient = WebClient.builder().baseUrl(questionId).build();
-        return tmplExpService.getPipelineInputExplanation(webClient.get().retrieve().bodyToMono(String.class).block());
+        String question = qanaryRepository.getQuestionFromQuestionId(questionId);
+        return tmplExpService.getPipelineInputExplanation(question);
     }
 
     // Caching candidate
@@ -150,16 +150,19 @@ public class ExplanationService {
         String explanation = null;
         String inputExplanation = null;
         String outputExplanation = null;
-        if (component != null) {
+        if (component == null) {
             inputExplanation = explainPipelineInput(graph);
             outputExplanation = explainPipelineOutput(graph);
         } else {
-            // TODO: Add wrapper method for component explanations (output)
             QanaryComponent qanaryComponent = new QanaryComponent(component);
             inputExplanation = getTemplateComponentInputExplanation(graph, qanaryComponent);
-            outputExplanation = ""; // HERE: TODO!
+            outputExplanation = getTemplateComponentOutputExplanation(graph, qanaryComponent, "en");
         }
         return tmplExpService.composeInputAndOutputExplanations(inputExplanation, outputExplanation, component);
+    }
+
+    public String getTemplateComponentOutputExplanation(String graph, QanaryComponent component, String lang) throws IOException {
+        return tmplExpService.createOutputExplanation(graph, component, lang);
     }
 
 }

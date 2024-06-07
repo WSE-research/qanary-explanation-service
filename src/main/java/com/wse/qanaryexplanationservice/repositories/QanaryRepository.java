@@ -42,6 +42,7 @@ public class QanaryRepository {
     @Value("${qanary.pipeline.port}")
     private int qanaryPort;
 
+
     public QanaryRepository() {
     }
 
@@ -71,6 +72,10 @@ public class QanaryRepository {
     public void initConnection() {
         logger.info("Init connection for Qanary repository: {}", this.virtuosoEndpoint);
         connection = new VirtGraph(this.virtuosoEndpoint, this.virtuosoUser, this.virtuosoPassword);
+    }
+
+    public String getQuestionFromQuestionId(String questionId) {
+        return webClient.get().uri(questionId).retrieve().bodyToMono(String.class).block();
     }
 
 }

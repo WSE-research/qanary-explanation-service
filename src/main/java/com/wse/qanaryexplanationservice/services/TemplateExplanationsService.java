@@ -69,7 +69,7 @@ public class TemplateExplanationsService {
         put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
-    private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation";
+    private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation/en";
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
     @Autowired
     private QanaryRepository qanaryRepository;
@@ -600,11 +600,10 @@ public class TemplateExplanationsService {
         String explanationTemplate = getStringFromFile(COMPOSED_EXPLANATION_TEMPLATE);
         String component = componentUri == null ? "pipeline" : "component " + componentUri;
 
-        String explanation = explanationTemplate
+        return explanationTemplate
                 .replace("${component}", component)
-                .replace("${inputExplanation", inputExplanation)
-                .replace("${outputExplanation", outputExplanation);
-        return explanation;
+                .replace("${inputExplanation}", inputExplanation)
+                .replace("${outputExplanation}", outputExplanation);
     }
 
 }
