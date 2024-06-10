@@ -109,20 +109,18 @@ public class ExplanationController {
             @PathVariable String graphURI,
             @PathVariable(required = false) QanaryComponent component,
             @RequestHeader(value = "accept", required = false) String acceptHeader) {
-        if (component != null) {
-            try {
-                String explanationInFormattedString = explanationService.getTemplateComponentExplanation(graphURI, component, acceptHeader);
-                return new ResponseEntity<>(explanationInFormattedString, HttpStatus.OK);
-            } catch (Exception e) {
-                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        String explanation = "";
+        try {
+            if (component == null) {
+                explanation = explanationService.getTemplateComponentOutputExplanation(graphURI, component, acceptHeader);
+            } else {
+                explanation = explanationService.explainPipelineOutput(graphURI);
             }
-        } else
-            try {
-                String explanation = explanationService.explainPipelineOutput(graphURI);
-                return new ResponseEntity<>(explanation, HttpStatus.OK);
-            } catch (Exception e) {
-                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-            }
+        } catch (Exception e) {
+            logger.error("{}", e.getMessage());
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(explanation, HttpStatus.OK);
     }
 
     @CrossOrigin
@@ -199,6 +197,13 @@ public class ExplanationController {
         }
     }
 
+    /**
+     * Endpoint explaining a component / pipeline input and output data
+     * @param graph
+     * @param component
+     * @return
+     * @throws IOException
+     */
     @GetMapping(value = "/explain/{graph}/{component}")
     @Operation()
     public ResponseEntity<?> getComposedExplanation(
