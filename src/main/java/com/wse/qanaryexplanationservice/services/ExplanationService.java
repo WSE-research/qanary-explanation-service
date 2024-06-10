@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,7 +24,7 @@ import java.util.List;
 public class ExplanationService {
 
     private final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
-
+    private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
     @Autowired
     private TemplateExplanationsService tmplExpService;
     @Autowired
@@ -53,7 +54,7 @@ public class ExplanationService {
 
         generativeExplanationRequest.getQanaryComponents().forEach(component -> {
             try {
-                String templatebased = tmplExpService.explainComponentAsText(   // compute template based explanation
+                String templatebased = tmplExpService.createOutputExplanation(   // compute template based explanation
                         composedExplanationDTO.getGraphUri(),
                         component,
                         "en"
@@ -115,6 +116,53 @@ public class ExplanationService {
     public String getBodyFromResultSet(ResultSet resultSet) {
         QuerySolution querySolution = resultSet.next();
         return querySolution.get("body").toString();
+    }
+
+    /**
+     * Similar to a system's explanation
+     */
+    public String explainPipelineOutput(String graphUri) throws IOException {
+        ResultSet results = getPipelineInformation(graphUri);
+        return tmplExpService.getPipelineOutputExplanation(results, graphUri);
+    }
+
+    public String explainPipelineInput(String graphUri) throws IOException {
+        ResultSet results = getPipelineInformation(graphUri);
+        String questionId = "";
+        while (results.hasNext()) {
+            QuerySolution result = results.next();
+            if (result.contains("questionId"))
+                questionId = result.get("questionId").asLiteral().getString();
+        }
+        String question = qanaryRepository.getQuestionFromQuestionId(questionId);
+        return tmplExpService.getPipelineInputExplanation(question);
+    }
+
+    // Caching candidate
+    public ResultSet getPipelineInformation(String graphUri) throws IOException {
+        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
+        querySolutionMap.add("graph", ResourceFactory.createResource(graphUri));
+        String sparql = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_PIPELINE_INFORMATION, querySolutionMap);
+        return qanaryRepository.selectWithResultSet(sparql);
+    }
+
+    public String getComposedExplanation(String graph, String component) throws IOException {
+        String explanation = null;
+        String inputExplanation = null;
+        String outputExplanation = null;
+        if (component == null) {
+            inputExplanation = explainPipelineInput(graph);
+            outputExplanation = explainPipelineOutput(graph);
+        } else {
+            QanaryComponent qanaryComponent = new QanaryComponent(component);
+            inputExplanation = getTemplateComponentInputExplanation(graph, qanaryComponent);
+            outputExplanation = getTemplateComponentOutputExplanation(graph, qanaryComponent, "en");
+        }
+        return tmplExpService.composeInputAndOutputExplanations(inputExplanation, outputExplanation, component);
+    }
+
+    public String getTemplateComponentOutputExplanation(String graph, QanaryComponent component, String lang) throws IOException {
+        return tmplExpService.createOutputExplanation(graph, component, lang);
     }
 
 }

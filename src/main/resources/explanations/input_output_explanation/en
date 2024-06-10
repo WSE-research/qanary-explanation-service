@@ -1,0 +1,7 @@
+The ${component} has this explanation regarding its input data:
+
+${inputExplanation}
+
+and this one for its output data:
+
+${outputExplanation}

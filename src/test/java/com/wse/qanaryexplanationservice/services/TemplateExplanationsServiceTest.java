@@ -1,13 +1,8 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wse.qanaryexplanationservice.controller.ControllerDataForTests;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import org.apache.jena.query.*;
-import org.apache.jena.rdf.model.Literal;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,10 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +29,10 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TemplateExplanationsServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
     private final ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
+    protected ClassLoader classLoader = this.getClass().getClassLoader();
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsServiceTest.class);
+    @Autowired
+    private TemplateExplanationsService templateExplanationsService;
 
     @Nested
     class ExplanationAsRdfTurtle {
@@ -47,8 +42,6 @@ public class TemplateExplanationsServiceTest {
         Model model;
         String sparqlQuery;
         String queryPrefixes = "PREFIX explanation: <" + EXPLANATION_NAMESPACE + ">";
-        @Autowired
-        TemplateExplanationsService tmplExpService;
 
         @BeforeEach
         void setup() {
@@ -59,7 +52,7 @@ public class TemplateExplanationsServiceTest {
 
         @Test
         void createRdfRepresentationTest() {
-            String result = tmplExpService.convertToDesiredFormat(null, tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
+            String result = templateExplanationsService.convertToDesiredFormat(null, templateExplanationsService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
 
             assertAll("String contains content elements as well as componentURI",
                     () -> assertTrue(result.contains(languageContentProvider.getContentDe())),
@@ -92,10 +85,10 @@ public class TemplateExplanationsServiceTest {
         @Test
         public void compareRepresentationModels() {
             // Create Strings with different format (plain == turtle, turtle, rdfxml,jsonld)
-            String resultEmptyHeader = tmplExpService.convertToDesiredFormat(null, tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
-            String resultTurtleHeader = tmplExpService.convertToDesiredFormat("text/turtle", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
-            String resultRDFXMLHeader = tmplExpService.convertToDesiredFormat("application/rdf+xml", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
-            String resultJSONLDHeader = tmplExpService.convertToDesiredFormat("application/ld+json", tmplExpService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
+            String resultEmptyHeader = templateExplanationsService.convertToDesiredFormat(null, templateExplanationsService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
+            String resultTurtleHeader = templateExplanationsService.convertToDesiredFormat("text/turtle", templateExplanationsService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
+            String resultRDFXMLHeader = templateExplanationsService.convertToDesiredFormat("application/rdf+xml", templateExplanationsService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
+            String resultJSONLDHeader = templateExplanationsService.convertToDesiredFormat("application/ld+json", templateExplanationsService.createModelForSpecificComponent(languageContentProvider.getContentDe(), languageContentProvider.getContentEn(), component));
 
             assertEquals(resultEmptyHeader, resultTurtleHeader);
             assertAll("Check different result-string",
@@ -131,43 +124,6 @@ public class TemplateExplanationsServiceTest {
     }
 
     @Nested
-    class QaSystemExplanationTest {
-
-        final String graphID = "http://exampleQuestionURI.a/question";
-        final String questionURI = "http://question-example.com/123/32a";
-        ResultSet emptyResultSet = serviceDataForTests.createResultSet(serviceDataForTests.getEmptyQuerySolutionMapList());
-        ControllerDataForTests controllerDataForTests;
-        ObjectMapper objectMapper = new ObjectMapper();
-        @Autowired
-        TemplateExplanationsService tmplExpService;
-        List<String> components;
-        Map<String, Model> models;
-
-        @BeforeEach
-        void setup() {
-            controllerDataForTests = new ControllerDataForTests();
-            //when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(emptyResultSet);
-        }
-
-        // Rewrite
-        /*
-        @Test
-        void createSystemModelTest() {
-            models = controllerDataForTests.getQaSystemExplanationMap();
-            components = controllerDataForTests.getComponents();
-            // Get the expected model from the test data
-            Model expectedModel = controllerDataForTests.getExpectedModelForQaSystemExplanation();
-            // call method to create model from Models and components
-            Model computedModel = tmplExpService.createSystemModel(models, components, questionURI, graphID);
-
-            assertTrue(expectedModel.isIsomorphicWith(computedModel));
-        }
-
-         */
-
-    }
-
-    @Nested
     class ComponentExplanationTests {
 
         private static final Map<String, String> annotationTypeExplanationTemplate = new HashMap<>() {{
@@ -181,7 +137,7 @@ public class TemplateExplanationsServiceTest {
         }};
         private final ResultSet resultSet = serviceDataForTests.createResultSet(serviceDataForTests.getQuerySolutionMapList());
         @SpyBean
-        private TemplateExplanationsService tmplExpService;
+        private TemplateExplanationsService templateExplanationsService;
 
         @Test
         public void createTextualExplanationTest() {
@@ -196,7 +152,7 @@ public class TemplateExplanationsServiceTest {
             Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
             Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
 
-            Map<String, String> comparedMap = tmplExpService.convertRdfNodeToStringValue(toBeConvertedMap);
+            Map<String, String> comparedMap = templateExplanationsService.convertRdfNodeToStringValue(toBeConvertedMap);
 
             assertEquals(comparingMap, comparedMap);
         }
@@ -220,18 +176,18 @@ public class TemplateExplanationsServiceTest {
         public void replacePropertiesTest(String type) {
 
             Map<String, String> convertedMap = serviceDataForTests.getConvertedMapWithStringValues();
-            ClassLoader classLoader = this.getClass().getClassLoader();
+
 
             assertAll("Testing correct replacement for templates",
                     () -> {
-                        String computedTemplate = tmplExpService.replaceProperties(convertedMap, tmplExpService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
+                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, templateExplanationsService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/de_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
                         assertEquals(expectedOutcome, computedTemplate);
                     },
                     () -> {
-                        String computedTemplate = tmplExpService.replaceProperties(convertedMap, tmplExpService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
+                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, templateExplanationsService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/en_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
@@ -252,9 +208,9 @@ public class TemplateExplanationsServiceTest {
                         "annotationofrelation",
                         "annotationofquestionlanguage"
                 })
-        public void addingExplanationsTest(String type) throws IOException {
+        public void addingExplanationsTest(String type) {
 
-            List<String> computedExplanations = tmplExpService.addingExplanations(type, "de", resultSet);
+            List<String> computedExplanations = templateExplanationsService.addingExplanations(type, "de", resultSet);
 
             // Should contain the (if existing) prefix (is an empty element) and one explanation
             assertEquals(2, computedExplanations.size());
@@ -266,20 +222,68 @@ public class TemplateExplanationsServiceTest {
 
         }
 
-        /*
         @Test
-        public void createSpecificExplanationTest() throws IOException {
-            //when(explanationSparqlRepository.executeSparqlQueryWithResultSet(any())).thenReturn(resultSet);
-
-            List<String> explanations = tmplExpService.createSpecificExplanation("annotationofinstance", "graphURI", "de", "componentuRI");
-
-            //verify(explanationSparqlRepository, times(1)).executeSparqlQueryWithResultSet(any());
-            verify(tmplExpService, times(1)).buildSparqlQuery(any(), any(), any());
-            verify(tmplExpService, times(1)).addingExplanations(any(), any(), any());
-
-            assertNotNull(explanations);
+        public void pipelineInputExplanationTest() throws IOException {
+            String question = "When was Konrad Zuse born?";
+            String explanation = templateExplanationsService.getPipelineInputExplanation(question);
+            File file = new File(Objects.requireNonNull(classLoader.getResource("expected_explanations/pipeline_input")).getFile());
+            String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+            assertEquals(expectedOutcome, explanation);
         }
-         */
+
+        @Test
+        public void pipelineOutputExplanationTest() throws IOException {
+            QuerySolutionMap querySolutionMap1 = new QuerySolutionMap();
+            querySolutionMap1.add("component", ResourceFactory.createResource("DBpedia"));
+            QuerySolutionMap querySolutionMap2 = new QuerySolutionMap();
+            querySolutionMap2.add("component", ResourceFactory.createResource("DBpedia2"));
+            List<QuerySolutionMap> querySolutionMapList = new ArrayList<>() {{
+                add(querySolutionMap1);
+                add(querySolutionMap2);
+            }};
+            ResultSet results = serviceDataForTests.createResultSet(querySolutionMapList);
+            String graph = "test-graph";
+            String explanation = templateExplanationsService.getPipelineOutputExplanation(results, graph);
+            File file = new File(Objects.requireNonNull(classLoader.getResource("expected_explanations/pipeline_output")).getFile());
+            String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+            assertEquals(expectedOutcome, explanation);
+        }
+
+    }
+
+    @Nested
+    class ComposedExplanation {
+
+        private final String EXAMPLE_INPUT_EXPLANATION = "A";
+        private final String EXAMPLE_OUTPUT_EXPLANATION = "B";
+        private final String EXAMPLE_COMPONENT = "exampleComponent";
+
+        @Test
+        public void composeInputAndOutputExplanationsPipelineTest() throws IOException {
+            File file = new File(Objects.requireNonNull(classLoader.getResource("expected_explanations/input_output_pipeline")).getFile());
+            String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+            String explanation = templateExplanationsService.composeInputAndOutputExplanations(
+                    EXAMPLE_INPUT_EXPLANATION,
+                    EXAMPLE_OUTPUT_EXPLANATION,
+                    null
+            );
+
+            assertEquals(expectedOutcome, explanation);
+        }
+
+        @Test
+        public void composeInputAndOutputExplanationsComponentTest() throws IOException {
+            File file = new File(Objects.requireNonNull(classLoader.getResource("expected_explanations/input_output_component")).getFile());
+            String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
+            String explanation = templateExplanationsService.composeInputAndOutputExplanations(
+                    EXAMPLE_INPUT_EXPLANATION,
+                    EXAMPLE_OUTPUT_EXPLANATION,
+                    EXAMPLE_COMPONENT
+            );
+
+            assertEquals(expectedOutcome, explanation);
+        }
+
 
     }
 

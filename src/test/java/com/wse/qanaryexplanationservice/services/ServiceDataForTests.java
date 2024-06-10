@@ -31,6 +31,7 @@ public class ServiceDataForTests {
         put("end", ResourceFactory.createTypedLiteral("3", XSDDatatype.XSDinteger));
         put("hasTarget", ResourceFactory.createResource("questionID:123f3rt3jrskdf324f"));
         put("value", ResourceFactory.createPlainLiteral("exampleJSON"));
+        put("questionId", ResourceFactory.createResource("questionId"));
     }};
     private final Map<String, String> convertedMapWithStringValues = new HashMap<>() {{
         put("hasBody", "http://dbpedia.org/resource/example");
@@ -42,6 +43,7 @@ public class ServiceDataForTests {
         put("end", "3");
         put("hasTarget", "questionID:123f3rt3jrskdf324f");
         put("value", "exampleJSON");
+        put("questionId", "questionId");
     }};
 
     private final Logger logger = LoggerFactory.getLogger(ServiceDataForTests.class);
@@ -79,6 +81,20 @@ public class ServiceDataForTests {
 
     public String getJsonForResultObjects() {
         return jsonResultObjects;
+    }
+
+    public List<QuerySolutionMap> getExampleQuerySolutionList() {
+        List<QuerySolutionMap> list = new ArrayList<>();
+        QuerySolutionMap q1 = new QuerySolutionMap();
+        q1.add("graph", ResourceFactory.createResource("test-graph"));
+        list.add(q1);
+        q1 = new QuerySolutionMap();
+        q1.add("component", ResourceFactory.createResource("component1"));
+        list.add(q1);
+        q1 = new QuerySolutionMap();
+        q1.add("component", ResourceFactory.createResource("component2"));
+        list.add(q1);
+        return list;
     }
 
     ResultSet createResultSet(List<QuerySolutionMap> querySolutionMapList) {
