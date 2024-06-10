@@ -1,7 +1,7 @@
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 
-SELECT ?component ?questionId
+SELECT DISTINCT ?component ?questionId
 FROM ?graph
 WHERE {
     ?s oa:annotatedBy ?component .
