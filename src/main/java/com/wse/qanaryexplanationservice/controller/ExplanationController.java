@@ -204,11 +204,11 @@ public class ExplanationController {
      * @return
      * @throws IOException
      */
-    @GetMapping(value = "/explain/{graph}/{component}")
+    @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
     @Operation()
     public ResponseEntity<?> getComposedExplanation(
-            @RequestParam(required = true) String graph,
-            @RequestParam(required = false) String component) throws IOException {
+            @PathVariable(required = true) String graph,
+            @PathVariable(required = false) String component) throws IOException {
         try {
             String explanation = explanationService.getComposedExplanation(graph, component);
             return new ResponseEntity<>(explanation, HttpStatus.OK);

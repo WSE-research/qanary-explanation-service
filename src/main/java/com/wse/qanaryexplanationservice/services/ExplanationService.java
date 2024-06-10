@@ -132,7 +132,7 @@ public class ExplanationService {
         while (results.hasNext()) {
             QuerySolution result = results.next();
             if (result.contains("questionId"))
-                questionId = result.get("questionId").asLiteral().getString();
+                questionId = result.get("questionId").toString();
         }
         String question = qanaryRepository.getQuestionFromQuestionId(questionId);
         return tmplExpService.getPipelineInputExplanation(question);
