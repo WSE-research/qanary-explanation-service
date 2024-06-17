@@ -51,7 +51,6 @@ public class QanaryRepository {
         MultiValueMap<String, String> multiValueMap = new LinkedMultiValueMap();
         multiValueMap.add("question", qanaryRequestObject.getQuestion());
         multiValueMap.addAll(qanaryRequestObject.getComponentListAsMap());
-
         return webClient.post().uri(uriBuilder -> uriBuilder // TODO: use new endpoint for question answering
                         .scheme("http").host(QANARY_PIPELINE_HOST).port(QANARY_PIPELINE_PORT).path("/startquestionansweringwithtextquestion")
                         .queryParams(multiValueMap)
@@ -75,6 +74,7 @@ public class QanaryRepository {
     }
 
     public String getQuestionFromQuestionId(String questionId) {
+        logger.info("Get question from url: {}", questionId);
         return webClient.get().uri(questionId).retrieve().bodyToMono(String.class).block();
     }
 
