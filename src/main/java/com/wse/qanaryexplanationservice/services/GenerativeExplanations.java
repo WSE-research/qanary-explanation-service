@@ -70,6 +70,7 @@ public class GenerativeExplanations {
         put("^^http://www.w3.org/2001/XMLSchema#double", "");
     }};
     private static final Map<Integer, String> EXAMPLE_COUNT_AND_TEMPLATE = new HashMap<>() {{
+        put(0, "/prompt_templates/outputdata/zeroshot");
         put(1, "/prompt_templates/outputdata/oneshot");
         put(2, "/prompt_templates/outputdata/twoshot");
         put(3, "/prompt_templates/outputdata/threeshot");

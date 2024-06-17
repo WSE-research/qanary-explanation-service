@@ -156,8 +156,6 @@ public class GenerativeExplanationsService {
                 generativeExplanations.getPromptTemplate(shots)
         );
 
-        logger.info("Shots {} and Object {}", shots, generativeExplanationObject.getExampleComponents().get(0).getExplanation());
-
         prompt = prompt.replace("<TASK_RDF_DATA_TEST>", generativeExplanationObject.getTestComponent().getDataSet());
 
         ArrayList<TestDataObject> testDataObjects = generativeExplanationObject.getExampleComponents();
