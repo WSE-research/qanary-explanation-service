@@ -156,8 +156,6 @@ public class GenerativeExplanationsService {
                 generativeExplanations.getPromptTemplate(shots)
         );
 
-        logger.info("Shots {} and Object {}", shots, generativeExplanationObject.getExampleComponents().get(0).getExplanation());
-
         prompt = prompt.replace("<TASK_RDF_DATA_TEST>", generativeExplanationObject.getTestComponent().getDataSet());
 
         ArrayList<TestDataObject> testDataObjects = generativeExplanationObject.getExampleComponents();
@@ -194,7 +192,6 @@ public class GenerativeExplanationsService {
      */
     public String getInputDataExplanationPrompt(QanaryComponent component, String body, int shots) throws Exception {
         String prompt = getStringFromFile(generativeExplanations.getPromptTemplateInputData(shots));
-
         prompt = prompt.replace("${QUERY}", body).replace("${COMPONENT}", component.getPrefixedComponentName());
         if (shots > 0) {
             InputQueryExample inputQueryExample = GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.get(random.nextInt(GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.size()));
@@ -202,6 +199,10 @@ public class GenerativeExplanationsService {
             if (shots > 1) {
                 InputQueryExample inputQueryExample2 = GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.get(random.nextInt(GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.size()));
                 prompt = prompt.replace("${ONESHOT_QUERY}", inputQueryExample2.getQuery()).replace("${ONESHOT_EXPLANATION", inputQueryExample2.getExplanations()); // select random pre-defined statements
+                if (shots > 2) {
+                    InputQueryExample inputQueryExample3 = GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.get(random.nextInt(GenerativeExplanations.INPUT_QUERIES_AND_EXAMPLE.size()));
+                    prompt = prompt.replace("${TWOSHOT_QUERY}", inputQueryExample3.getQuery()).replace("${TWOSHOT_EXPLANATION", inputQueryExample3.getExplanations()); // select random pre-defined statements
+                }
             }
         }
         return prompt;

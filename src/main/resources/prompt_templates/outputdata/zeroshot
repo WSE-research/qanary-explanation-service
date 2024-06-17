@@ -1,0 +1,12 @@
+Given the following context:
+Here, we consider the data of a Question Answering system.
+The data describes the outcome of this system.
+As a user I'd like to understand what happened inside that particular component.
+For this purpose a (text-based) explanation has to be computed.
+
+Given is the following data:
+<TASK_RDF_DATA_TEST>
+
+Now, create an explanation for this data.
+
+Don't introduce your answer and only return the result.
