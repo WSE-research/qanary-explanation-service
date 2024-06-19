@@ -1,6 +1,7 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -235,8 +236,10 @@ public class TemplateExplanationsServiceTest {
         public void pipelineOutputExplanationTest() throws IOException {
             QuerySolutionMap querySolutionMap1 = new QuerySolutionMap();
             querySolutionMap1.add("component", ResourceFactory.createResource("DBpedia"));
+            querySolutionMap1.add("annotations", ResourceFactory.createTypedLiteral("1", XSDDatatype.XSDinteger));
             QuerySolutionMap querySolutionMap2 = new QuerySolutionMap();
             querySolutionMap2.add("component", ResourceFactory.createResource("DBpedia2"));
+            querySolutionMap2.add("annotations", ResourceFactory.createTypedLiteral("2", XSDDatatype.XSDinteger));
             List<QuerySolutionMap> querySolutionMapList = new ArrayList<>() {{
                 add(querySolutionMap1);
                 add(querySolutionMap2);
