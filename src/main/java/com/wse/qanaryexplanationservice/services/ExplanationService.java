@@ -150,7 +150,7 @@ public class ExplanationService {
         String explanation = null;
         String inputExplanation = null;
         String outputExplanation = null;
-        if (component == null) {
+        if (component == null) { // Pipeline explanation
             inputExplanation = explainPipelineInput(graph);
             outputExplanation = explainPipelineOutput(graph);
         } else {

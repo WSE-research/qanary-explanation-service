@@ -1,9 +1,18 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX urn: <http://fliqz.com/>
 PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 
-SELECT DISTINCT ?component ?questionId
+SELECT (COUNT(?s) AS ?annotations) ?component ?questionId
 FROM ?graph
 WHERE {
     ?s oa:annotatedBy ?component .
-	?questionId owl:sameAs <urn:qanary:currentQuestion> .
+    ?s rdf:type ?type .
+    FILTER NOT EXISTS { ?type rdfs:subClassOf qa:AnnotationOfLog }
+    OPTIONAL {
+        ?questionId owl:sameAs <urn:qanary:currentQuestion> .
+    }
 }
+GROUP BY ?component ?questionId
