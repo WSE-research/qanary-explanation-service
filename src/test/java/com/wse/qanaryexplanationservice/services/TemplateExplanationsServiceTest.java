@@ -297,18 +297,19 @@ public class TemplateExplanationsServiceTest {
                 explanations.add("prefix");
                 explanations.add("explanation1");
                 explanations.add("explanation2");
+                explanations.add("explanation3");
             }
 
             @Test
             public void composeExplanationsTestGerman() {
-                String expectedDe = "Die Komponente component hat 2 Annotation(en) zum Graph hinzugefügt: 1. explanation1 2. explanation2";
+                String expectedDe = "Die Komponente component hat 3 Annotation(en) zum Graph hinzugefügt: 1. explanation1 2. explanation2 3. explanation3";
                 String computedDe = templateExplanationsService.composeExplanations(qanaryComponent,"de",explanations,"");
                 Assertions.assertEquals(expectedDe,computedDe);
 
             }
             @Test
             public void composeExplanationsTestEnglish() {
-                String expectedEn = "The component component has added 2 annotation(s) to the graph: 1. explanation1 2. explanation2";
+                String expectedEn = "The component component has added 3 annotation(s) to the graph: 1. explanation1 2. explanation2 3. explanation3";
                 String computedEn = templateExplanationsService.composeExplanations(qanaryComponent, "en", explanations, "");
                 Assertions.assertEquals(expectedEn,computedEn);
             }

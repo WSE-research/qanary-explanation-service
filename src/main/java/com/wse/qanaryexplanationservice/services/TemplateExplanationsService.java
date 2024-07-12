@@ -118,10 +118,13 @@ public class TemplateExplanationsService {
         AtomicInteger i = new AtomicInteger(0);
         if (Objects.equals(lang, "en")) {
             result = "The component " + componentURI + " has added " + (explanations.size() == 5 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
-                    + prefix + ": " + (i.getAndAdd(1)+1) + ". " + StringUtils.join(explanations, " " + (i.getAndAdd(1)+1) + ". ");
+                    + prefix + ":";
         } else if (Objects.equals(lang, "de")) {
             result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 5 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
-                    + prefix + ": " + (i.getAndAdd(1)+1) + ". " + StringUtils.join(explanations, " " + (i.getAndAdd(1)+1) + ". ");
+                    + prefix + ":";
+        }
+        for(int counter = 0; counter < explanations.size(); counter++) {
+            result += (" " + String.valueOf(counter+1) + ". " + explanations.get(counter));
         }
         return result;
     }
