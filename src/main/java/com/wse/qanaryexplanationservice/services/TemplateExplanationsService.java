@@ -515,7 +515,7 @@ public class TemplateExplanationsService {
         List<String> explanationsForQueries = new ArrayList<>();
         ResultSet results = qanaryRepository.selectWithResultSet(queryTemplate);
         if (!results.hasNext())
-            return "The component " + component + " hasn't used any queries.";
+            return "The component " + component.getPrefixedComponentName() + " hasn't used any queries.";
         while (results.hasNext()) {
             QuerySolution currentSolution = results.nextSolution();
             try {
