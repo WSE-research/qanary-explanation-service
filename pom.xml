@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.wse</groupId>
     <artifactId>qanary-explanation-service</artifactId>
-    <version>3.5.0</version>
+    <version>3.5.1</version>
     <name>Qanary explanation service</name>
     <description>Webservice for rule-based explanation of QA-Systems as well as specific components</description>
     <properties>
@@ -46,11 +46,6 @@
             <artifactId>spring-boot-starter-cache</artifactId>
             <version>2.4.0</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/eu.wdaqua.qanary/qa.commons -->
-        <dependency>
-            <groupId>eu.wdaqua.qanary</groupId>
-            <artifactId>qa.commons</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -59,7 +54,7 @@
         <dependency>
             <groupId>eu.wdaqua.qanary</groupId>
             <artifactId>qa.commons</artifactId>
-            <version>[3.9.2,4.0.0)</version>
+            <version>[3.15.0,4.0.0)</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

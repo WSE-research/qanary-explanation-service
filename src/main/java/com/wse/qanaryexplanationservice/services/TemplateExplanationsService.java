@@ -25,6 +25,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -110,16 +111,17 @@ public class TemplateExplanationsService {
      * @param prefix       Text phrase between intro and items, can be an empty string
      * @return Explanation as String
      */
-    private String composeExplanations(QanaryComponent component, String lang, List<String> explanations, String prefix) {
+    public String composeExplanations(QanaryComponent component, String lang, List<String> explanations, String prefix) {
         String result = "";
         String componentURI = component.getComponentName();
         explanations.remove(0); // remove prefix
+        AtomicInteger i = new AtomicInteger(0);
         if (Objects.equals(lang, "en")) {
             result = "The component " + componentURI + " has added " + (explanations.size() == 5 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
-                    + prefix + ": " + StringUtils.join(explanations, " ");
+                    + prefix + ": " + (i.getAndAdd(1)+1) + ". " + StringUtils.join(explanations, " " + (i.getAndAdd(1)+1) + ". ");
         } else if (Objects.equals(lang, "de")) {
             result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 5 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
-                    + prefix + ": " + StringUtils.join(explanations, " ");
+                    + prefix + ": " + (i.getAndAdd(1)+1) + ". " + StringUtils.join(explanations, " " + (i.getAndAdd(1)+1) + ". ");
         }
         return result;
     }
@@ -513,7 +515,7 @@ public class TemplateExplanationsService {
         List<String> explanationsForQueries = new ArrayList<>();
         ResultSet results = qanaryRepository.selectWithResultSet(queryTemplate);
         if (!results.hasNext())
-            return "The component " + component + " hasn't used any queries.";
+            return "The component " + component.getPrefixedComponentName() + " hasn't used any queries.";
         while (results.hasNext()) {
             QuerySolution currentSolution = results.nextSolution();
             try {
