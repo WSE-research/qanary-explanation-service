@@ -3,6 +3,7 @@ package com.wse.qanaryexplanationservice.services;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -284,6 +285,34 @@ public class TemplateExplanationsServiceTest {
             assertEquals(expectedOutcome, explanation);
         }
 
+        @Nested
+        class composeExplanationTests {
+            private List<String> explanations;
+            QanaryComponent qanaryComponent;
+
+            @BeforeEach
+            public void setup() {
+                this.qanaryComponent = new QanaryComponent("component");
+                this.explanations = new ArrayList<>();
+                explanations.add("prefix");
+                explanations.add("explanation1");
+                explanations.add("explanation2");
+            }
+
+            @Test
+            public void composeExplanationsTestGerman() {
+                String expectedDe = "Die Komponente component hat 2 Annotation(en) zum Graph hinzugefügt: 1. explanation1 2. explanation2";
+                String computedDe = templateExplanationsService.composeExplanations(qanaryComponent,"de",explanations,"");
+                Assertions.assertEquals(expectedDe,computedDe);
+
+            }
+            @Test
+            public void composeExplanationsTestEnglish() {
+                String expectedEn = "The component component has added 2 annotation(s) to the graph: 1. explanation1 2. explanation2";
+                String computedEn = templateExplanationsService.composeExplanations(qanaryComponent, "en", explanations, "");
+                Assertions.assertEquals(expectedEn,computedEn);
+            }
+        }
 
     }
 
