@@ -16,10 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +26,8 @@ public class ExplanationService {
 
     private final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
+    private final String COMPONENTS_QUERY = "/queries/components_sparql_query.rq";
+    private final String QUESTION_QUERY = "/queries/question_query.rq";
     @Autowired
     private TemplateExplanationsService tmplExpService;
     @Autowired
@@ -145,10 +145,7 @@ public class ExplanationService {
 
     // Caching candidate
     public ResultSet getPipelineInformation(String graphUri) throws IOException {
-        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
-        querySolutionMap.add("graph", ResourceFactory.createResource(graphUri));
-        String sparql = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_PIPELINE_INFORMATION, querySolutionMap);
-        return qanaryRepository.selectWithResultSet(sparql);
+        return getResultSetWithGraphQuery(graphUri, SELECT_PIPELINE_INFORMATION);
     }
 
     public String getComposedExplanation(String graph, String component) throws IOException {
@@ -189,7 +186,7 @@ public class ExplanationService {
     public String explainPipeline(String graphUri) throws IOException {
         try {
             String explanation = QanaryTripleStoreConnector.readFileFromResources("/explanations/pipeline_system/en_prefix");
-            String questionUri = getQuestionFromGraph(graphUri);
+            String questionUri = getQuestionUriFromGraph(graphUri);
             String question = qanaryRepository.getQuestionFromQuestionId(questionUri);
             List<String> componentExplanations = getComponentExplanations(graphUri);
 
@@ -204,19 +201,21 @@ public class ExplanationService {
         }
     }
 
-    public String getQuestionFromGraph(String graph) throws IOException {
-        QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("graph", ResourceFactory.createResource(graph));
-        String sparql = QanaryTripleStoreConnector.readFileFromResourcesWithMap("/queries/question_query.rq", qsm);
-        ResultSet result = qanaryRepository.selectWithResultSet(sparql);
+    /**
+     * Returns Question URI
+     * @return Question URI
+     */
+    public String getQuestionUriFromGraph(String graph) throws IOException {
+        ResultSet result = getResultSetWithGraphQuery(graph,QUESTION_QUERY);
         return result.next().get("source").toString();
     }
 
+    /**
+     * Returns components that has inserted at least one annotation to the passed graph
+     * @return Components as list
+     */
     public List<QanaryComponent> getUsedComponents(String graph) throws IOException {
-        QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("graph", ResourceFactory.createResource(graph));
-        String sparql = QanaryTripleStoreConnector.readFileFromResourcesWithMap("/queries/components_sparql_query.rq", qsm);
-        ResultSet components = qanaryRepository.selectWithResultSet(sparql);
+        ResultSet components = getResultSetWithGraphQuery(graph, COMPONENTS_QUERY);
         List<QanaryComponent> componentList = new ArrayList<>();
         while(components.hasNext()) {
             QuerySolution qs = components.next();
@@ -225,6 +224,21 @@ public class ExplanationService {
         return componentList;
     }
 
+    /** Method that creates a SPARQL query that solely relies on the passed graph
+     * @return ResultSet
+     */
+    public ResultSet getResultSetWithGraphQuery(String graph, String path) throws IOException {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("graph", ResourceFactory.createResource(graph));
+        String sparql = QanaryTripleStoreConnector.readFileFromResourcesWithMap(path, qsm);
+        return qanaryRepository.selectWithResultSet(sparql);
+    }
+
+    /**
+     * Method to collect composed explanations for all components within the passed graph
+     * @param graph Graph URI
+     * @return List of explanations for each used component
+     */
     public List<String> getComponentExplanations(String graph) throws IOException {
         List<QanaryComponent> qanaryComponents = getUsedComponents(graph);
         List<String> explanations = new ArrayList<>();
