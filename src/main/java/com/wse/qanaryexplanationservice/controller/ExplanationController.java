@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 @RestController
 @ControllerAdvice
@@ -215,6 +216,24 @@ public class ExplanationController {
         } catch (IOException e) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
+    }
+
+    /**
+     *
+     */
+    @GetMapping("/datasets/output/{graph}/{component}")
+    public ResponseEntity<String> getOutputDatasetForComponent(@PathVariable QanaryComponent component, @PathVariable String graph) throws Exception {
+        String dataset = explanationService.getOutputExplanationDataset(component, graph);
+        return new ResponseEntity<>(dataset, HttpStatus.OK);
+    }
+
+    /**
+     *
+     */
+    @GetMapping("/datasets/input/{graph}/{component}")
+    public ResponseEntity<ArrayList<String>> getInputDatasetForComponent(@PathVariable QanaryComponent component, @PathVariable String graph) throws Exception {
+        ArrayList<String> dataset = explanationService.getInputExplanationDataset(component, graph);
+        return new ResponseEntity<>(dataset, HttpStatus.OK);
     }
 
 }

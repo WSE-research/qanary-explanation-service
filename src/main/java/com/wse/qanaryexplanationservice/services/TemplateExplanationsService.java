@@ -591,14 +591,19 @@ public class TemplateExplanationsService {
     }
 
     public String getPipelineOutputExplanation(ResultSet results, String graphUri) {
-        String explanation = getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
+        String explanation = getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);//.replace("${questionId}", questionId);
         String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
         List<String> explanations = new ArrayList<>();
+        if(results.hasNext()) {
+            QuerySolution querySolution = results.next();
+            explanation = explanation.replace("${questionId}", querySolution.get("questionId").toString());
+            explanations.add(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate));
+        }
         while (results.hasNext()) {
             QuerySolution querySolution = results.next();
             explanations.add(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate));
         }
-        return explanation + " " + StringUtils.join(explanations, ", ");
+        return explanation.replace("${components}", StringUtils.join(explanations, ", "));
     }
 
     public String composeInputAndOutputExplanations(String inputExplanation, String outputExplanation, String componentUri) throws IOException {

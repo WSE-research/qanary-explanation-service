@@ -1,0 +1,4 @@
+The QA system received the question "${question}" and created the graph "${graph}" as well as  the question URI "${questionId}".
+It executed components that are explained as follows:
+
+${components}

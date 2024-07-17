@@ -1,1 +1,1 @@
-The QA pipeline executed the following components on the graph "${graph}":
+The QA pipeline created the graph "${graph}" and the question URI "${questionId}". It executed the components ${components} on this particular graph.

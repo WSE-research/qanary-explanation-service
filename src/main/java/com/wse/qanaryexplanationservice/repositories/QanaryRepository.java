@@ -75,7 +75,7 @@ public class QanaryRepository {
 
     public String getQuestionFromQuestionId(String questionId) {
         logger.info("Get question from url: {}", questionId);
-        return webClient.get().uri(questionId).retrieve().bodyToMono(String.class).block();
+        return webClient.get().uri(questionId + "/raw").retrieve().bodyToMono(String.class).block();
     }
 
 }
