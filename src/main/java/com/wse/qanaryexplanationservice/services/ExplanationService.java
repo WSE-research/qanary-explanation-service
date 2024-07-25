@@ -1,6 +1,9 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
+import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
@@ -15,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.util.List;
@@ -146,7 +148,9 @@ public class ExplanationService {
         return qanaryRepository.selectWithResultSet(sparql);
     }
 
-    public String getComposedExplanation(String graph, String component) throws IOException {
+    public String getComposedExplanation(QanaryExplanationData body) throws IOException {
+        String graph = body.getGraph();
+        String component = body.getComponent();
         String explanation = null;
         String inputExplanation = null;
         String outputExplanation = null;
@@ -165,4 +169,32 @@ public class ExplanationService {
         return tmplExpService.createOutputExplanation(graph, component, lang);
     }
 
+    protected String getComponentExplanation(String graph, QanaryComponent qanaryComponent) throws IOException {
+        return tmplExpService.composeInputAndOutputExplanations(
+                getTemplateComponentInputExplanation(graph, qanaryComponent),
+                getTemplateComponentOutputExplanation(graph, qanaryComponent, "en"),
+                qanaryComponent.getComponentName()
+        );
+    }
+
+    public String explain(QanaryExplanationData explanationData) throws ExplanationExceptionComponent, ExplanationExceptionPipeline {
+        if(explanationData.getExplanations() != null) { // It's a pipeline (as component) -> Composes explanations
+            try {
+                return null;
+            } catch(Exception e) {
+                throw new ExplanationExceptionPipeline();
+            }
+        }
+        else { // It's a component
+            QanaryComponent qanaryComponent = new QanaryComponent(explanationData.getComponent());
+            try {
+                return getComponentExplanation(explanationData.getGraph(), qanaryComponent);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new ExplanationExceptionComponent();
+            }
+        }
+    }
+
 }
+
