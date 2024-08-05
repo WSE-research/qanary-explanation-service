@@ -1,6 +1,9 @@
 package com.wse.qanaryexplanationservice.helper.dtos;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.List;
+import java.util.Map;
 
 public class QanaryExplanationData {
 
@@ -8,17 +11,17 @@ public class QanaryExplanationData {
     private String questionId;
     private String component;
     private String serverHost;
-    private List<String> explanations;
+    private Map<String,String> explanations;
 
     public QanaryExplanationData() {
 
     }
 
-    public List<String> getExplanations() {
+    public Map<String,String> getExplanations() {
         return explanations;
     }
 
-    public void setExplanations(List<String> explanations) {
+    public void setExplanations(Map<String, String> explanations) {
         this.explanations = explanations;
     }
 

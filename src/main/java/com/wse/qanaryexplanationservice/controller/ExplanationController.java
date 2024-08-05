@@ -211,9 +211,10 @@ public class ExplanationController {
     @Operation()
     public ResponseEntity<?> getComposedExplanation(@RequestBody QanaryExplanationData body) throws ExplanationException { // TODO: Extend methods
         try {
+            logger.info(body.getComponent());
             String explanation = explanationService.explain(body);
             return new ResponseEntity<>(explanation, HttpStatus.OK);
-        } catch (ExplanationException e) {
+        } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

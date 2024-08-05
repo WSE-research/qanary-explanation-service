@@ -10,6 +10,7 @@ import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationReques
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ExplanationService {
@@ -128,6 +130,10 @@ public class ExplanationService {
         return tmplExpService.getPipelineOutputExplanation(results, graphUri);
     }
 
+    public String explainPipelineOutput(String graphUri, Map<String,String> explanations) {
+        return tmplExpService.getPipelineOutputExplanation(explanations, graphUri);
+    }
+
     public String explainPipelineInput(String graphUri) throws IOException {
         ResultSet results = getPipelineInformation(graphUri);
         String questionId = "";
@@ -177,10 +183,23 @@ public class ExplanationService {
         );
     }
 
+    protected String getPipelineExplanation(String graph, Map<String,String> explanations) throws IOException {
+        return tmplExpService.composeInputAndOutputExplanations(
+                explainPipelineInput(graph),
+                explainPipelineOutput(graph, explanations),
+                null
+        );
+    }
+
+    // Deprecated, alt. approach
+    /*
     public String explain(QanaryExplanationData explanationData) throws ExplanationExceptionComponent, ExplanationExceptionPipeline {
         if(explanationData.getExplanations() != null) { // It's a pipeline (as component) -> Composes explanations
             try {
-                return null;
+                return getPipelineExplanation(
+                  explanationData.getGraph(),
+                  explanationData.getExplanations()
+                );
             } catch(Exception e) {
                 throw new ExplanationExceptionPipeline();
             }
@@ -194,6 +213,39 @@ public class ExplanationService {
                 throw new ExplanationExceptionComponent();
             }
         }
+    }
+     */
+
+    public String explain(QanaryExplanationData data) {
+        logger.info("Explaining ...");
+        if(data.getExplanations() == null || data.getExplanations().isEmpty()) { // componentName, questionId and graph provided // component-based explanation
+            QanaryComponent qanaryComponent = new QanaryComponent(data.getComponent());
+            try {
+                return getComponentExplanation(data.getGraph(), qanaryComponent); // TODO: Add lang-support
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else if (data.getComponent() != "" || data.getComponent() != null){ // componentName, componentExplanations, questionId and graph are provided // PaC-based explanation
+            String explanationTemplate = tmplExpService.getStringFromFile("/explanations/pipeline_component/en_prefix");
+            String components = StringUtils.join(data.getExplanations().keySet().toArray(), ", ");
+            return explanationTemplate
+                    .replace("${component}", data.getComponent())
+                    .replace("${components}", components)
+                    .replace("${componentsAndExplanations}", composeComponentExplanations(data.getExplanations()));
+        }
+        else { // only questionId and graph are provided // System-based explanation
+            // TODO: Implement. Extend pipeline with /explain or handle it here?
+        }
+        return null;
+    }
+
+    public String composeComponentExplanations(Map<String,String> componentAndExplanation) {
+        StringBuilder composedExplanations = new StringBuilder();
+        componentAndExplanation.forEach((k,v) -> {
+            composedExplanations.append (k + ": " + v + "\n\n");
+        });
+        return composedExplanations.toString();
     }
 
 }
