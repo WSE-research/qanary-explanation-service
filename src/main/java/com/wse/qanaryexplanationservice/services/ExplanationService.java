@@ -217,7 +217,7 @@ public class ExplanationService {
      */
 
     public String explain(QanaryExplanationData data) {
-        logger.info("Explaining ...");
+        logger.info("Explaining  component {}", data.getComponent());
         if(data.getExplanations() == null || data.getExplanations().isEmpty()) { // componentName, questionId and graph provided // component-based explanation
             QanaryComponent qanaryComponent = new QanaryComponent(data.getComponent());
             try {
@@ -226,18 +226,26 @@ public class ExplanationService {
                 e.printStackTrace();
             }
         }
-        else if (data.getComponent() != "" || data.getComponent() != null){ // componentName, componentExplanations, questionId and graph are provided // PaC-based explanation
+        else { // componentName, componentExplanations, questionId and graph are provided // PaC-based explanation
             String explanationTemplate = tmplExpService.getStringFromFile("/explanations/pipeline_component/en_prefix");
             String components = StringUtils.join(data.getExplanations().keySet().toArray(), ", ");
+            String question = qanaryRepository.getQuestionFromQuestionId(data.getQuestionId() + "/raw");
             return explanationTemplate
+                    .replace("${question}", question)
+                    .replace("${questionId}", data.getQuestionId())
+                    .replace("${graph}", data.getGraph())
                     .replace("${component}", data.getComponent())
                     .replace("${components}", components)
                     .replace("${componentsAndExplanations}", composeComponentExplanations(data.getExplanations()));
         }
+/*
         else { // only questionId and graph are provided // System-based explanation
             // TODO: Implement. Extend pipeline with /explain or handle it here?
         }
         return null;
+
+ */
+        return "Explanation couldn't be created.";
     }
 
     public String composeComponentExplanations(Map<String,String> componentAndExplanation) {
