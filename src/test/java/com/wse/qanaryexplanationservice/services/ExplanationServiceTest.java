@@ -38,7 +38,7 @@ class ExplanationServiceTest {
         Mockito.when(qanaryRepository.selectWithResultSet(any())).thenReturn(results);
         Mockito.when(qanaryRepository.getQuestionFromQuestionId(any())).thenReturn("Example Question?");
         Mockito.when(templateExplanationsService.getPipelineInputExplanation(any())).thenReturn("A");
-        Mockito.when(templateExplanationsService.getPipelineOutputExplanation(any(), any())).thenReturn("B");
+        Mockito.when(templateExplanationsService.getPipelineOutputExplanation((ResultSet) any(), any())).thenReturn("B");
     }
 
     /**
