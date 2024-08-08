@@ -590,7 +590,6 @@ public class TemplateExplanationsService {
         return explanation.replace("${question}", question);
     }
 
-    // Computes the explanation itself
     public String getPipelineOutputExplanation(ResultSet results, String graphUri) {
         String explanation = getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
         String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
@@ -600,17 +599,6 @@ public class TemplateExplanationsService {
             explanations.add(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate));
         }
         return explanation + " " + StringUtils.join(explanations, ", ");
-    }
-
-    // Composes the passed explanations
-    public String getPipelineOutputExplanation(Map<String,String> explanations, String graphUri) {
-        String explanation = getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
-        String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
-        List<String> explanationsList = new ArrayList<>();
-        explanations.forEach((key,value) -> {
-            explanationsList.add(componentTemplate.replace("${component}", key).replace("${componentExplanation}", value));
-        });
-        return explanation + "\n" + StringUtils.join(explanationsList,"\n\n");
     }
 
     public String composeInputAndOutputExplanations(String inputExplanation, String outputExplanation, String componentUri) throws IOException {
