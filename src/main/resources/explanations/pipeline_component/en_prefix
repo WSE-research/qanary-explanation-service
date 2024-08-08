@@ -1,0 +1,3 @@
+The pipeline component ${component} has executed the components ${components} with the following explanations:
+
+${componentsAndExplanations}
