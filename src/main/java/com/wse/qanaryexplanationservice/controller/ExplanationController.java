@@ -219,4 +219,20 @@ public class ExplanationController {
         }
     }
 
+    @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
+    @Operation()
+    public ResponseEntity<?> getComposedExplanation(
+            @PathVariable(required = true) String graph,
+            @PathVariable(required = false) String component) throws IOException {
+        try {
+            QanaryExplanationData qanaryExplanationData = new QanaryExplanationData();
+            qanaryExplanationData.setComponent(component);
+            qanaryExplanationData.setGraph(graph);
+            String explanation = explanationService.getComposedExplanation(qanaryExplanationData);
+            return new ResponseEntity<>(explanation, HttpStatus.OK);
+        } catch (IOException e) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+    }
+
 }
