@@ -1,8 +1,12 @@
 package com.wse.qanaryexplanationservice.controller;
 
+import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
+import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.slf4j.Logger;
@@ -199,18 +203,32 @@ public class ExplanationController {
 
     /**
      * Endpoint explaining a component / pipeline input and output data
-     * @param graph
-     * @param component
+     * @param body TODO
      * @return
      * @throws IOException
      */
+    @PostMapping(value = {"/explain"})
+    @Operation()
+    public ResponseEntity<?> getComposedExplanation(@RequestBody QanaryExplanationData body) throws ExplanationException { // TODO: Extend methods
+        try {
+            logger.info(body.getComponent());
+            String explanation = explanationService.explain(body);
+            return new ResponseEntity<>(explanation, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
     @Operation()
     public ResponseEntity<?> getComposedExplanation(
             @PathVariable(required = true) String graph,
             @PathVariable(required = false) String component) throws IOException {
         try {
-            String explanation = explanationService.getComposedExplanation(graph, component);
+            QanaryExplanationData qanaryExplanationData = new QanaryExplanationData();
+            qanaryExplanationData.setComponent(component);
+            qanaryExplanationData.setGraph(graph);
+            String explanation = explanationService.getComposedExplanation(qanaryExplanationData);
             return new ResponseEntity<>(explanation, HttpStatus.OK);
         } catch (IOException e) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
