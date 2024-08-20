@@ -1,6 +1,7 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
 import org.junit.jupiter.api.Assertions;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -24,6 +26,8 @@ import java.nio.file.Files;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -139,6 +143,13 @@ public class TemplateExplanationsServiceTest {
         private final ResultSet resultSet = serviceDataForTests.createResultSet(serviceDataForTests.getQuerySolutionMapList());
         @SpyBean
         private TemplateExplanationsService templateExplanationsService;
+        @MockBean
+        private QanaryRepository qanaryRepository;
+
+        @BeforeEach
+        public void setup() {
+            when(qanaryRepository.getQuestionFromQuestionId(any())).thenReturn("test");
+        }
 
         @Test
         public void createTextualExplanationTest() {
