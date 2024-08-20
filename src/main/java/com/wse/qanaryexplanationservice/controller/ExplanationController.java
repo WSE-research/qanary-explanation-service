@@ -235,4 +235,10 @@ public class ExplanationController {
         }
     }
 
+    @GetMapping("/explain/pipeline/{graph}")
+    @Operation()
+    public ResponseEntity<?> getPipelineExplanation(@PathVariable String graph) throws IOException {
+        return new ResponseEntity<>(explanationService.getPipelineExplanation(graph), HttpStatus.OK);
+    }
+
 }

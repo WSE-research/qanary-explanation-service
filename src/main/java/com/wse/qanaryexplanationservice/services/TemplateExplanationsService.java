@@ -592,14 +592,21 @@ public class TemplateExplanationsService {
 
     // Computes the explanation itself
     public String getPipelineOutputExplanation(ResultSet results, String graphUri) {
-        String explanation = getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
+        String explanation = getStringFromFile("/explanations/pipeline/en_prefix")
+                .replace("${graph}", graphUri);
         String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
+        String questionId = "";
         List<String> explanations = new ArrayList<>();
         while (results.hasNext()) {
             QuerySolution querySolution = results.next();
+            if(querySolution.get("questionId") != null)
+                questionId = querySolution.get("questionId").toString();
             explanations.add(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate));
         }
-        return explanation + " " + StringUtils.join(explanations, ", ");
+        return explanation
+                .replace("${questionId}", questionId)
+                .replace("${question}", qanaryRepository.getQuestionFromQuestionId(questionId + "/raw"))
+                + " " + StringUtils.join(explanations, ", ");
     }
 
     // Composes the passed explanations

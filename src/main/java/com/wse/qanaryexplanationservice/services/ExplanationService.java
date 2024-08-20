@@ -154,6 +154,13 @@ public class ExplanationService {
         return qanaryRepository.selectWithResultSet(sparql);
     }
 
+    public String getPipelineExplanation(String graph) throws IOException {
+        return tmplExpService.getPipelineOutputExplanation(
+                this.getPipelineInformation(graph),
+                graph
+        );
+    }
+
     public String getComposedExplanation(QanaryExplanationData body) throws IOException {
         String graph = body.getGraph();
         String component = body.getComponent();
@@ -163,6 +170,7 @@ public class ExplanationService {
         if (component == null) {
             inputExplanation = explainPipelineInput(graph);
             outputExplanation = explainPipelineOutput(graph);
+            return getPipelineExplanation(graph);
         } else {
             QanaryComponent qanaryComponent = new QanaryComponent(component);
             inputExplanation = getTemplateComponentInputExplanation(graph, qanaryComponent);
