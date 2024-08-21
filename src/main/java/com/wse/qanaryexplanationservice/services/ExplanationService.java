@@ -240,6 +240,9 @@ public class ExplanationService {
             return explanationTemplate
                     .replace("${component}", data.getComponent())
                     .replace("${components}", components)
+                    .replace("${question}", qanaryRepository.getQuestionFromQuestionId(data.getQuestionId() + "/raw"))
+                    .replace("${questionId}", data.getQuestionId())
+                    .replace("${graph}", data.getGraph())
                     .replace("${componentsAndExplanations}", composeComponentExplanations(data.getExplanations()));
         }
         else { // only questionId and graph are provided // System-based explanation
