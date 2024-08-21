@@ -1,4 +1,4 @@
-The pipeline component ${component} has received the question ${question} that is represented with the questionId "${questionId}". It executed the
+The pipeline component ${component} has received the question "${question}" that is represented with the questionId "${questionId}". It executed the
 components ${components} on the knowledge graph "${graph}" with the following explanations:
 
 ${componentsAndExplanations}
