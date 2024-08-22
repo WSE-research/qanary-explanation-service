@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
@@ -14,8 +15,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(SpringExtension.class)
@@ -29,16 +32,14 @@ class ExplanationServiceTest {
     private ExplanationService explanationService;
     @MockBean
     private QanaryRepository qanaryRepository;
-    @MockBean
+    @Autowired
     private TemplateExplanationsService templateExplanationsService;
 
     @BeforeEach
-    public void setUpRepository() {
+    public void setUpRepository() throws IOException {
         ResultSet results = testData.createResultSet(testData.getExampleQuerySolutionList());
         Mockito.when(qanaryRepository.selectWithResultSet(any())).thenReturn(results);
         Mockito.when(qanaryRepository.getQuestionFromQuestionId(any())).thenReturn("Example Question?");
-        Mockito.when(templateExplanationsService.getPipelineInputExplanation(any())).thenReturn("A");
-        Mockito.when(templateExplanationsService.getPipelineOutputExplanation((ResultSet) any(), any())).thenReturn("B");
     }
 
     /**
@@ -55,6 +56,25 @@ class ExplanationServiceTest {
         assertEquals("component1", querySolution.get("component").toString());
         querySolution = resultSet.next();
         assertEquals("component2", querySolution.get("component").toString());
+    }
+
+    @Test
+    public void explainPipeline() {
+        QanaryExplanationData testData = new QanaryExplanationData();
+        testData.setGraph("testGraph");
+        testData.setQuestionId("testQuestionId");
+        testData.setComponent("MyQanaryPipeline");
+        Map<String,String> map = new HashMap<>();
+        map.put("component1", "explanation1"); map.put("component2", "explanation");
+        testData.setExplanations(map);
+        String explanation = this.explanationService.explain(testData);
+        assertFalse(explanation.contains("${"));
+        assertTrue(explanation.contains("The pipeline component MyQanaryPipeline has received the question \"Example Question?\" that is represented with the questionId \"testQuestionId\". It executed the\n" +
+                "components component1, component2 on the knowledge graph \"testGraph\" with the following explanations:\n" +
+                "\n" +
+                "component1: explanation1\n" +
+                "\n" +
+                "component2: explanation"));
     }
 
 }
