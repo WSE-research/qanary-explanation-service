@@ -7,6 +7,7 @@ import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
+import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
@@ -34,6 +35,13 @@ public class    ExplanationService {
     @Autowired
     private TemplateExplanationsService tmplExplanationService;
 
+    public String getQaSystemExplanation(String header, String graphUri) throws Exception {
+        return tmplExplanationService.explainQaSystem(header, graphUri);
+    }
+
+    public String getTemplateComponentExplanation(String graphUri, QanaryComponent component, String header) throws Exception {
+        return tmplExplanationService.explainComponentAsRdf(graphUri, component, header);
+    }
 
     /**
      * Explains the input data of a certain component
@@ -260,9 +268,12 @@ public class    ExplanationService {
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(plainQueryPath, bindings);
     }
 
-
-
-
+    public String getPipelineExplanation(String graph) throws IOException {
+        return tmplExplanationService.getPipelineOutputExplanation(
+                this.getPipelineInformation(graph),
+                graph
+        );
+    }
 
 }
 

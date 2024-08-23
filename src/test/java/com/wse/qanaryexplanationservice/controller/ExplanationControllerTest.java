@@ -48,18 +48,6 @@ public class ExplanationControllerTest {
     }
 
     @Test
-    public void explanationsForComponentResultNotNull() throws Exception {
-        when(explanationService.getTemplateComponentExplanation(any(), any(), any())).thenReturn(testRdfData);
-
-        MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI/componentURI"))
-                .andReturn();
-
-        assertEquals(200, mvcResult.getResponse().getStatus());
-        assertEquals(testRdfData, mvcResult.getResponse().getContentAsString());
-        verify(explanationService, times(1)).getTemplateComponentExplanation(any(), any(), any());
-    }
-
-    @Test
     public void explanationsForSystemResultNotNull() throws Exception {
         when(explanationService.getQaSystemExplanation(any(), any())).thenReturn(testRdfData);
 
@@ -73,7 +61,7 @@ public class ExplanationControllerTest {
 
     @Test
     public void explanationsForComponentResultIsNull() throws Exception {
-        when(explanationService.getTemplateComponentExplanation(any(), any(), any())).thenReturn(null);
+        when(explanationService.getComposedTemplateExplanation(any(), any())).thenReturn(null);
 
         MvcResult mvcResult = mockMvc.perform(get("/explanations/graphURI/componentURI"))
                 .andReturn();

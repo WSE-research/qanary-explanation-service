@@ -30,15 +30,15 @@ public class ExplanationController {
      * Computes the explanations for (currently) the output data for a specific graph and/or component
      *
      * @param component    @see QanaryComponent
-     //* @param acceptHeader The answer is formatted as RDF, possibly in RDF/XML, TTL or JSON-LD.
+     * @param acceptHeader The answer is formatted as RDF, possibly in RDF/XML, TTL or JSON-LD.
      * @return Explanation for system or component as RDF
-
+    **/
     @CrossOrigin
     @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{component}"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
-            "}) // add "* / *"
+            "*/*"})
     @Operation(
             summary = "Get either the explanation for a the whole QA-system on a graphURI"
                     + "or the explanation for a specific component by attaching the componentURI",
@@ -67,7 +67,7 @@ public class ExplanationController {
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
     }
-    */
+
 
     @CrossOrigin
     @GetMapping(value = {"/inputdata/{graphURI}/{componentURI}"}, produces = {

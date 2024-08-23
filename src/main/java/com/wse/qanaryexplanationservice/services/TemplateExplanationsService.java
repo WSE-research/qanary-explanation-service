@@ -71,7 +71,7 @@ public class TemplateExplanationsService {
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation/en";
-    Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
+    static Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
     @Autowired
     private QanaryRepository qanaryRepository;
     @Value("${explanations.dataset.limit}")
@@ -465,7 +465,7 @@ public class TemplateExplanationsService {
      * @param path Given path
      * @return String with the file's content
      */
-    public String getStringFromFile(String path) throws RuntimeException {
+    public static String getStringFromFile(String path) throws RuntimeException {
         ClassPathResource cpr = new ClassPathResource(path);
         try {
             byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());

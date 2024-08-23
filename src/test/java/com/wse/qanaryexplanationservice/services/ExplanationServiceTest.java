@@ -59,7 +59,7 @@ class ExplanationServiceTest {
     }
 
     @Test
-    public void explainPipeline() {
+    public void explainPipeline() throws IOException {
         QanaryExplanationData testData = new QanaryExplanationData();
         testData.setGraph("testGraph");
         testData.setQuestionId("testQuestionId");
