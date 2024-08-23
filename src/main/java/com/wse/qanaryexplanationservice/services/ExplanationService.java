@@ -249,7 +249,7 @@ public class    ExplanationService {
             if (result.contains("questionId"))
                 questionId = result.get("questionId").toString();
         }
-        String question = qanaryRepository.getQuestionFromQuestionId(questionId);
+        String question = qanaryRepository.getQuestionFromQuestionId(questionId + "/raw");
         return tmplExplanationService.getPipelineInputExplanation(question);
     }
 

@@ -34,7 +34,7 @@ public class ExplanationController {
      * @return Explanation for system or component as RDF
     **/
     @CrossOrigin
-    @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{component}"}, produces = {
+        @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{component}"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
