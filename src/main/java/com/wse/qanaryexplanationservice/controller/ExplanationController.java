@@ -30,15 +30,15 @@ public class ExplanationController {
      * Computes the explanations for (currently) the output data for a specific graph and/or component
      *
      * @param component    @see QanaryComponent
-     * @param acceptHeader The answer is formatted as RDF, possibly in RDF/XML, TTL or JSON-LD.
+     //* @param acceptHeader The answer is formatted as RDF, possibly in RDF/XML, TTL or JSON-LD.
      * @return Explanation for system or component as RDF
-     */
+
     @CrossOrigin
     @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{component}"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
-            "*/*"})
+            "}) // add "* / *"
     @Operation(
             summary = "Get either the explanation for a the whole QA-system on a graphURI"
                     + "or the explanation for a specific component by attaching the componentURI",
@@ -67,6 +67,7 @@ public class ExplanationController {
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
     }
+    */
 
     @CrossOrigin
     @GetMapping(value = {"/inputdata/{graphURI}/{componentURI}"}, produces = {
@@ -83,16 +84,14 @@ public class ExplanationController {
     )
     public ResponseEntity<?> getInputExplanation(
             @PathVariable String graphURI,
-            @PathVariable(required = false) QanaryComponent component) throws IOException {
-        if (component != null) {
-            return new ResponseEntity<>(this.explanationService.getTemplateComponentInputExplanation(graphURI, component), HttpStatus.OK);
-        } else
-            try {
-                String explanation = explanationService.explainPipelineInput(graphURI);
-                return new ResponseEntity<>(explanation, HttpStatus.OK);
-            } catch (Exception e) {
-                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-            }
+            @PathVariable(required = false) QanaryComponent component) {
+        try {
+            return new ResponseEntity<>(explanationService.getInputTemplateExplanation(graphURI, component != null ? component : null), HttpStatus.OK);
+        } catch (Exception e) {
+            logger.error("Error: {}", e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>("Error while computing output explanation", HttpStatus.INTERNAL_SERVER_ERROR); // TODO define error code
+        }
     }
 
     @CrossOrigin
@@ -103,7 +102,7 @@ public class ExplanationController {
             "*/*"
     })
     @Operation(
-            summary = "Computes the rulebased explanation for a specific component",
+            summary = "Computes the rulebased output-data explanation for a specific component or the pipeline",
             description = """
                     This endpoint doesn't require a body and only takes the graph and component as path variables.
                     The component must include the prefixes, e.g. 'urn:qanary:'
@@ -112,19 +111,14 @@ public class ExplanationController {
     public ResponseEntity<?> getOutputExplanation(
             @PathVariable String graphURI,
             @PathVariable(required = false) QanaryComponent component,
-            @RequestHeader(value = "accept", required = false) String acceptHeader) {
-        String explanation = "";
+            @RequestHeader(value = "accept", required = false) String lang) {
         try {
-            if (component == null) {
-                explanation = explanationService.getTemplateComponentOutputExplanation(graphURI, component, acceptHeader);
-            } else {
-                explanation = explanationService.explainPipelineOutput(graphURI);
-            }
+            return new ResponseEntity<>(explanationService.getOutputTemplateExplanation(graphURI, component != null ? component : null), HttpStatus.OK);
         } catch (Exception e) {
-            logger.error("{}", e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            logger.error("Error: {}", e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>("Error while computing output explanation", HttpStatus.INTERNAL_SERVER_ERROR); // TODO define error code
         }
-        return new ResponseEntity<>(explanation, HttpStatus.OK);
     }
 
     @CrossOrigin
@@ -158,7 +152,7 @@ public class ExplanationController {
     )
     public ResponseEntity<?> getComposedExplanationInputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
         try {
-            ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationForInputData(composedExplanationDTO);
+            ComposedExplanation composedExplanationInputData = this.explanationService.templateAndGenerativeInputExplanation(composedExplanationDTO);
             return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
         } catch (Exception e) {
             logger.error("{}", e.toString());
@@ -193,7 +187,7 @@ public class ExplanationController {
     )
     public ResponseEntity<?> getComposedExplanationOutputData(@RequestBody ComposedExplanationDTO composedExplanationDTO) {
         try {
-            ComposedExplanation composedExplanationInputData = this.explanationService.composedExplanationsForOutputData(composedExplanationDTO);
+            ComposedExplanation composedExplanationInputData = this.explanationService.templateAndGenerativeOutputExplanation(composedExplanationDTO);
             return new ResponseEntity<>(composedExplanationInputData, HttpStatus.OK);
         } catch (Exception e) {
             logger.error("{}", e.toString());
@@ -219,22 +213,12 @@ public class ExplanationController {
         }
     }
 
-    @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
-    @Operation()
-    public ResponseEntity<?> getComposedExplanation(
-            @PathVariable(required = true) String graph,
-            @PathVariable(required = false) String component) throws IOException {
-        try {
-            QanaryExplanationData qanaryExplanationData = new QanaryExplanationData();
-            qanaryExplanationData.setComponent(component);
-            qanaryExplanationData.setGraph(graph);
-            String explanation = explanationService.getComposedExplanation(qanaryExplanationData);
-            return new ResponseEntity<>(explanation, HttpStatus.OK);
-        } catch (IOException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-    }
-
+    /**
+     * Alternative approach
+     * @param graph
+     * @return
+     * @throws IOException
+     */
     @GetMapping("/explain/pipeline/{graph}")
     @Operation()
     public ResponseEntity<?> getPipelineExplanation(@PathVariable String graph) throws IOException {
