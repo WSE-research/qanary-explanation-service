@@ -1,0 +1,15 @@
+Given the context of a component-based Question-Answering-system where a QA process with several components was executed. Each component of this QA system processes data and stores data. For the component ${component} this data was as follows:
+
+Input data:
+"
+${inputData}
+"
+
+
+Output data:
+"
+${outputData}
+"
+
+
+Now, use both datasets to explain the components' process. Write in past-tense. Only return the explanation.

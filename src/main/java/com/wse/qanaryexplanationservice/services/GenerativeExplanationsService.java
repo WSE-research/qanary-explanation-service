@@ -11,6 +11,7 @@ import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTes
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryPipelineInformation;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.slf4j.Logger;
@@ -210,6 +211,21 @@ public class GenerativeExplanationsService {
 
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
         return tmplExpService.createOutputExplanation(graphUri, component, lang);
+    }
+
+    public String createPromptForComposedComponentExplanation(QanaryComponent component, String inputData, String outputData) throws IOException {
+        return getStringFromFile("/prompt_templates/composed/zeroshot")
+                .replace("${component}", component.getComponentName())
+                .replace("${inputData}", inputData)
+                .replace("${outputData}", outputData);
+    }
+
+    public String createPromptForPipelineExplanation(QanaryPipelineInformation qanaryPipelineInformation) throws IOException {
+        return getStringFromFile("/prompt_templates/composed/zeroshot_pipeline")
+                .replace("${questionId}", qanaryPipelineInformation.getQuestionId())
+                .replace("${question}", qanaryPipelineInformation.getQuestion())
+                .replace("${graph}", qanaryPipelineInformation.getGraph())
+                .replace("${components}", String.join(", ", qanaryPipelineInformation.getComponents()));
     }
 
 }
