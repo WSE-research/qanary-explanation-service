@@ -1,14 +1,11 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.annotations.LogExecution;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.GptModel;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
-import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
-import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryPipelineInformation;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -238,7 +235,6 @@ public class ExplanationController {
         }
     }
 
-    @LogExecution
     @GetMapping("/explain/pipeline/{graph}")
     @Operation()
     public ResponseEntity<?> getPipelineExplanation(@PathVariable String graph) throws IOException {
