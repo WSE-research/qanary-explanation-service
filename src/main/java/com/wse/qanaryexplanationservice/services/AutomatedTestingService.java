@@ -163,7 +163,7 @@ public class AutomatedTestingService {
             logger.info("Resolve dependencies and select components");
             ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(GenerativeExplanations.DEPENDENCY_MAP_FOR_ANNOTATION_TYPES.get(givenAnnotationType)));
             List<QanaryComponent> componentListForQanaryPipeline = generativeExplanations.selectRandomComponents(annotationTypes);
-            componentListForQanaryPipeline.add(selectedComponent); // Seperation of concerns, add this to the selectRandomComps method
+            componentListForQanaryPipeline.add(selectedComponent); // Seperation of concerns, add this to the selectRandomComps en
 
             // Execute Qanary pipeline and store graphURI + questionID
             logger.info("Execute Qanary pipeline");

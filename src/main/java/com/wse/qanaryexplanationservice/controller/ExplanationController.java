@@ -2,6 +2,7 @@ package com.wse.qanaryexplanationservice.controller;
 
 import com.wse.qanaryexplanationservice.annotations.LogExecution;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
+import com.wse.qanaryexplanationservice.helper.SupportedLanguage;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.io.IOException;
 
@@ -26,6 +28,17 @@ public class ExplanationController {
     private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
     @Autowired
     private ExplanationService explanationService;
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<String> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
+        if (e.getParameter().getMethod().getName().equals("getMethodExplanations")) {
+            if (e.getRequiredType().isEnum()) {
+                logger.error("Requested explanation of method with unsupported language declined.");
+                return new ResponseEntity<>("Language " + e.getValue() + " is not supported.", HttpStatus.BAD_REQUEST);
+            }
+        }
+        return new ResponseEntity<>("Bad request", HttpStatus.BAD_REQUEST);
+    }
 
     /**
      * Computes the explanations for (currently) the output data for a specific graph and/or component
@@ -241,6 +254,12 @@ public class ExplanationController {
     @Operation()
     public ResponseEntity<?> getPipelineExplanation(@PathVariable String graph) throws IOException {
         return new ResponseEntity<>(explanationService.getPipelineExplanation(graph), HttpStatus.OK);
+    }
+
+    @GetMapping("/explain/methodsaslist/{graph}/{component}/{language}")
+    @Operation()
+    public ResponseEntity<?> getMethodExplanations(@PathVariable String graph, @PathVariable QanaryComponent component, @PathVariable SupportedLanguage language) throws IOException{
+        return new ResponseEntity<>(explanationService.explainMethodsAsList(graph, component, language), HttpStatus.OK);
     }
 
 }

@@ -1,7 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
-import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
+import com.wse.qanaryexplanationservice.helper.SupportedLanguage;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
@@ -21,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +49,7 @@ public class ExplanationService {
     }
 
     /**
-     * Controller called method to start the process explaining several components with both approaches;
+     * Controller called en to start the process explaining several components with both approaches;
      * the rulebased and the generative one.
      */
     public ComposedExplanation composedExplanationsForOutputData(ComposedExplanationDTO composedExplanationDTO) {
@@ -257,6 +257,36 @@ public class ExplanationService {
             composedExplanations.append (k + ": " + v + "\n\n");
         });
         return composedExplanations.toString();
+    }
+
+    public List<String> explainMethodsAsList(String graph, QanaryComponent component, SupportedLanguage language) throws IOException {
+        ResultSet methods = getMethodsFromComponent(graph,component);
+        List<String> explainedMethods = new ArrayList<>();
+        while(methods.hasNext()) {
+            QuerySolution qs = methods.next();
+            explainedMethods.add(explainMethod(qs, language.toString()));
+        }
+        return explainedMethods;
+    }
+
+    public String explainMethod(QuerySolution qs, String language) {
+        String template = this.tmplExpService.getStringFromFile("/explanations/methods/" + language);
+        return template
+                .replace("parameters", qs.get("parameters").toString())
+                .replace("result", qs.get("result").toString())
+                .replace("methodname", qs.get("methodname").toString());
+    }
+
+    public ResultSet getMethodsFromComponent(String graph, QanaryComponent component) throws IOException {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("graph", ResourceFactory.createResource(graph));
+        qsm.add("component", ResourceFactory.createResource(component.getPrefixedComponentName()));
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(
+                "/queries/method_query.rq",
+                qsm
+        );
+        logger.info("Query: {}", query);
+        return qanaryRepository.selectWithResultSet(query);
     }
 
 }

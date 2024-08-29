@@ -100,7 +100,7 @@ public class GenerativeExplanationsService {
             ArrayList<AnnotationType> annotationTypes = new ArrayList<>(Arrays.asList(generativeExplanations.getDependencyList(component.getComponentMainType())));
             logger.info("Annotation List: {}", annotationTypes);
             List<QanaryComponent> componentListForQanaryPipeline = generativeExplanations.selectRandomComponents(annotationTypes);
-            componentListForQanaryPipeline.add(component); // Separation of concerns, add this to the selectRandomComps method
+            componentListForQanaryPipeline.add(component); // Separation of concerns, add this to the selectRandomComps en
             logger.info("List of comps: {}", componentListForQanaryPipeline);
 
             // Execute Qanary pipeline and store graphURI + questionID

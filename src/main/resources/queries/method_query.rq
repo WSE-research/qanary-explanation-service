@@ -1,0 +1,13 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+PREFIX qa: <http://www.wdaqua.eu/qa#>
+
+SELECT *
+FROM ?graph
+WHERE {
+    ?annotationId   rdf:type    qa:AnnotationOfLogMethod ;
+                    qa:methodName   ?methodname ;
+                    qa:input    ?parameters ;
+                    qa:output   ?result ;
+                    qa:annotatedBy  ?component .
+}
