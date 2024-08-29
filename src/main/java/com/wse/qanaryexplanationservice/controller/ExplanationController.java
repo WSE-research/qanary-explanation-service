@@ -1,12 +1,12 @@
 package com.wse.qanaryexplanationservice.controller;
 
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
+import com.wse.qanaryexplanationservice.helper.GptModel;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
-import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
-import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryPipelineInformation;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.slf4j.Logger;
@@ -239,6 +239,16 @@ public class ExplanationController {
     @Operation()
     public ResponseEntity<?> getPipelineExplanation(@PathVariable String graph) throws IOException {
         return new ResponseEntity<>(explanationService.getPipelineExplanation(graph), HttpStatus.OK);
+    }
+
+    @GetMapping("/generative/{gptModel}/{graph}/{component}")
+    public ResponseEntity<?> getGenerativeExplanation(@PathVariable GptModel gptModel, @PathVariable String graph, @PathVariable QanaryComponent component) throws Exception {
+        return new ResponseEntity(this.explanationService.getGenerativeExplanation(graph, component, null, gptModel), HttpStatus.OK);
+    }
+
+    @GetMapping("/generative/{gptModel}")
+    public ResponseEntity<?> getGenerativeExplanation(@PathVariable GptModel gptModel, @RequestBody QanaryPipelineInformation qanaryPipelineInformation) throws Exception {
+        return new ResponseEntity(this.explanationService.getGenerativeExplanation(qanaryPipelineInformation.getGraph(), null, qanaryPipelineInformation, gptModel), HttpStatus.OK);
     }
 
 }

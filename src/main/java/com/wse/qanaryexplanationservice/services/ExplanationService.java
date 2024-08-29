@@ -2,12 +2,10 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
+import com.wse.qanaryexplanationservice.helper.GptModel;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
-import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -21,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +34,8 @@ public class ExplanationService {
     private GenerativeExplanationsService genExpService;
     @Autowired
     private QanaryRepository qanaryRepository;
+    @Autowired
+    private GenerativeExplanations generativeExplanations;
 
     public String getQaSystemExplanation(String header, String graphUri) throws Exception {
         return tmplExpService.explainQaSystem(header, graphUri);
@@ -257,6 +258,27 @@ public class ExplanationService {
             composedExplanations.append (k + ": " + v + "\n\n");
         });
         return composedExplanations.toString();
+    }
+
+    public String getGenerativeExplanation(String graph, QanaryComponent component, QanaryPipelineInformation qanaryPipelineInformation, GptModel gptModel) throws Exception {
+        String prompt = "";
+        if(component != null) {
+            List<String> sparqlQueriesInputData = new ArrayList<>();
+            String sparqlQuery = bindingForGraphAndComponent(graph, component, TemplateExplanationsService.INPUT_DATA_SELECT_QUERY);
+            ResultSet results = qanaryRepository.selectWithResultSet(sparqlQuery);
+            while(results.hasNext()) {
+                QuerySolution solution = results.nextSolution();
+                sparqlQueriesInputData.add(solution.get("body").toString());
+            }
+            String sparqlQueries = String.join("\n\n", sparqlQueriesInputData); // == Input data
+            String datasetOutputData = generativeExplanations.createDataset(component, graph, null);
+            prompt = genExpService.createPromptForComposedComponentExplanation(component, sparqlQueries == null ? "" : sparqlQueries, datasetOutputData == null ? "" : datasetOutputData);
+        }
+        else {
+            prompt = genExpService.createPromptForPipelineExplanation(qanaryPipelineInformation);
+        }
+        logger.info("Prompt: {}", prompt);
+        return genExpService.sendPrompt(prompt, gptModel);
     }
 
 }

@@ -1,0 +1,6 @@
+Given the context of a component-based Question-Answering-system that consists of a pipeline and several components, a QA process was executed. The pipeline received the question "${question}" and executed the following components to compute an answer: ${components}. It then returned the following data for the process:
+
+questionId: ${questionId}
+graph: ${graph}
+
+Now, summarize and explain this data in terms of the process. Return only the explanations. Write in the past-tense.
