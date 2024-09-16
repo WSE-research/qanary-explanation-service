@@ -1,6 +1,5 @@
 package com.wse.qanaryexplanationservice.controller;
 
-import com.wse.qanaryexplanationservice.annotations.LogExecution;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 
 @RestController
-@ControllerAdvice
 public class ExplanationController {
 
     private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
@@ -236,7 +234,6 @@ public class ExplanationController {
         }
     }
 
-    @LogExecution
     @GetMapping("/explain/pipeline/{graph}")
     @Operation()
     public ResponseEntity<?> getPipelineExplanation(@PathVariable String graph) throws IOException {
