@@ -96,7 +96,7 @@ public class ExplanationService {
             ResultSet results = qanaryRepository.selectWithResultSet(sparqlQuery);
             String query = getBodyFromResultSet(results);
 
-            String templatebasedExplanation = tmplExpService.createExplanationForQuery(query, graph, component);
+            String templatebasedExplanation = query == null ? "This component didn't used any query" : tmplExpService.createExplanationForQuery(query, graph, component);
 
             String prompt = genExpService.getInputDataExplanationPrompt(
                     component,
@@ -118,8 +118,12 @@ public class ExplanationService {
     }
 
     public String getBodyFromResultSet(ResultSet resultSet) {
-        QuerySolution querySolution = resultSet.next();
-        return querySolution.get("body").toString();
+        if (resultSet.hasNext()) {
+            QuerySolution querySolution = resultSet.next();
+            return querySolution.get("body").toString();
+        } else {
+            return null;
+        }
     }
 
     /**
