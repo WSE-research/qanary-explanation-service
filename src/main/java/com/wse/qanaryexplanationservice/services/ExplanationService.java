@@ -100,7 +100,7 @@ public class ExplanationService {
 
             String prompt = genExpService.getInputDataExplanationPrompt(
                     component,
-                    query,
+                    query == null ? "" : query,
                     composedExplanationDTO.getGenerativeExplanationRequest().getShots()
             );
             String gptExplanation = genExpService.sendPrompt(prompt, composedExplanationDTO.getGenerativeExplanationRequest().getGptModel());
