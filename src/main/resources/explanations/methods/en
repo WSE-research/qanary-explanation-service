@@ -1,0 +1,1 @@
+The component ${annotatedBy} executed the method  ${method} at ${annotatedAt} on behalf of ${caller} with input variables ${inputVars} and returned ${outputVar}.

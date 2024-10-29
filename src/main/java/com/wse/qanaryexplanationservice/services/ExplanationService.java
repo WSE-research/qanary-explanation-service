@@ -48,8 +48,10 @@ public class ExplanationService {
         return tmplExpService.createInputExplanation(graphUri, component);
     }
 
-    public List<String> explainComponentMethods(String graph, QanaryComponent component) {
-        ResultSet loggedMethods = qanaryRepository.selectWithResultSet(SELECT_ALL_LOGGED_METHODS);
+    public List<String> explainComponentMethods(String graph, QanaryComponent component) throws IOException {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("graph", ResourceFactory.createResource(graph));
+        ResultSet loggedMethods = qanaryRepository.selectWithResultSet(QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm));
         List<String> explanations = new ArrayList<>();
         // Here, decide whether to explain with GenAI or rule-based
         loggedMethods.forEachRemaining(qs -> {

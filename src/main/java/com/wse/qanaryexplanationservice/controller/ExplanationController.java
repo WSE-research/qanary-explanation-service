@@ -220,16 +220,12 @@ public class ExplanationController {
         }
     }
 
-    @PostMapping(value = "/explainmethods/{graph}/{component}")
+    @GetMapping(value = "/explainmethods/{graph}/{component}")
     @Operation(
             summary = "Explains all methods logged for the passed component"
     )
-    public ResponseEntity<?> getMethodExplanation(@PathVariable String graph, @PathVariable QanaryComponent component) {
-        try {
-            return new ResponseEntity<>(explanationService.explainComponentMethods(graph, component), HttpStatus.OK);
-        } catch(Exception e) {
-
-        }
+    public ResponseEntity<?> getMethodExplanation(@PathVariable String graph, @PathVariable QanaryComponent component) throws IOException {
+        return new ResponseEntity<>(explanationService.explainComponentMethods(graph, component), HttpStatus.OK);
     }
 
     @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
@@ -247,6 +243,9 @@ public class ExplanationController {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
     }
+
+    // TODO: Decide whether to add the explanation to the origin graph, to a new graph or
+    // TODO: to no graph at all
 
     @GetMapping("/explain/pipeline/{graph}")
     @Operation()
