@@ -1,7 +1,5 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
-import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
@@ -21,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +28,7 @@ public class ExplanationService {
 
     private final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
+    private final String SELECT_ALL_LOGGED_METHODS = "/queries/fetch_all_logged_methods.rq";
     @Autowired
     private TemplateExplanationsService tmplExpService;
     @Autowired
@@ -46,6 +46,16 @@ public class ExplanationService {
 
     public String getTemplateComponentInputExplanation(String graphUri, QanaryComponent component) throws IOException {
         return tmplExpService.createInputExplanation(graphUri, component);
+    }
+
+    public List<String> explainComponentMethods(String graph, QanaryComponent component) {
+        ResultSet loggedMethods = qanaryRepository.selectWithResultSet(SELECT_ALL_LOGGED_METHODS);
+        List<String> explanations = new ArrayList<>();
+        // Here, decide whether to explain with GenAI or rule-based
+        loggedMethods.forEachRemaining(qs -> {
+            explanations.add(tmplExpService.explainMethod(qs));
+        });
+        return explanations;
     }
 
     /**

@@ -71,6 +71,7 @@ public class TemplateExplanationsService {
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation/en";
+    private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
     @Autowired
     private QanaryRepository qanaryRepository;
@@ -628,6 +629,16 @@ public class TemplateExplanationsService {
                 .replace("${component}", component)
                 .replace("${inputExplanation}", inputExplanation)
                 .replace("${outputExplanation}", outputExplanation);
+    }
+
+    public String explainMethod(QuerySolution qs) {
+        return METHOD_EXPLANATION_TEMPLATE
+                .replace("${annotatedBy}", qs.get("annotatedBy").toString())
+                .replace("${method}", qs.get("method").toString())
+                .replace("${annotatedAt}", qs.get("annotatedAt").toString())
+                .replace("${caller}", qs.get("caller").toString())
+                .replace("${inputVars}", null) // TODO
+                .replace("${outputVar}", null); // TODO
     }
 
 }

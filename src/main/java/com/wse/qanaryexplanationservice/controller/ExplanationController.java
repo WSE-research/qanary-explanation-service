@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 public class ExplanationController {
@@ -215,6 +217,18 @@ public class ExplanationController {
             return new ResponseEntity<>(explanation, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping(value = "/explainmethods/{graph}/{component}")
+    @Operation(
+            summary = "Explains all methods logged for the passed component"
+    )
+    public ResponseEntity<?> getMethodExplanation(@PathVariable String graph, @PathVariable QanaryComponent component) {
+        try {
+            return new ResponseEntity<>(explanationService.explainComponentMethods(graph, component), HttpStatus.OK);
+        } catch(Exception e) {
+
         }
     }
 
