@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -631,14 +632,12 @@ public class TemplateExplanationsService {
                 .replace("${outputExplanation}", outputExplanation);
     }
 
-    public String explainMethod(QuerySolution qs, String template) {
-        return template
-                .replace("${annotatedBy}", qs.get("annotatedBy").toString())
-                .replace("${method}", qs.get("method").toString())
-                .replace("${annotatedAt}", qs.get("annotatedAt").toString())
-                .replace("${caller}", qs.get("caller").toString())
-                .replace("${inputVars}", null) // TODO
-                .replace("${outputVar}", null); // TODO
+    // TODO: Make the same as for the template for SPARQL queries, too. Hence, this would provide a great and flexible playground for both researcher and user.
+    public String replacePlaceholdersWithVarsFromQuerySolution(QuerySolution querySolution, List<String> variables, String template) {
+        for (String variable : variables) {
+            template = template.replace("${" + variable + "}", querySolution.get(variable).toString());
+        }
+        return template;
     }
 
 }

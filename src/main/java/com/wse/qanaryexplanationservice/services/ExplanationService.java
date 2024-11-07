@@ -48,17 +48,19 @@ public class ExplanationService {
     public List<String> explainComponentMethods(ExplanationMetaData explanationMetaData) throws IOException {
         QuerySolutionMap qsm = new QuerySolutionMap();
         List<String> explanations = new ArrayList<>();
-        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
-        qsm.add("annotatedBy", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
-        ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm));
 
-        if (explanationMetaData.isDoGenerative()) {
+        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm);
+        logger.debug("Query: {}", query);
+        ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(query);
+        List<String> variables = loggedMethodsResultSet.getResultVars();
+
+        if (!explanationMetaData.isDoGenerative()) {
             loggedMethodsResultSet.forEachRemaining(querySolution -> {
-                explanations.add(tmplExpService.explainMethod(querySolution, explanationMetaData.getTemplate()));
+                explanations.add(tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution, variables, explanationMetaData.getTemplate()));
             });
-        } else {
-                explanations.add(genExpService.explainMethod());
-        }
+        } else explanations.add(genExpService.explainMethod());
+
         return explanations;
     }
 
