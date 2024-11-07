@@ -208,6 +208,14 @@ public class GenerativeExplanationsService {
         return prompt;
     }
 
+    /**
+     * TODO
+     * @return
+     */
+    public String explainMethod() {
+        return "";
+    }
+
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
         return tmplExpService.createOutputExplanation(graphUri, component, lang);
     }

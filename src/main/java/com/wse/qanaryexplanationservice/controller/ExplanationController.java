@@ -4,6 +4,7 @@ import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
@@ -220,12 +221,10 @@ public class ExplanationController {
         }
     }
 
-    @GetMapping(value = "/explainmethods/{graph}/{component}")
-    @Operation(
-            summary = "Explains all methods logged for the passed component"
-    )
-    public ResponseEntity<?> getMethodExplanation(@PathVariable String graph, @PathVariable QanaryComponent component) throws IOException {
-        return new ResponseEntity<>(explanationService.explainComponentMethods(graph, component), HttpStatus.OK);
+    @GetMapping(value = "/explainmethods")
+    @Operation()
+    public ResponseEntity<?> getMethodExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws IOException {
+        return new ResponseEntity<>(explanationService.explainComponentMethods(explanationMetaData), HttpStatus.OK);
     }
 
     @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})

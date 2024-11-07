@@ -2,10 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
-import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -48,15 +45,20 @@ public class ExplanationService {
         return tmplExpService.createInputExplanation(graphUri, component);
     }
 
-    public List<String> explainComponentMethods(String graph, QanaryComponent component) throws IOException {
+    public List<String> explainComponentMethods(ExplanationMetaData explanationMetaData) throws IOException {
         QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("graph", ResourceFactory.createResource(graph));
-        ResultSet loggedMethods = qanaryRepository.selectWithResultSet(QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm));
         List<String> explanations = new ArrayList<>();
-        // Here, decide whether to explain with GenAI or rule-based
-        loggedMethods.forEachRemaining(qs -> {
-            explanations.add(tmplExpService.explainMethod(qs));
-        });
+        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
+        qsm.add("annotatedBy", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
+        ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm));
+
+        if (explanationMetaData.isDoGenerative()) {
+            loggedMethodsResultSet.forEachRemaining(querySolution -> {
+                explanations.add(tmplExpService.explainMethod(querySolution, explanationMetaData.getTemplate()));
+            });
+        } else {
+                explanations.add(genExpService.explainMethod());
+        }
         return explanations;
     }
 

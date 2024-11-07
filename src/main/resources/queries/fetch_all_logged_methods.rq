@@ -9,7 +9,7 @@ SELECT  ?id ?caller ?method ?outputDataType ?outputDataValue ?annotatedAt ?annot
 FROM ?graph
 WHERE {
   ?id  rdf:type              qa:AnnotationOfLogMethod ;
-        prov:actedOnBehalfOf  ?caller ;
+        prov:actedOnBehalfOf  ?caller ; # Fetch method name possible, too!
         qa:methodName         ?method ;
         x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
         x:input ?input .
