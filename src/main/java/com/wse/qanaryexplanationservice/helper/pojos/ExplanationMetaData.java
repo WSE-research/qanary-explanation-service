@@ -25,7 +25,7 @@ public class ExplanationMetaData {
         this.qanaryComponent = new QanaryComponent(qanaryComponent);
         this.graph = new URI(graph);
         this.doGenerative = doGenerative;
-        this.itemTemplate = itemTemplate != null ? prefixTemplate : TemplateExplanationsService.getStringFromFile(DEFAULT_METHOD_TEMPLATE_ROOT_PATH + "item/en");
+        this.itemTemplate = itemTemplate != null ? itemTemplate : TemplateExplanationsService.getStringFromFile(DEFAULT_METHOD_TEMPLATE_ROOT_PATH + "item/en");
         this.prefixTemplate = prefixTemplate != null ? prefixTemplate : TemplateExplanationsService.getStringFromFile(DEFAULT_METHOD_TEMPLATE_ROOT_PATH + "prefix/en");
         this.requestQuery = query;
     }
