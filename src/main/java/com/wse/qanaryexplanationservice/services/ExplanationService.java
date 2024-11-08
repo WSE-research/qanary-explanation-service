@@ -6,9 +6,7 @@ import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.QuerySolutionMap;
-import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,15 +47,17 @@ public class ExplanationService {
     public String explainComponentMethods(ExplanationMetaData explanationMetaData) throws IOException {
         QuerySolutionMap qsm = new QuerySolutionMap();
         AtomicReference<String> prefixExplanation = new AtomicReference<>();
+        AtomicInteger i = new AtomicInteger(1);
         StringBuilder explanationItems = new StringBuilder();
 
         qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm);
+        String query = explanationMetaData.getRequestQuery() == null ?
+                QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm) :
+                transformQueryStringToQuery(explanationMetaData.getRequestQuery(), qsm);
+
         logger.debug("Query: {}", query);
         ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(query);
         List<String> variables = loggedMethodsResultSet.getResultVars();
-
-        AtomicInteger i = new AtomicInteger(1);
 
         if (!explanationMetaData.isDoGenerative()) {
             loggedMethodsResultSet.forEachRemaining(querySolution -> {
@@ -70,6 +70,12 @@ public class ExplanationService {
         } else explanationItems.append(genExpService.explainMethod());
 
         return prefixExplanation + explanationItems.toString();
+    }
+
+    public String transformQueryStringToQuery(String queryString, QuerySolutionMap querySolutionMap) {
+        ParameterizedSparqlString pq = new ParameterizedSparqlString(queryString, querySolutionMap);
+        Query query = QueryFactory.create(pq.toString());
+        return query.toString();
     }
 
     /**
