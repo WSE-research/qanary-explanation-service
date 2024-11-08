@@ -16,9 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class ExplanationService {
@@ -45,9 +46,10 @@ public class ExplanationService {
         return tmplExpService.createInputExplanation(graphUri, component);
     }
 
-    public List<String> explainComponentMethods(ExplanationMetaData explanationMetaData) throws IOException {
+    public String explainComponentMethods(ExplanationMetaData explanationMetaData) throws IOException {
         QuerySolutionMap qsm = new QuerySolutionMap();
-        List<String> explanations = new ArrayList<>();
+        AtomicReference<String> prefixExplanation = new AtomicReference<>();
+        StringBuilder explanationItems = new StringBuilder();
 
         qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm);
@@ -55,13 +57,19 @@ public class ExplanationService {
         ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(query);
         List<String> variables = loggedMethodsResultSet.getResultVars();
 
+        AtomicInteger i = new AtomicInteger(1);
+
         if (!explanationMetaData.isDoGenerative()) {
             loggedMethodsResultSet.forEachRemaining(querySolution -> {
-                explanations.add(tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution, variables, explanationMetaData.getTemplate()));
+                if(prefixExplanation.get() == null) {
+                    prefixExplanation.set(tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution, variables, explanationMetaData.getPrefixTemplate()));
+                }
+                explanationItems.append("\n" + i + ". " + tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution, variables, explanationMetaData.getItemTemplate()));
+                i.getAndIncrement();
             });
-        } else explanations.add(genExpService.explainMethod());
+        } else explanationItems.append(genExpService.explainMethod());
 
-        return explanations;
+        return prefixExplanation + explanationItems.toString();
     }
 
     /**
@@ -218,31 +226,6 @@ public class ExplanationService {
                 null
         );
     }
-
-    // Deprecated, alt. approach
-    /*
-    public String explain(QanaryExplanationData explanationData) throws ExplanationExceptionComponent, ExplanationExceptionPipeline {
-        if(explanationData.getExplanations() != null) { // It's a pipeline (as component) -> Composes explanations
-            try {
-                return getPipelineExplanation(
-                  explanationData.getGraph(),
-                  explanationData.getExplanations()
-                );
-            } catch(Exception e) {
-                throw new ExplanationExceptionPipeline();
-            }
-        }
-        else { // It's a component
-            QanaryComponent qanaryComponent = new QanaryComponent(explanationData.getComponent());
-            try {
-                return getComponentExplanation(explanationData.getGraph(), qanaryComponent);
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new ExplanationExceptionComponent();
-            }
-        }
-    }
-     */
 
     public String explain(QanaryExplanationData data) {
         logger.info("Explaining ...");
