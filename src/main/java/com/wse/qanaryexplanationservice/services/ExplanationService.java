@@ -72,7 +72,13 @@ public class ExplanationService {
         return prefixExplanation + explanationItems.toString();
     }
 
-    public String transformQueryStringToQuery(String queryString, QuerySolutionMap querySolutionMap) {
+    /**
+     * Replaces passed variables within the SPARQL query
+     * @param queryString Query with variables
+     * @param querySolutionMap Variable mappings
+     * @return Final query
+     */
+    public static String transformQueryStringToQuery(String queryString, QuerySolutionMap querySolutionMap) {
         ParameterizedSparqlString pq = new ParameterizedSparqlString(queryString, querySolutionMap);
         Query query = QueryFactory.create(pq.toString());
         return query.toString();

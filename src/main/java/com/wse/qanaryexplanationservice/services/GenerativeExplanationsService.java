@@ -213,7 +213,7 @@ public class GenerativeExplanationsService {
      * @return
      */
     public String explainMethod() {
-        return "";
+        return "Not yet implemented";
     }
 
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
