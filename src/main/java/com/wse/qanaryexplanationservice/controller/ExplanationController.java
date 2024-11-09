@@ -227,21 +227,22 @@ public class ExplanationController {
     @GetMapping(value = "/explainmethods")
     @Operation(
             summary = "Explains all methods for the passed component with the desired template",
-            description = "Explains all methods for the passed component. The templates can be specified depending on the needs." +
-                    "Additionally, a specific SPARQL query can be passed. The variables used in the SPARQL query must match the placeholder-names within the passed template." +
-                    "For the body (JSON) it's sufficient to pass the component name only (\"qanaryComponent\": \"NED-DBpediaSpotlight\" // for example).",
+            description = "Explains all methods for the passed component. The templates can be specified depending on the requirements." +
+                    "Additionally, a specific SPARQL query can be passed. The variables used in the SPARQL query must match the placeholder-names within the passed template.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "JSON body",
                     content = @Content(
                             schema = @Schema(
-                                    example = "{\n" +
-                                            "    \"qanaryComponent\":\"REQUIRED\",\n" +
-                                            "    \"graph\":\"REQUIRED\",\n" +
-                                            "    \"doGenerative\": DECIDE WHETHER TO GENERATE LLM OR TEMPLATE EXPLANATIONS,\n" +
-                                            "    \"itemTemplate\": INSERT SPECIFIC ITEM TEMPLATE (null if not),\n" +
-                                            "    \"prefixTemplate\": INSERT SPECIFIC PREFIX TEMPLATE (null if not),\n" +
-                                            "    \"requestQuery\": PASS SPECIFIC SPARQL QUERY (CARE THAT VARIABLE NAMES MATCH WITH PLACEHOLDERS) (null if not)\n" +
-                                            "}"
+                                    example = """
+                                            {
+                                                "qanaryComponent": "REQUIRED",
+                                                "graph": "REQUIRED",
+                                                "doGenerative": "DECIDE WHETHER TO GENERATE LLM OR TEMPLATE EXPLANATIONS (true or false)",
+                                                "itemTemplate": "INSERT SPECIFIC ITEM TEMPLATE (null if not)",
+                                                "prefixTemplate": "INSERT SPECIFIC PREFIX TEMPLATE (null if not)",
+                                                "requestQuery": "PASS SPECIFIC SPARQL QUERY (CARE THAT VARIABLE NAMES MATCH WITH PLACEHOLDERS) (null if not)"
+                                            }
+                                            """
                             )
                     )
             )
