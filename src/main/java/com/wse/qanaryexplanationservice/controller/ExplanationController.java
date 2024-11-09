@@ -4,11 +4,15 @@ import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionComponent;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationExceptionPipeline;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 public class ExplanationController {
@@ -218,6 +224,33 @@ public class ExplanationController {
         }
     }
 
+    @GetMapping(value = "/explainmethods")
+    @Operation(
+            summary = "Explains all methods for the passed component with the desired template",
+            description = "Explains all methods for the passed component. The templates can be specified depending on the requirements." +
+                    "Additionally, a specific SPARQL query can be passed. The variables used in the SPARQL query must match the placeholder-names within the passed template.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "JSON body",
+                    content = @Content(
+                            schema = @Schema(
+                                    example = """
+                                            {
+                                                "qanaryComponent": "REQUIRED",
+                                                "graph": "REQUIRED",
+                                                "doGenerative": "DECIDE WHETHER TO GENERATE LLM OR TEMPLATE EXPLANATIONS (true or false)",
+                                                "itemTemplate": "INSERT SPECIFIC ITEM TEMPLATE (null if not)",
+                                                "prefixTemplate": "INSERT SPECIFIC PREFIX TEMPLATE (null if not)",
+                                                "requestQuery": "PASS SPECIFIC SPARQL QUERY (CARE THAT VARIABLE NAMES MATCH WITH PLACEHOLDERS) (null if not)"
+                                            }
+                                            """
+                            )
+                    )
+            )
+    )
+    public ResponseEntity<?> getMethodExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws IOException {
+        return new ResponseEntity<>(explanationService.explainComponentMethods(explanationMetaData), HttpStatus.OK);
+    }
+
     @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
     @Operation()
     public ResponseEntity<?> getComposedExplanation(
@@ -233,6 +266,9 @@ public class ExplanationController {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
     }
+
+    // TODO: Decide whether to add the explanation to the origin graph, to a new graph or
+    // TODO: to no graph at all
 
     @GetMapping("/explain/pipeline/{graph}")
     @Operation()

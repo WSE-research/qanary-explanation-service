@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -71,7 +72,8 @@ public class TemplateExplanationsService {
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation/en";
-    Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
+    private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
+    static Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
     @Autowired
     private QanaryRepository qanaryRepository;
     @Value("${explanations.dataset.limit}")
@@ -465,7 +467,7 @@ public class TemplateExplanationsService {
      * @param path Given path
      * @return String with the file's content
      */
-    public String getStringFromFile(String path) throws RuntimeException {
+    public static String getStringFromFile(String path) throws RuntimeException {
         ClassPathResource cpr = new ClassPathResource(path);
         try {
             byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
@@ -628,6 +630,14 @@ public class TemplateExplanationsService {
                 .replace("${component}", component)
                 .replace("${inputExplanation}", inputExplanation)
                 .replace("${outputExplanation}", outputExplanation);
+    }
+
+    // TODO: Make the same as for the template for SPARQL queries, too. Hence, this would provide a great and flexible playground for both researcher and user.
+    public String replacePlaceholdersWithVarsFromQuerySolution(QuerySolution querySolution, List<String> variables, String template) {
+        for (String variable : variables) {
+            template = template.replace("${" + variable + "}", querySolution.get(variable).toString());
+        }
+        return template;
     }
 
 }
