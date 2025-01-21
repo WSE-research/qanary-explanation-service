@@ -393,7 +393,7 @@ public class TemplateExplanationsService {
 
         while (results.hasNext() && results.getRowNumber() < EXPLANATIONS_DATASET_LIMIT) {
             QuerySolution querySolution = results.next();
-            explanationsForCurrentType.add(replaceProperties(convertQuerySolutionToMap(querySolution), template));
+            explanationsForCurrentType.add(checkAndReplaceOuterPlaceholder(replaceProperties(convertQuerySolutionToMap(querySolution), template)).replace(questionIdReplacement + "/question/stored-question__text_", "questionID:"));
         }
 
         return explanationsForCurrentType;
@@ -405,15 +405,11 @@ public class TemplateExplanationsService {
      * @param template Template including the defined pre- and suffixes
      * @return Template with replaced placeholders
      */
-    public String replaceProperties(Map<String, String> convertedMap, String template) {
-
+    public static String replaceProperties(Map<String, String> convertedMap, String template) {
         // Replace all placeholders with values from map
         template = StringSubstitutor
-                .replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX)
-                .replace(questionIdReplacement + "/question/stored-question__text_", "questionID:");
-        template = checkAndReplaceOuterPlaceholder(template);
+                .replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
 
-        logger.info("Template with inserted params: {}", template);
         return template;
     }
 
@@ -435,21 +431,11 @@ public class TemplateExplanationsService {
         return template;
     }
 
-    public Map<String, String> convertQuerySolutionToMap(QuerySolution querySolution) {
+    public static Map<String, String> convertQuerySolutionToMap(QuerySolution querySolution) {
         QuerySolutionMap querySolutionMap = new QuerySolutionMap();
         querySolutionMap.addAll(querySolution);
         Map<String, RDFNode> querySolutionMapAsMap = querySolutionMap.asMap();
-        return convertRdfNodeToStringValue(querySolutionMapAsMap);
-    }
-
-    /**
-     * Converts RDFNodes to Strings without the XML datatype declaration and leaves resources as they are.
-     *
-     * @param map Key = variable from sparql-query, Value = its corresponding RDFNode
-     * @return Map with value::String instead of value::RDFNode
-     */
-    public Map<String, String> convertRdfNodeToStringValue(Map<String, RDFNode> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(
+        return querySolutionMapAsMap.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 entry -> {
                     if (entry.getValue().isResource())
@@ -602,7 +588,7 @@ public class TemplateExplanationsService {
             QuerySolution querySolution = results.next();
             if(querySolution.get("questionId") != null)
                 questionId = querySolution.get("questionId").toString();
-            explanations.add(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate));
+            explanations.add(checkAndReplaceOuterPlaceholder(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate)).replace(questionIdReplacement + "/question/stored-question__text_", "questionID:"));
         }
         return explanation
                 .replace("${questionId}", questionId)
@@ -632,13 +618,22 @@ public class TemplateExplanationsService {
     }
 
     public String explainMethod(QuerySolution qs) {
-        return METHOD_EXPLANATION_TEMPLATE
+        logger.info("Type for {}: {}", qs.get("method").toString(), qs.get("input").toString());
+        // convertInputVarsToStringRepresentation(inputVars);
+        return getStringFromFile(METHOD_EXPLANATION_TEMPLATE + "en")
                 .replace("${annotatedBy}", qs.get("annotatedBy").toString())
                 .replace("${method}", qs.get("method").toString())
                 .replace("${annotatedAt}", qs.get("annotatedAt").toString())
                 .replace("${caller}", qs.get("caller").toString())
-                .replace("${inputVars}", null) // TODO
-                .replace("${outputVar}", null); // TODO
+                .replace("${inputVars}", "null") // TODO
+                .replace("${outputVar}", "null"); // TODO
+    }
+
+    public void convertInputVarsToStringRepresentation(List<RDFNode> inputVars) {
+        StringBuilder stringBuilder = new StringBuilder();
+        inputVars.forEach(var -> {
+            logger.info("Var: {}", var.toString());
+        });
     }
 
 }

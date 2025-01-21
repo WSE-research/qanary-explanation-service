@@ -84,6 +84,7 @@ public class GenerativeExplanations {
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private static final String QUESTION_QUERY = "/queries/random_question_query.rq";
+    private static final String METHOD_SINGLE_EXPLANATION_PROMPT = "/prompt_templates/methods/singleMethod"; // TODO
     private static final Logger logger = LoggerFactory.getLogger(GenerativeExplanations.class);
 
     @Autowired
@@ -234,5 +235,7 @@ public class GenerativeExplanations {
     public String getPromptTemplateInputData(int shots) {
         return EXAMPLE_COUNT_AND_TEMPLATE_INPUT_DATA.get(shots);
     }
+
+    public String getPromptTemplateSingleMethod() { return METHOD_SINGLE_EXPLANATION_PROMPT;}
 
 }

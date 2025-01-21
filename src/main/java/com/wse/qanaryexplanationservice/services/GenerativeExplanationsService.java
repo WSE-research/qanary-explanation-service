@@ -13,12 +13,14 @@ import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
+import org.apache.jena.query.QuerySolution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.apache.jena.query.ResultSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -210,6 +212,31 @@ public class GenerativeExplanationsService {
 
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
         return tmplExpService.createOutputExplanation(graphUri, component, lang);
+    }
+
+    /**
+     * Generates a generative explanation for the provided method using a given result set and GPT model.
+     *
+     * @param method the name or identifier of the method for which the generative explanation is being created
+     * @param resultSet a ResultSet object containing query solutions to be used for generating the explanation (likely to be exactly one)
+     * @param gptModel Used GPT model
+     * @return a string representing the generative explanation for the specified method
+     * @throws Exception if an error occurs while processing the result set, generating the explanation, or interacting with the GPT model
+     */
+    public String createGenerativeExplanationForMethod(String method, ResultSet resultSet, GptModel gptModel) throws Exception {
+        String template = this.getStringFromFile(generativeExplanations.getPromptTemplateSingleMethod());
+        QuerySolution qs = null;
+        try {
+            qs = resultSet.next();
+        } catch(Exception e) {
+            logger.error("{}", e);
+            return "";
+        }
+        template = TemplateExplanationsService.replaceProperties(
+                TemplateExplanationsService.convertQuerySolutionToMap(qs),
+                template
+        );
+        return this.sendPrompt(template, gptModel);
     }
 
 }
