@@ -25,6 +25,7 @@ public class ExplanationService {
     private final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
     private final String SELECT_ALL_LOGGED_METHODS = "/queries/fetch_all_logged_methods.rq";
+    private final String SELECT_ONE_METHOD = "/queries/fetch_one_method.rq";
     @Autowired
     private TemplateExplanationsService tmplExpService;
     @Autowired
@@ -70,6 +71,22 @@ public class ExplanationService {
         } else explanationItems.append(genExpService.explainMethod());
 
         return prefixExplanation + explanationItems.toString();
+    }
+
+    // TODO: Later, combine both approaches (single method explanation as well as multiple method explanations)
+    public String explainComponentMethod(ExplanationMetaData explanationMetaData, String methodName) throws IOException {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
+        qsm.add("method", ResourceFactory.createPlainLiteral(methodName));
+        qsm.add("annotatedBy", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD, qsm);
+        
+        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
+        List<String> variables = resultSet.getResultVars();
+
+        QuerySolution querysolution = resultSet.next();
+        String explanation = explanationMetaData.getPrefixTemplate().replace("${annotatedBy}", explanationMetaData.getQanaryComponent().getComponentName()) + "\n" + tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querysolution, variables, explanationMetaData.getItemTemplate()).replace("${method}", methodName);
+        return explanation;
     }
 
     /**

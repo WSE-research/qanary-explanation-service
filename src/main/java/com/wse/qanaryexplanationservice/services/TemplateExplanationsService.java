@@ -635,7 +635,7 @@ public class TemplateExplanationsService {
     // TODO: Make the same as for the template for SPARQL queries, too. Hence, this would provide a great and flexible playground for both researcher and user.
     public String replacePlaceholdersWithVarsFromQuerySolution(QuerySolution querySolution, List<String> variables, String template) {
         for (String variable : variables) {
-            template = template.replace("${" + variable + "}", querySolution.get(variable).toString());
+            template = template.replace("${" + variable + "}", querySolution.get(variable).toString().replace("<//>", "\n"));
         }
         return template;
     }
