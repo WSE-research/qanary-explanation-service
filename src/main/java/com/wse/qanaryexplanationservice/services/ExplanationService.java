@@ -2,16 +2,11 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
-import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationRequest;
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.QuerySolutionMap;
-import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class ExplanationService {
@@ -48,16 +44,44 @@ public class ExplanationService {
         return tmplExpService.createInputExplanation(graphUri, component);
     }
 
-    public List<String> explainComponentMethods(String graph, QanaryComponent component) throws IOException {
+    public String explainComponentMethods(ExplanationMetaData explanationMetaData) throws IOException {
         QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("graph", ResourceFactory.createResource(graph));
-        ResultSet loggedMethods = qanaryRepository.selectWithResultSet(QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm));
-        List<String> explanations = new ArrayList<>();
-        // Here, decide whether to explain with GenAI or rule-based
-        loggedMethods.forEachRemaining(qs -> {
-            explanations.add(tmplExpService.explainMethod(qs));
-        });
-        return explanations;
+        AtomicReference<String> prefixExplanation = new AtomicReference<>();
+        AtomicInteger i = new AtomicInteger(1);
+        StringBuilder explanationItems = new StringBuilder();
+
+        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
+        String query = explanationMetaData.getRequestQuery() == null ?
+                QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm) :
+                transformQueryStringToQuery(explanationMetaData.getRequestQuery(), qsm);
+
+        logger.debug("Query: {}", query);
+        ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(query);
+        List<String> variables = loggedMethodsResultSet.getResultVars();
+
+        if (!explanationMetaData.isDoGenerative()) {
+            loggedMethodsResultSet.forEachRemaining(querySolution -> {
+                if(prefixExplanation.get() == null) {
+                    prefixExplanation.set(tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution, variables, explanationMetaData.getPrefixTemplate()));
+                }
+                explanationItems.append("\n" + i + ". " + tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution, variables, explanationMetaData.getItemTemplate()));
+                i.getAndIncrement();
+            });
+        } else explanationItems.append(genExpService.explainMethod());
+
+        return prefixExplanation + explanationItems.toString();
+    }
+
+    /**
+     * Replaces passed variables within the SPARQL query
+     * @param queryString Query with variables
+     * @param querySolutionMap Variable mappings
+     * @return Final query
+     */
+    public static String transformQueryStringToQuery(String queryString, QuerySolutionMap querySolutionMap) {
+        ParameterizedSparqlString pq = new ParameterizedSparqlString(queryString, querySolutionMap);
+        Query query = QueryFactory.create(pq.toString());
+        return query.toString();
     }
 
     /**
@@ -214,31 +238,6 @@ public class ExplanationService {
                 null
         );
     }
-
-    // Deprecated, alt. approach
-    /*
-    public String explain(QanaryExplanationData explanationData) throws ExplanationExceptionComponent, ExplanationExceptionPipeline {
-        if(explanationData.getExplanations() != null) { // It's a pipeline (as component) -> Composes explanations
-            try {
-                return getPipelineExplanation(
-                  explanationData.getGraph(),
-                  explanationData.getExplanations()
-                );
-            } catch(Exception e) {
-                throw new ExplanationExceptionPipeline();
-            }
-        }
-        else { // It's a component
-            QanaryComponent qanaryComponent = new QanaryComponent(explanationData.getComponent());
-            try {
-                return getComponentExplanation(explanationData.getGraph(), qanaryComponent);
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new ExplanationExceptionComponent();
-            }
-        }
-    }
-     */
 
     public String explain(QanaryExplanationData data) {
         logger.info("Explaining ...");

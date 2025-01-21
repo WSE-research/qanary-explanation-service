@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -72,7 +73,7 @@ public class TemplateExplanationsService {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation/en";
     private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
-    Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
+    static Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
     @Autowired
     private QanaryRepository qanaryRepository;
     @Value("${explanations.dataset.limit}")
@@ -452,7 +453,7 @@ public class TemplateExplanationsService {
      * @param path Given path
      * @return String with the file's content
      */
-    public String getStringFromFile(String path) throws RuntimeException {
+    public static String getStringFromFile(String path) throws RuntimeException {
         ClassPathResource cpr = new ClassPathResource(path);
         try {
             byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
@@ -627,13 +628,6 @@ public class TemplateExplanationsService {
                 .replace("${caller}", qs.get("caller").toString())
                 .replace("${inputVars}", "null") // TODO
                 .replace("${outputVar}", "null"); // TODO
-    }
-
-    public void convertInputVarsToStringRepresentation(List<RDFNode> inputVars) {
-        StringBuilder stringBuilder = new StringBuilder();
-        inputVars.forEach(var -> {
-            logger.info("Var: {}", var.toString());
-        });
     }
 
 }
