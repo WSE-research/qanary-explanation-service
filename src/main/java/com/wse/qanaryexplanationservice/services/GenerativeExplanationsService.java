@@ -8,11 +8,14 @@ import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.GptModel;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
 import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -209,11 +212,12 @@ public class GenerativeExplanationsService {
     }
 
     /**
-     * TODO
+     * Care:
+     * TODO: Support one-/two-/multi-shot prompts, replace outer placeholders
      * @return
      */
-    public String explainMethod() {
-        return "Not yet implemented";
+    public String explain(ExplanationMetaData explanationMetaData, ResultSet resultSet) throws Exception {
+        return null;
     }
 
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {

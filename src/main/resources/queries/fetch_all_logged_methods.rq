@@ -19,6 +19,3 @@ WHERE {
    ?id  oa:annotatedAt        ?annotatedAt ;
         oa:annotatedBy        ?annotatedBy .
 } GROUP BY ?id ?caller ?method ?outputDataType ?outputDataValue ?annotatedAt ?annotatedBy
-
-
-

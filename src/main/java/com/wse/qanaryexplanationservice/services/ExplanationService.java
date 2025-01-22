@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ public class ExplanationService {
     private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
     private final String SELECT_ALL_LOGGED_METHODS = "/queries/fetch_all_logged_methods.rq";
     private final String SELECT_ONE_METHOD = "/queries/fetch_one_method.rq";
+    private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     @Autowired
     private TemplateExplanationsService tmplExpService;
     @Autowired
@@ -45,7 +47,7 @@ public class ExplanationService {
         return tmplExpService.createInputExplanation(graphUri, component);
     }
 
-    public String explainComponentMethods(ExplanationMetaData explanationMetaData) throws IOException {
+    public String explainComponentMethods(ExplanationMetaData explanationMetaData) throws Exception {
         QuerySolutionMap qsm = new QuerySolutionMap();
         AtomicReference<String> prefixExplanation = new AtomicReference<>();
         AtomicInteger i = new AtomicInteger(1);
@@ -68,26 +70,48 @@ public class ExplanationService {
                 explanationItems.append("\n" + i + ". " + tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution, variables, explanationMetaData.getItemTemplate()));
                 i.getAndIncrement();
             });
-        } else explanationItems.append(genExpService.explainMethod());
+        } else explanationItems.append(genExpService.explain(explanationMetaData, loggedMethodsResultSet));
 
         return prefixExplanation + explanationItems.toString();
     }
 
     // TODO: Later, combine both approaches (single method explanation as well as multiple method explanations)
-    public String explainComponentMethod(ExplanationMetaData explanationMetaData, String methodName) throws IOException {
-        QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
-        qsm.add("method", ResourceFactory.createPlainLiteral(methodName));
-        qsm.add("annotatedBy", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD, qsm);
-        
-        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
-        List<String> variables = resultSet.getResultVars();
+    // THis class in general sets up everything relevant to make explanations easy in responsible classes
+    public String explainComponentMethod(ExplanationMetaData explanationMetaData) throws Exception {
+        String query = QanaryTripleStoreConnector.readFileFromResources(SELECT_ONE_METHOD)
+                .replace("?graph", "<" + explanationMetaData.getGraph().toASCIIString() + ">")
+                .replace("?methodName", "\"" + explanationMetaData.getMethodName() + "\"")
+                .replace("?component", "<" + explanationMetaData.getQanaryComponent().getPrefixedComponentName() + ">");
 
-        QuerySolution querysolution = resultSet.next();
-        String explanation = explanationMetaData.getPrefixTemplate().replace("${annotatedBy}", explanationMetaData.getQanaryComponent().getComponentName()) + "\n" + tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querysolution, variables, explanationMetaData.getItemTemplate()).replace("${method}", methodName);
-        return explanation;
+        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
+        if (!resultSet.hasNext()) {
+            return "SPARQL query returned no results. Therefore, no explanation can be provided.";
+        }
+
+        try {
+            if(explanationMetaData.getItemTemplate() == null) {
+                explanationMetaData.setItemTemplate(
+                        TemplateExplanationsService.getStringFromFile(METHOD_EXPLANATION_TEMPLATE + "item/" + explanationMetaData.getLang())
+                );
+            }
+            if(explanationMetaData.getPrefixTemplate() == null) {
+                explanationMetaData.setPrefixTemplate(
+                        TemplateExplanationsService.getStringFromFile(METHOD_EXPLANATION_TEMPLATE + "prefix/" + explanationMetaData.getLang())
+                );
+            }
+            if(explanationMetaData.isDoGenerative() && explanationMetaData.getPromptTemplate() == null) {
+                explanationMetaData.setPromptTemplate("/prompt_templates/methods/" + explanationMetaData.getLang());
+            }
+        } catch (IOException e) {
+            return "For language " + explanationMetaData.getLang() + " no template exists.";
+        }
+
+        return explanationMetaData.isDoGenerative() ?
+                genExpService.explain(explanationMetaData, resultSet) :
+                tmplExpService.explain(explanationMetaData, resultSet);
     }
+
+
 
     /**
      * Replaces passed variables within the SPARQL query
@@ -187,7 +211,7 @@ public class ExplanationService {
         return tmplExpService.getPipelineOutputExplanation(results, graphUri);
     }
 
-    public String explainPipelineOutput(String graphUri, Map<String,String> explanations) {
+    public String explainPipelineOutput(String graphUri, Map<String,String> explanations) throws IOException {
         return tmplExpService.getPipelineOutputExplanation(explanations, graphUri);
     }
 
@@ -256,7 +280,7 @@ public class ExplanationService {
         );
     }
 
-    public String explain(QanaryExplanationData data) {
+    public String explain(QanaryExplanationData data) throws IOException {
         logger.info("Explaining ...");
         if(data.getExplanations() == null || data.getExplanations().isEmpty()) { // componentName, questionId and graph provided // component-based explanation
             QanaryComponent qanaryComponent = new QanaryComponent(data.getComponent());

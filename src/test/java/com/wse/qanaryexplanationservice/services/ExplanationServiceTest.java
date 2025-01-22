@@ -33,7 +33,7 @@ class ExplanationServiceTest {
     private TemplateExplanationsService templateExplanationsService;
 
     @BeforeEach
-    public void setUpRepository() {
+    public void setUpRepository() throws IOException {
         ResultSet results = testData.createResultSet(testData.getExampleQuerySolutionList());
         Mockito.when(qanaryRepository.selectWithResultSet(any())).thenReturn(results);
         Mockito.when(qanaryRepository.getQuestionFromQuestionId(any())).thenReturn("Example Question?");

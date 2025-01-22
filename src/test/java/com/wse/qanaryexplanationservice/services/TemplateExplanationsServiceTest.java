@@ -220,7 +220,7 @@ public class TemplateExplanationsServiceTest {
                         "annotationofrelation",
                         "annotationofquestionlanguage"
                 })
-        public void addingExplanationsTest(String type) {
+        public void addingExplanationsTest(String type) throws IOException {
 
             List<String> computedExplanations = templateExplanationsService.addingExplanations(type, "de", resultSet);
 

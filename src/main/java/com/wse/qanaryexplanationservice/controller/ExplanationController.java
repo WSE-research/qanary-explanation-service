@@ -250,25 +250,34 @@ public class ExplanationController {
                     )
             )
     )
-    public ResponseEntity<?> getMethodExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws IOException {
+    public ResponseEntity<?> getMethodExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws Exception {
         return new ResponseEntity<>(explanationService.explainComponentMethods(explanationMetaData), HttpStatus.OK);
+    }
+
+    /**
+     * The template must match the variables from the SPARQL query
+     *
+     */
+
+    @GetMapping("/method")
+    public ResponseEntity<?> getExplanationForMethod(@RequestBody ExplanationMetaData explanationMetaData) throws Exception {
+            return new ResponseEntity<>(explanationService.explainComponentMethod(explanationMetaData), HttpStatus.OK);
     }
 
     /**
      * Creates the explanation for one (the passed) method
      * @param graph Knowledge graph
      * @param component Component name
-     * @param method Method name
      * @return Explanation as String
      * @throws URISyntaxException
      * @throws IOException
-     */
+     *//*
     @GetMapping("/explainmethod")    
     public ResponseEntity<?> getMethodExplanation(@RequestParam String graph, @RequestParam String component, @RequestParam String method) throws URISyntaxException, IOException {
         ExplanationMetaData explanationMetaData = new ExplanationMetaData(component, graph, null, null, false, null);
         String explanation = explanationService.explainComponentMethod(explanationMetaData, method);
         return new ResponseEntity<>(explanation, HttpStatus.OK);
-    }
+    }*/
 
     @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
     @Operation()

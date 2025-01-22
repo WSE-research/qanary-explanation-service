@@ -72,7 +72,6 @@ public class TemplateExplanationsService {
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
     private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation/en";
-    private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     static Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
     @Autowired
     private QanaryRepository qanaryRepository;
@@ -385,7 +384,7 @@ public class TemplateExplanationsService {
      * @param results The ResultSet for the actual type
      * @return A list of explanations for the given type in the given language
      */
-    public List<String> addingExplanations(String type, String lang, ResultSet results) {
+    public List<String> addingExplanations(String type, String lang, ResultSet results) throws IOException {
 
         List<String> explanationsForCurrentType = new ArrayList<>();
         String langExplanationPrefix = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_prefix");
@@ -418,7 +417,7 @@ public class TemplateExplanationsService {
         return template;
     }
 
-    public String checkAndReplaceOuterPlaceholder(String template) {
+    public static String checkAndReplaceOuterPlaceholder(String template) {
         Pattern pattern = Pattern.compile(OUTER_TEMPLATE_REGEX);
         Matcher matcher = pattern.matcher(template);
 
@@ -467,14 +466,14 @@ public class TemplateExplanationsService {
      * @param path Given path
      * @return String with the file's content
      */
-    public static String getStringFromFile(String path) throws RuntimeException {
+    public static String getStringFromFile(String path) throws IOException {
         ClassPathResource cpr = new ClassPathResource(path);
         try {
             byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
             return new String(bdata, StandardCharsets.UTF_8);
         } catch (IOException e) {
             logger.error("{}", e.getMessage());
-            throw new RuntimeException();
+            throw new IOException();
         }
     }
 
@@ -587,13 +586,13 @@ public class TemplateExplanationsService {
         throw new RuntimeException("No annotation type could be dissambled");
     }
 
-    public String getPipelineInputExplanation(String question) {
+    public String getPipelineInputExplanation(String question) throws IOException {
         String explanation = getStringFromFile("/explanations/input_data/pipeline/en");
         return explanation.replace("${question}", question);
     }
 
     // Computes the explanation itself
-    public String getPipelineOutputExplanation(ResultSet results, String graphUri) {
+    public String getPipelineOutputExplanation(ResultSet results, String graphUri) throws IOException {
         String explanation = getStringFromFile("/explanations/pipeline/en_prefix")
                 .replace("${graph}", graphUri);
         String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
@@ -612,7 +611,7 @@ public class TemplateExplanationsService {
     }
 
     // Composes the passed explanations
-    public String getPipelineOutputExplanation(Map<String,String> explanations, String graphUri) {
+    public String getPipelineOutputExplanation(Map<String,String> explanations, String graphUri) throws IOException {
         String explanation = getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
         String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
         List<String> explanationsList = new ArrayList<>();
@@ -638,6 +637,35 @@ public class TemplateExplanationsService {
             template = template.replace("${" + variable + "}", querySolution.get(variable).toString().replace("<//>", "\n"));
         }
         return template;
+    }
+
+    /**
+     * This method should serve as general method to explain anything based on the passed vars.
+     * @param explanationMetaData Consist of the required meta data
+     * @param resultSet Consist the prior executed SPARQL request's results
+     * @return
+     */
+    public String explain(ExplanationMetaData explanationMetaData, ResultSet resultSet) {
+        // Get Template
+        String prefixTemplate = explanationMetaData.getPrefixTemplate();
+        String itemTemplate = explanationMetaData.getItemTemplate();
+        ArrayList<String> explanationItems = new ArrayList<>();
+
+        // Complete Prefix template
+        QuerySolution qs = resultSet.nextSolution();
+            prefixTemplate = replaceProperties(convertQuerySolutionToMap(qs), prefixTemplate);
+
+        // For each QuerySolution in ResultSet replace vars in item template
+        explanationItems.add(checkAndReplaceOuterPlaceholder(replaceProperties(convertQuerySolutionToMap(qs),itemTemplate)));
+
+        while (resultSet.hasNext()) {
+            qs = resultSet.nextSolution();
+            explanationItems.add(checkAndReplaceOuterPlaceholder(replaceProperties(convertQuerySolutionToMap(qs),itemTemplate)));
+        }
+
+        // Concat prefixTemplate and all itemTemplates
+        return prefixTemplate + "\n" + StringUtils.join(explanationItems,"\n");
+
     }
 
 }
