@@ -1,0 +1,14 @@
+PREFIX qa: <http://www.mit.jyu.fi/ai/TRUST_Ontologies/QA.owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT DISTINCT ?leaf ?parent
+FROM ?graph
+WHERE {
+	?leaf prov:actedOnBehalfOf+ ?root.
+  	?leaf prov:actedOnBehalfOf ?parent .
+	FILTER(?root = ?methodId)
+}

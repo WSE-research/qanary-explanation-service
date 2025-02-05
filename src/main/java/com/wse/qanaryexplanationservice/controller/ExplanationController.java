@@ -304,4 +304,12 @@ public class ExplanationController {
         return new ResponseEntity<>(explanationService.getPipelineExplanation(graph), HttpStatus.OK);
     }
 
+    @GetMapping("/explain/aggregatedexplanations")
+    public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws IOException {
+
+    }
+
+
+
+
 }

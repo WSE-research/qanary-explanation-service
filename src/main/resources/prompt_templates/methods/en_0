@@ -1,0 +1,17 @@
+Given the following context:
+Here, we consider the data of a java method executed in a component. The data describes the passed values as input and the return values as output (if provided).
+As a user I'd like to understand what happened inside that particular method.
+For this purpose a (text-based) explanation has to be computed.
+In the following, multiple variables are separated by "//" The corresponding datatypes are in the same order as the variables.
+
+For example, the following explanation was created for the component ${annotatedBy} and there for the method ${method} from the given raw data.
+
+Method: ${method}
+Input: ${inputDataValues}
+Input types: ${inputDataTypes}
+Output: ${outputDataValue}
+Output types: ${outputDataType}
+
+Now, explain what the method did by utilizing the provided data.
+
+Don't introduce your answer and only return the result.

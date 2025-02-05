@@ -8,6 +8,7 @@ import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ public class ExplanationService {
     private final String SELECT_ALL_LOGGED_METHODS = "/queries/fetch_all_logged_methods.rq";
     private final String SELECT_ONE_METHOD = "/queries/fetch_one_method.rq";
     private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
+    private final String SELECT_CHILD_PARENT_METHODS = "/queries/fetch_child_parent_methods.rq";
     @Autowired
     private TemplateExplanationsService tmplExpService;
     @Autowired
@@ -62,7 +64,7 @@ public class ExplanationService {
         ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(query);
         List<String> variables = loggedMethodsResultSet.getResultVars();
 
-        if (!explanationMetaData.isDoGenerative()) {
+        if (!explanationMetaData.getGptRequest().isDoGenerative()) {
             loggedMethodsResultSet.forEachRemaining(querySolution -> {
                 if(prefixExplanation.get() == null) {
                     prefixExplanation.set(tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution, variables, explanationMetaData.getPrefixTemplate()));
@@ -83,6 +85,8 @@ public class ExplanationService {
                 .replace("?methodName", "\"" + explanationMetaData.getMethodName() + "\"")
                 .replace("?component", "<" + explanationMetaData.getQanaryComponent().getPrefixedComponentName() + ">");
 
+        logger.info("Requesting query: {}", query);
+
         ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
         if (!resultSet.hasNext()) {
             return "SPARQL query returned no results. Therefore, no explanation can be provided.";
@@ -99,14 +103,11 @@ public class ExplanationService {
                         TemplateExplanationsService.getStringFromFile(METHOD_EXPLANATION_TEMPLATE + "prefix/" + explanationMetaData.getLang())
                 );
             }
-            if(explanationMetaData.isDoGenerative() && explanationMetaData.getPromptTemplate() == null) {
-                explanationMetaData.setPromptTemplate("/prompt_templates/methods/" + explanationMetaData.getLang());
-            }
         } catch (IOException e) {
             return "For language " + explanationMetaData.getLang() + " no template exists.";
         }
 
-        return explanationMetaData.isDoGenerative() ?
+        return explanationMetaData.getGptRequest().isDoGenerative() ?
                 genExpService.explain(explanationMetaData, resultSet) :
                 tmplExpService.explain(explanationMetaData, resultSet);
     }
@@ -314,6 +315,28 @@ public class ExplanationService {
         });
         return composedExplanations.toString();
     }
+
+    // Explanation Tree
+    public JSONObject getAggregatedExplanations(String graph, String methodId) throws IOException {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("methodId", ResourceFactory.createResource(methodId));
+        qsm.add("graph", ResourceFactory.createResource(graph));
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_CHILD_PARENT_METHODS, qsm);
+        ResultSet childParentPairs = qanaryRepository.selectWithResultSet(query);
+
+        // Decide which explanation mode to use
+
+    }
+
+    /*
+    * 1st step: Compute for all involved methods either data or explanations (atomic axplanations)
+    * 2nd step: Recreate Child/Parent structure
+     */
+
+
+
+
+
 
 }
 

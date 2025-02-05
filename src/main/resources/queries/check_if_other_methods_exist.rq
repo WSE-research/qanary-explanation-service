@@ -11,11 +11,16 @@ WHERE {
   ?id  rdf:type              qa:AnnotationOfLogMethod ;
         prov:actedOnBehalfOf  ?caller ; # Fetch method name possible, too!
         qa:methodName         ?method ;
+OPTIONAL {
         x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
+        }
+OPTIONAL {
         x:input ?input .
             ?input (rdf:rest*/rdf:first) ?item .
             ?item rdf:type ?inputDataType ;
                   rdf:value ?inputDataValue .
+        }
    ?id  oa:annotatedAt        ?annotatedAt ;
         oa:annotatedBy        ?annotatedBy .
+	FILTER(?annotatedBy != ?component && ?method != ?methodName)
 } GROUP BY ?id ?caller ?method ?outputDataType ?outputDataValue ?annotatedAt ?annotatedBy

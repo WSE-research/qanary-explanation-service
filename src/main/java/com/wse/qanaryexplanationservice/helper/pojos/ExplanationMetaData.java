@@ -19,47 +19,27 @@ public class ExplanationMetaData {
     private URI graph;
     private String prefixTemplate;
     private String itemTemplate;
-    private boolean doGenerative;
     private String requestQuery;
     private String lang;
-    private String promptTemplate;
-    private GptModel gptModel;
+    private GPTRequest gptRequest;
 
-    public ExplanationMetaData(String qanaryComponent, String methodName, String graph, String itemTemplate, String prefixTemplate, boolean doGenerative, String query, String lang, String promptTemplate, GptModel gptModel) throws URISyntaxException {
+    public ExplanationMetaData(String qanaryComponent, String methodName, String graph, String itemTemplate, String prefixTemplate, String query, String lang, GPTRequest gptRequest) throws URISyntaxException {
         this.methodName = methodName != null ? methodName : null;
         this.qanaryComponent = new QanaryComponent(qanaryComponent);
         this.graph = new URI(graph);
-        this.doGenerative = doGenerative;
         this.itemTemplate = itemTemplate;
         this.prefixTemplate = prefixTemplate;
         this.requestQuery = query;
         this.lang = lang == null ? "en" : lang;
-        this.promptTemplate = promptTemplate;
-        if (doGenerative) {
-            if (gptModel == null) {
-                throw new RuntimeException("Please provide a GPT model when creating a generative explanation");
-            }
-            this.gptModel = gptModel;
-        } else {
-            this.gptModel = null;
-        }
-
+        this.gptRequest = gptRequest;
     }
 
-    public GptModel getGptModel() {
-        return gptModel;
+    public GPTRequest getGptRequest() {
+        return gptRequest;
     }
 
-    public void setGptModel(GptModel gptModel) {
-        this.gptModel = gptModel;
-    }
-
-    public String getPromptTemplate() {
-        return promptTemplate;
-    }
-
-    public void setPromptTemplate(String promptTemplate) {
-        this.promptTemplate = promptTemplate;
+    public void setGptRequest(GPTRequest gptRequest) {
+        this.gptRequest = gptRequest;
     }
 
     public String getLang() {
@@ -92,14 +72,6 @@ public class ExplanationMetaData {
 
     public void setPrefixTemplate(String prefixTemplate) {
         this.prefixTemplate = prefixTemplate;
-    }
-
-    public boolean isDoGenerative() {
-        return doGenerative;
-    }
-
-    public void setDoGenerative(boolean doGenerative) {
-        this.doGenerative = doGenerative;
     }
 
     public QanaryComponent getQanaryComponent() {

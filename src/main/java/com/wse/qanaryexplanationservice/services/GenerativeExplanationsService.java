@@ -13,6 +13,7 @@ import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject
 import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
+import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
@@ -24,10 +25,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * This service is used to create [...]
@@ -48,6 +46,10 @@ public class GenerativeExplanationsService {
     private GenerativeExplanationsRepository generativeExplanationsRepository;
     @Value("${questionId.replacement}")
     private String questionIdReplacement;
+    @Autowired
+    private QanaryRepository qanaryRepository;
+    private final String PROMPT_TEMPLATE_PATH = "/prompt_templates/";
+    private final String CHECK_EXISTENCE_OF_OTHER_METHODS_QUERY = "/queries/check_if_other_methods_exist.rq";
 
     public GenerativeExplanationsService(TemplateExplanationsService tmplExpService) {
         this.tmplExpService = tmplExpService;
@@ -181,7 +183,7 @@ public class GenerativeExplanationsService {
     public String sendPrompt(String prompt, GptModel gptModel) throws Exception {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
         int tokens = encoding.countTokens(prompt);
-        logger.info("Calculated Token: {}", tokens);
+        logger.info("Calculated Token: {}", String.valueOf(tokens));
         return generativeExplanationsRepository.sendGptPrompt(prompt, tokens, gptModel);
     }
 
@@ -217,7 +219,52 @@ public class GenerativeExplanationsService {
      * @return
      */
     public String explain(ExplanationMetaData explanationMetaData, ResultSet resultSet) throws Exception {
-        return null;
+        // Differentiate between zero- and multi-shot prompts
+        int shots = explanationMetaData.getGptRequest().getShots();
+        String promptTemplate = TemplateExplanationsService.getStringFromFile(
+                PROMPT_TEMPLATE_PATH + "methods/" + explanationMetaData.getLang() + "_" + String.valueOf(shots)
+        );
+
+        // Replace baseline and experiment data (i.e. component, method, method input/output values and types)
+        promptTemplate = tmplExpService.replaceProperties(tmplExpService.convertQuerySolutionToMap(resultSet.next()), promptTemplate);
+        logger.debug("Prompt Template: {}", promptTemplate);
+
+        // Create further samples, depending on the shots passed (Outsource generalized method)
+        if (shots == 0) {
+            return this.sendPrompt(promptTemplate, explanationMetaData.getGptRequest().getGptModel());
+        } else {
+            return "Not yet implemented.";
+        }
+    }
+
+    // Create method examples
+    // Needed: Component, Method, input data value/type, output data value/type
+    // Request all components where at least one method is logged
+    // take a random method from a random component
+    // Follow the template-based approach
+    // Return
+    public String getMethodExample(String graph, QanaryComponent component, String method, int shots) throws IOException {
+        ResultSet requestComponentAndMethodResult = qanaryRepository.selectWithResultSet(
+                QanaryTripleStoreConnector.readFileFromResources(CHECK_EXISTENCE_OF_OTHER_METHODS_QUERY)
+                        .replace("?graph", "<" + graph + ">")
+                        .replace("?component", "<" + component.getPrefixedComponentName() + ">")
+                        .replace("?methodName", "\"" + method + "\"")
+        );
+        QuerySolution qs = null;
+        try {
+            qs = requestComponentAndMethodResult.next();
+        } catch(NoSuchElementException e) {
+            logger.error("No other methods were executed, therefore no examples can be computed.");
+            throw new RuntimeException("No other methods were executed, therefore no examples for the prompt could be generated."); // Handle Runtime exceptions in the controller; return other HttpStatus
+        }
+
+        // TODO: How to continue?
+        // When we create only one explanation we'd need to check for this used method in the next call.
+
+
+
+
+
     }
 
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
