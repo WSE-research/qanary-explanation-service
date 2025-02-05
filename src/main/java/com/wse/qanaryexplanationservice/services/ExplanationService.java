@@ -13,11 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -317,14 +315,28 @@ public class ExplanationService {
     }
 
     // Explanation Tree
-    public JSONObject getAggregatedExplanations(String graph, String methodId) throws IOException {
+    public String getAggregatedExplanations(String graph, String methodId) throws IOException {
         QuerySolutionMap qsm = new QuerySolutionMap();
         qsm.add("methodId", ResourceFactory.createResource(methodId));
         qsm.add("graph", ResourceFactory.createResource(graph));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_CHILD_PARENT_METHODS, qsm);
         ResultSet childParentPairs = qanaryRepository.selectWithResultSet(query);
+        TreeMap treeMap = new TreeMap();
+
+        while (childParentPairs.hasNext()) {
+            QuerySolution qs = childParentPairs.next();
+            String childId = qs.get("child").toString();
+            String parentId = qs.get("parent").toString();
+            logger.info("childId: " + childId + " parentId: " + parentId);
+            treeMap.put(childId, parentId);
+        }
+
+        return treeMap.toString();
 
         // Decide which explanation mode to use
+
+        // Explanation mode
+
 
     }
 
