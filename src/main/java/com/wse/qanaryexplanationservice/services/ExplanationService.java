@@ -26,7 +26,8 @@ public class ExplanationService {
     private final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
     private final String SELECT_ALL_LOGGED_METHODS = "/queries/fetch_all_logged_methods.rq";
-    private final String SELECT_ONE_METHOD = "/queries/fetch_one_method.rq";
+    private final String SELECT_ONE_METHOD_WITH_ID = "/queries/fetch_one_method_id.rq";
+    private final String SELECT_ONE_METHOD_WITH_NAME = "/queries/fetch_one_method_name.rq";
     private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     private final String SELECT_CHILD_PARENT_METHODS = "/queries/fetch_child_parent_methods.rq";
 
@@ -81,23 +82,25 @@ public class ExplanationService {
         return prefixExplanation + explanationItems.toString();
     }
 
+    public String select_one_method(ExplanationMetaData explanationMetaData) throws Exception {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("methodId", ResourceFactory.createResource(explanationMetaData.getMethodId()));
+        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
+        qsm.add("methodName", ResourceFactory.createResource(explanationMetaData.getMethodName()));
+        qsm.add("component", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
+
+        String query = explanationMetaData.getMethodId() == null ?
+                QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_NAME, qsm) :
+                QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
+        logger.debug("Query: {}", query);
+    }
+
     // TODO: Later, combine both approaches (single method explanation as well as
     // multiple method explanations)
     // THis class in general sets up everything relevant to make explanations easy
     // in responsible classes
     public String explainComponentMethod(ExplanationMetaData explanationMetaData) throws Exception {
-        String query = QanaryTripleStoreConnector.readFileFromResources(SELECT_ONE_METHOD)
-                .replace("?graph", "<" + explanationMetaData.getGraph().toASCIIString() + ">")
-                .replace("?component", "<" + explanationMetaData.getQanaryComponent().getPrefixedComponentName() + ">");
-        if (explanationMetaData.getMethodName() == null && explanationMetaData.getMethodId() != null) { // ID given
-            query = query.replace("?methodId", "<" + explanationMetaData.getMethodId() + ">")
-                    .replace("BIND(?methodName", "#BIND(?methodName)");
-        } else if (explanationMetaData.getMethodName() != null) {
-            query = query.replace("?methodName", "\"" + explanationMetaData.getMethodName() + "\"")
-                    .replace("BIND(?methodId", "#BIND(?methodId)");
-        } // TODO: Refactor to getMethodObject
-
-        logger.info("Requesting query: {}", query);
+        String query = select_one_method(explanationMetaData);
 
         ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
         if (!resultSet.hasNext()) {
@@ -300,7 +303,6 @@ public class ExplanationService {
     }
 
     public String explain(QanaryExplanationData data) throws IOException {
-        logger.info("Explaining ...");
         if (data.getExplanations() == null || data.getExplanations().isEmpty()) { // componentName, questionId and graph
                                                                                   // provided // component-based
                                                                                   // explanation
@@ -356,38 +358,48 @@ public class ExplanationService {
             childrenMap.get(parentId).add(childId);
             if (root == null)
                 root = rootId;
-            allMethods.putIfAbsent(childId, getMethodItem(data, null, childId));
-            allMethods.putIfAbsent(parentId, getMethodItem(data, null, parentId));
+            allMethods.putIfAbsent(childId, requestMethodItem(data, null, childId));
+            allMethods.putIfAbsent(parentId, requestMethodItem(data, null, parentId));
         }
 
         JSONObject json = buildJsonTree(childrenMap, root, data, allMethods);
         return json.toString();
     }
 
-    public MethodItem getMethodItem(ExplanationMetaData data, String methodName, String methodId) throws IOException {
-        String query = QanaryTripleStoreConnector.readFileFromResources(SELECT_ONE_METHOD)
-                .replace("?graph", "<" + data.getGraph().toASCIIString() + ">")
-                .replace("?component", "<" + data.getQanaryComponent().getPrefixedComponentName() + ">");
-        if (methodName == null && methodId != null) { // ID given
-            query = query.replace("?methodId", "<" + methodId + ">").replace("BIND(?methodName", "#BIND(?methodName");
-        } else if (methodName != null) {
-            query = query.replace("?methodName", "\"" + methodName + "\"").replace("BIND(?methodId",
-                    "#BIND(?methodId)");
-        }
-        logger.info("Query: {}", query);
+    public MethodItem requestMethodItem(ExplanationMetaData data, String methodName, String methodId)
+            throws Exception {
+        // is no call-by-reference
+        data.setMethodName(methodName);
+        data.setMethodId(methodId);
+        String query = select_one_method(data);
         ResultSet result = qanaryRepository.selectWithResultSet(query);
         return transformQuerySolutionToMethodItem(result.next());
     }
 
-    public MethodItem transformQuerySolutionToMethodItem(QuerySolution qs) {
-        MethodItem methodItem = new MethodItem(
-                qs.get("caller").toString(),
-                qs.get("method").toString(),
-                null, null, null, null,
-                qs.get("annotatedAt").toString(),
-                qs.get("annotatedBy").toString());
-        return methodItem;
+    // New helper method to safely retrieve a variable from QuerySolution
+    private String safeGetString(QuerySolution qs, String key) {
+        if (qs.contains(key) && qs.get(key) != null) {
+            return qs.get(key).toString();
+        }
+        return null;
+    }
 
+    public MethodItem transformQuerySolutionToMethodItem(QuerySolution qs) {
+        String caller = safeGetString(qs, "caller");
+        String method = safeGetString(qs, "method");
+        String annotatedAt = safeGetString(qs, "annotatedAt");
+        String annotatedBy = safeGetString(qs, "annotatedBy");
+        String outputDataType = safeGetString(qs, "outputDataType");
+        String outputDataValue = safeGetString(qs, "outputDataValue");
+        String inputDataTypes = safeGetString(qs, "inputDataTypes");
+        String inputDataValues = safeGetString(qs, "inputDataValues");
+
+        return new MethodItem(
+                caller,
+                method,
+                outputDataType, outputDataValue, inputDataTypes, inputDataValues,
+                annotatedAt,
+                annotatedBy);
     }
 
     public JSONObject buildJsonTree(Map<String, List<String>> childrenMap, String root, ExplanationMetaData data,
@@ -407,6 +419,7 @@ public class ExplanationService {
                     JSONObject childExplanationObj = new JSONObject();
                     childExplanationObj.put("id", child);
                     childExplanationObj.put("explanation", explainComponentMethod(data));
+                    childExplanationObj.put("method", allMethods.get(child).getMethodName());
                     childrenArray.put(childExplanationObj);
                 }
             }
@@ -414,9 +427,10 @@ public class ExplanationService {
         // <-- Explain aggregated methods
         JSONObject jsonObj = new JSONObject();
         jsonObj.put("id", root);
-        jsonObj.put("explanation", genExpService.explainAggregatedMethods(
+        jsonObj.put("explanation", data.getGptRequest().isDoGenerative() ? genExpService.explainAggregatedMethods(
                 aggregateExplanationsToOneExplanation(childrenArray),
-                data, allMethods.get(root)));
+                data, allMethods.get(root)) : "Summarized template explanation are not yet supported.");
+        jsonObj.put("method", allMethods.get(root).getMethodName());
         jsonObject.put("parent", jsonObj);
         jsonObject.put("children", childrenArray);
         return jsonObject;
@@ -424,7 +438,6 @@ public class ExplanationService {
 
     // Takes all explanations and combines them to one
     public String aggregateExplanationsToOneExplanation(JSONArray explanations) {
-        logger.info("Children Array: {}", explanations);
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < explanations.length(); i++) {
             JSONObject explanationObj = explanations.getJSONObject(i);

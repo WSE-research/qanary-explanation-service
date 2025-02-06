@@ -9,7 +9,6 @@ SELECT  ?id ?caller ?method ?annotatedBy ?outputDataType ?outputDataValue ?annot
 FROM ?graph
 WHERE {
   BIND(?methodId AS ?id)
-  BIND(?methodName AS ?method)
   BIND(?component AS ?annotatedBy)
   ?id  rdf:type              qa:AnnotationOfLogMethod ;
         prov:actedOnBehalfOf  ?caller ;
