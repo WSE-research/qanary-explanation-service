@@ -8,18 +8,23 @@ PREFIX  prov: <http://www.w3.org/ns/prov#>
 SELECT  ?id ?caller ?method ?annotatedBy ?outputDataType ?outputDataValue ?annotatedAt (GROUP_CONCAT(?inputDataValue; SEPARATOR=",") AS ?inputDataValues) (GROUP_CONCAT(?inputDataType; SEPARATOR=",") AS ?inputDataTypes)
 FROM ?graph
 WHERE {
+  BIND(?methodId AS ?id)
+  BIND(?methodName AS ?method)
+  BIND(?component AS ?annotatedBy)
   ?id  rdf:type              qa:AnnotationOfLogMethod ;
         prov:actedOnBehalfOf  ?caller ;
         qa:methodName         ?method ;
-        x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
-        x:input ?input .
-  ?input (rdf:rest*/rdf:first) ?item .
-  ?item rdf:type ?inputDataType ;
-        rdf:value ?inputDataValue .
-  ?id  oa:annotatedAt        ?annotatedAt ;
+        oa:annotatedAt        ?annotatedAt ;
         oa:annotatedBy        ?annotatedBy .
-        FILTER(?method = ?methodName)
-        FILTER(?annotatedBy = ?component)
-        FILTER(?id = ?methodId)
+
+        OPTIONAL {
+        ?id x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
+  		}
+  		OPTIONAL {
+	    ?id x:input ?input .
+  		?input (rdf:rest*/rdf:first) ?item .
+  		?item rdf:type ?inputDataType ;
+        	  rdf:value ?inputDataValue .
+  		}
 }
 GROUP BY ?id ?caller ?outputDataType ?outputDataValue ?annotatedAt ?annotatedBy ?method

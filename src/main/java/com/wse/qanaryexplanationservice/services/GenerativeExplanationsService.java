@@ -6,12 +6,9 @@ import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.GptModel;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
-import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
-import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -263,12 +260,25 @@ public class GenerativeExplanationsService {
 
 
 
-
+    return null;
 
     }
 
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
         return tmplExpService.createOutputExplanation(graphUri, component, lang);
+    }
+
+    public String explainAggregatedMethods(String explanations, ExplanationMetaData data, MethodItem methodItem) throws Exception {
+        int shots = data.getGptRequest().getShots();
+        String promptTemplate = TemplateExplanationsService.getStringFromFile(
+                PROMPT_TEMPLATE_PATH + "methods/aggregated/" + data.getLang() + "_" + String.valueOf(shots)
+        ).replace("${explanations}", explanations).replace("${methodName}", methodItem.getMethodName());
+        if (shots == 0) {
+            return sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
+            // return "todo";
+        } else {
+            return "Not yet implemented.";
+        }
     }
 
 }

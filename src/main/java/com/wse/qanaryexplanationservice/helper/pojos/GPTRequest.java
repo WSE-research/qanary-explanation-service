@@ -7,13 +7,7 @@ public class GPTRequest {
     GPTRequest(boolean doGenerative, GptModel gptModel, int shots) {
         this.doGenerative = doGenerative;
         this.shots = shots;
-        if(doGenerative) {
-            if(gptModel == null) {
-                throw new RuntimeException("Please provide a GPT model when creating a generative explanation");
-            } else {
-                this.gptModel = gptModel;
-            }
-        }
+        this.gptModel = gptModel;
     }
 
     private boolean doGenerative;

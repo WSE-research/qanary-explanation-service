@@ -305,8 +305,8 @@ public class ExplanationController {
     }
 
     @GetMapping("/explain/aggregatedexplanations")
-    public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws IOException {
-
+    public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws Exception {
+        return new ResponseEntity<>(explanationService.getAggregatedExplanations(explanationMetaData), HttpStatus.OK);
     }
 
 

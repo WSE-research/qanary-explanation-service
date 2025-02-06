@@ -22,9 +22,11 @@ public class ExplanationMetaData {
     private String requestQuery;
     private String lang;
     private GPTRequest gptRequest;
+    private String methodId;
 
-    public ExplanationMetaData(String qanaryComponent, String methodName, String graph, String itemTemplate, String prefixTemplate, String query, String lang, GPTRequest gptRequest) throws URISyntaxException {
+    public ExplanationMetaData(String qanaryComponent, String methodName, String graph, String itemTemplate, String prefixTemplate, String query, String lang, GPTRequest gptRequest, String methodId) throws URISyntaxException {
         this.methodName = methodName != null ? methodName : null;
+        this.methodId = methodId != null ? methodId : null;
         this.qanaryComponent = new QanaryComponent(qanaryComponent);
         this.graph = new URI(graph);
         this.itemTemplate = itemTemplate;
@@ -32,6 +34,14 @@ public class ExplanationMetaData {
         this.requestQuery = query;
         this.lang = lang == null ? "en" : lang;
         this.gptRequest = gptRequest;
+    }
+
+    public String getMethodId() {
+        return methodId;
+    }
+
+    public void setMethodId(String methodId) {
+        this.methodId = methodId;
     }
 
     public GPTRequest getGptRequest() {
