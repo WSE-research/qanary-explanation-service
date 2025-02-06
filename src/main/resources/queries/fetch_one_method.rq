@@ -20,5 +20,6 @@ WHERE {
         oa:annotatedBy        ?annotatedBy .
         FILTER(?method = ?methodName)
         FILTER(?annotatedBy = ?component)
+        FILTER(?id = ?methodId)
 }
 GROUP BY ?id ?caller ?outputDataType ?outputDataValue ?annotatedAt ?annotatedBy ?method

@@ -5,7 +5,7 @@ PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 
-SELECT DISTINCT ?leaf ?parent
+SELECT DISTINCT ?leaf ?parent ?root
 FROM ?graph
 WHERE {
 	?leaf prov:actedOnBehalfOf+ ?root.
