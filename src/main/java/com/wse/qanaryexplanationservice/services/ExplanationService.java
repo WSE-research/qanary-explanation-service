@@ -93,6 +93,7 @@ public class ExplanationService {
                 QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_NAME, qsm) :
                 QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
         logger.debug("Query: {}", query);
+        return query;
     }
 
     // TODO: Later, combine both approaches (single method explanation as well as
@@ -436,7 +437,11 @@ public class ExplanationService {
         return jsonObject;
     }
 
-    // Takes all explanations and combines them to one
+    /**
+     * Aggregated all explanations with two newlines in between
+     * @param explanations JSONArray of JSONObjects that contain the key "explanation" if atomic, otherwise "parent" -> "explanation"
+     * @return Explanations separated with \n\n
+     */
     public String aggregateExplanationsToOneExplanation(JSONArray explanations) {
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < explanations.length(); i++) {
@@ -449,8 +454,15 @@ public class ExplanationService {
         return stringBuilder.toString();
     }
 
-    // Not yet implemented
-    public String aggregateDataToOneExplanation() {
+    public String explainMethodSingle() {
+        return null;
+    }
+
+    public String explainMethodsAsList() {
+        return null;
+    }
+
+    public String explainMethodsAggregated() {
         return null;
     }
 
