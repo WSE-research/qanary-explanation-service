@@ -15,21 +15,14 @@ import java.util.stream.Collectors;
 @Service
 public class ExplanationHelper {
 
-    public static Map<String, String> convertQuerySolutionToMap(QuerySolution querySolution) {
-        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
-        querySolutionMap.addAll(querySolution);
-        Map<String, RDFNode> querySolutionMapAsMap = querySolutionMap.asMap();
-        return convertRdfNodeToStringValue(querySolutionMapAsMap);
-    }
-
     /**
-     * Converts RDFNodes to Strings without the XML datatype declaration and leaves resources as they are.
-     *
-     * @param map Key = variable from sparql-query, Value = its corresponding RDFNode
-     * @return Map with value::String instead of value::RDFNode
+     * Converts one QuerySolution to a Map with variable-value mappings, where the RDFNode values are converted to Strings
+     * @param qs Single QuerySolution
+     * @return Variable (String)-Value (String) Mapping of one QuerySolution
      */
-    public static Map<String, String> convertRdfNodeToStringValue(Map<String, RDFNode> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(
+    public static Map<String, String> convertQuerySolutionToMap(QuerySolution qs) {
+        Map<String, RDFNode> rdfNodeMap = convertQuerySolutionToMapWithRdfNodes(qs);
+        return rdfNodeMap.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 entry -> {
                     if (entry.getValue().isResource())
@@ -38,6 +31,17 @@ public class ExplanationHelper {
                         return entry.getValue().asNode().getLiteralValue().toString();
                 }
         ));
+    }
+
+    /**
+     * Converts one QuerySolution to a Map with variable-value mappings with RDFNode(s) as values
+     * @param qs Single QuerySolution
+     * @return Variable (String)-Value (RDFNode) Mapping of one QuerySolution
+     */
+    public static Map<String, RDFNode> convertQuerySolutionToMapWithRdfNodes(QuerySolution qs) {
+        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
+        querySolutionMap.addAll(qs);
+        return querySolutionMap.asMap();
     }
 
     /**
