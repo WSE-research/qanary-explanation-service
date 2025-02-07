@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @Service
 public class ExplanationService {
@@ -36,15 +37,18 @@ public class ExplanationService {
     private final String SELECT_ONE_METHOD_WITH_ID = "/queries/fetch_one_method_id.rq";
     private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     private final String SELECT_CHILD_PARENT_METHODS = "/queries/fetch_child_parent_methods.rq";
+    private final String ASK_IF_CHILDS_EXIST = "/queries/ask_if_method_has_childs.rq";
 
     private final TemplateExplanationsService templateService;
     private final GenerativeExplanationsService generativeService;
     private final QanaryRepository qanaryRepository;
+    private final GenerativeExplanationsService generativeExplanationsService;
 
-    public ExplanationService(TemplateExplanationsService templateService, GenerativeExplanationsService generativeService, QanaryRepository qanaryRepository) {
+    public ExplanationService(TemplateExplanationsService templateService, GenerativeExplanationsService generativeService, QanaryRepository qanaryRepository, GenerativeExplanationsService generativeExplanationsService) {
         this.templateService = templateService;
         this.generativeService = generativeService;
         this.qanaryRepository = qanaryRepository;
+        this.generativeExplanationsService = generativeExplanationsService;
     }
 
     public String getQaSystemExplanation(String header, String graphUri) throws Exception {
@@ -95,9 +99,7 @@ public class ExplanationService {
         qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
         qsm.add("component", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
 
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
-        logger.debug("Query: {}", query);
-        return query;
+        return QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
     }
 
     /**
@@ -412,26 +414,108 @@ public class ExplanationService {
         return stringBuilder.toString();
     }
 
+    /**
+     * Wrapper method that decides whether the target method is atomic or a parent of other methods. Based on this result, the path to the dark or bright side is chosen.
+     * @param metaData
+     * @return
+     * @throws Exception
+     */
+    public String explainMethod(ExplanationMetaData metaData) throws Exception {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("graph", ResourceFactory.createResource(metaData.getGraph().toASCIIString()));
+        qsm.add("methodId", ResourceFactory.createResource(metaData.getMethod()));
+        boolean doChildrenExist = qanaryRepository.askQuestion(QanaryTripleStoreConnector.readFileFromResourcesWithMap(ASK_IF_CHILDS_EXIST, qsm));
+
+        return !doChildrenExist ? explainMethodSingle(metaData) : explainMethodAggregated(metaData);
+    }
+
+    public String explainMethodAggregated(ExplanationMetaData metaData) throws Exception {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("methodId", ResourceFactory.createResource(metaData.getMethod()));
+        qsm.add("graph", ResourceFactory.createResource(metaData.getGraph().toASCIIString()));
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_CHILD_PARENT_METHODS, qsm);
+        ResultSet childParentPairs = qanaryRepository.selectWithResultSet(query);
+        Map<String, List<String>> childParentPairsMap = createParentChildrenMap(childParentPairs);
+
+        // Decide how generative explanations may be computed. In the case of "data", we don't need to explain the leafs as we solely use the data from the child methods.
+        if (metaData.getAggregationSettings().getType() == "data")
+            return explainMethodAggregatedDataBased();
+        else if (metaData.getAggregationSettings().getType() == "explanations") {
+            return explainMethodAggregatedExplanationBased(childParentPairsMap, metaData);
+        } else throw new ExplanationException("Aggregated explanation 'type'-value isn't supported.");
+    }
+
+
+
+    public Map<String, List<String>> createParentChildrenMap(ResultSet childParentPairs) {
+        Map<String, List<String>> childrenMap = new HashMap<>(); // Contains all 1-level subtree's
+        while (childParentPairs.hasNext()) {
+            QuerySolution qs = childParentPairs.next();
+            String childId = qs.get("leaf").toString(); // TODO: Access "hasChilds" property
+            String parentId = qs.get("parent").toString();
+            String rootId = qs.get("root").toString();
+            childrenMap.putIfAbsent(parentId, new ArrayList<>());
+            childrenMap.get(parentId).add(childId);
+            if (childrenMap.containsKey(rootId))
+                childrenMap.put(rootId, null);
+            // allMethods.putIfAbsent(childId, requestMethodItem(metaData,  childId)); // TODO: Required that methodItem is requested here?
+            // allMethods.putIfAbsent(parentId, requestMethodItem(metaData, parentId));
+        }
+    }
+
+    public String explainMethodAggregatedExplanationBased(Map<String, List<String>> childParentPairsMap, ExplanationMetaData metaData) throws Exception {
+        Map<String, ChildWithExplanation> childWithExplanationMap = explainAllLeafs(childParentPairsMap, metaData);
+        if (metaData.getAggregationSettings().getApproach() == "template")
+            return templateService.explainMethodAggregated(childWithExplanationMap, metaData);
+        else if (metaData.getAggregationSettings().getApproach() == "generative")
+            return generativeExplanationsService.explainMethodAggregated(childWithExplanationMap, metaData);
+        else throw new ExplanationException("Aggregated explanation 'approach'-value isn't supported.");
+    }
+
+    /**
+     * Can only apply to generative approach
+     * @return
+     */
+    public String explainMethodAggregatedDataBased() {
+
+    }
+
+    public record ChildWithExplanation(String id, String explanation) {};
+
+    public Map<String, ChildWithExplanation> explainAllLeafs(Map<String, List<String>> childrenMap, ExplanationMetaData metaData) throws Exception {
+        Map<String, ChildWithExplanation> leafExplanations = new HashMap<>();
+
+        for (String parentId : childrenMap.keySet()) {
+            List<String> childIds = childrenMap.get(parentId);
+            for (String childId : childIds) {
+                metaData.setMethod(childId);
+                leafExplanations.put(parentId, new ChildWithExplanation(childId, explainMethodSingle(metaData)));
+            }
+        }
+        return leafExplanations;
+    }
+
     public String explainMethodSingle(ExplanationMetaData data) throws ExplanationException, GenerativeExplanationException, Exception {
         String query = select_one_method(data);
         ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
-        if (!resultSet.hasNext()) {
-            return "SPARQL query returned no results. Therefore, no explanation can be provided.";
-        }
+        if (!resultSet.hasNext()) {return "SPARQL query returned no results. Therefore, no explanation can be provided.";}
+        QuerySolution qs = resultSet.next();
 
         try {
             if (data.getItemTemplate() == null) {
                 data.setItemTemplate(
                         ExplanationHelper.getStringFromFile(
-                                METHOD_EXPLANATION_TEMPLATE + "item/" + data.getLang()));
+                                METHOD_EXPLANATION_TEMPLATE + "item/" + data.getLang())); // TODO: Is it possible, to provide the placeholders somewhere where they can be seen from OpenAPI def. for example?
             }
         } catch (IOException e) {
-            throw new ExplanationException("Template for language" + data.getLang() + " not found.", e);
+            throw new ExplanationException("Template for language" + data.getLang() + " not found. Please use a different language or provide your own template with the designated json property.", e);
         }
 
-        return data.getGptRequest().isDoGenerative()
-                ? generativeService.explainSingleMethod(data, resultSet)
-                : templateService.explain(data, resultSet);
+        if(data.getAggregationSettings().getLeafs() == "template")
+            return templateService.explain(data, qs);
+        else if(data.getAggregationSettings().getLeafs() == "generative")
+            return generativeService.explainSingleMethod(data, qs);
+        else throw new ExplanationException("Please provide a valid value for \"leaf\": Either \"template\" or \"generative\".");
     }
 
     /**

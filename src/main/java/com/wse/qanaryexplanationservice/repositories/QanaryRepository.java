@@ -84,6 +84,13 @@ public class QanaryRepository {
         return ResultSetFactory.makeRewindable(vqe.execSelect());
     }
 
+    public boolean askQuestion(String question) throws QueryException {
+        ensureConnection();
+        Query query = QueryFactory.create(question);
+        VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(query, this.connection);
+        return vqe.execAsk();
+    }
+
     private void ensureConnection() {
         if (connection == null) {
             logger.info("Initializing connection for Qanary repository: {}", this.virtuosoEndpoint);

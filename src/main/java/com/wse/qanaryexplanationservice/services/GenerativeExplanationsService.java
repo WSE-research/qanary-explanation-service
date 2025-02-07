@@ -217,15 +217,14 @@ public class GenerativeExplanationsService {
      * TODO: Support one-/two-/multi-shot prompts, replace outer placeholders
      * @return
      */
-    public String explainSingleMethod(ExplanationMetaData explanationMetaData, ResultSet resultSet) throws GenerativeExplanationException, Exception {
-        QuerySolution methodSolution = resultSet.nextSolution();
+    public String explainSingleMethod(ExplanationMetaData explanationMetaData, QuerySolution qs) throws GenerativeExplanationException, Exception {
         int shots = explanationMetaData.getGptRequest().getShots();
         String promptTemplate = ExplanationHelper.getStringFromFile(
                 PROMPT_TEMPLATE_PATH + "methods/" + explanationMetaData.getLang() + "_" + shots
         );
 
         // Replace baseline and experiment data (i.e. component, method, method input/output values and types)
-        promptTemplate = tmplExpService.replaceProperties(ExplanationHelper.convertQuerySolutionToMap(methodSolution), promptTemplate);
+        promptTemplate = tmplExpService.replaceProperties(ExplanationHelper.convertQuerySolutionToMap(qs), promptTemplate);
         logger.debug("Prompt Template: {}", promptTemplate);
 
         // Create further samples, depending on the shots passed (Outsource generalized method)
@@ -281,6 +280,10 @@ public class GenerativeExplanationsService {
         } else {
             return "Not yet implemented.";
         }
+    }
+
+    public String explainMethodAggregated(Map<String, ExplanationService.ChildWithExplanation> childWithExplanationMap, ExplanationMetaData metaData) {
+
     }
 
 }

@@ -19,15 +19,17 @@ public class ExplanationMetaData {
     private String prefixTemplate;
     private String itemTemplate;
     private String lang;
+    private AggregationSettings aggregationSettings;
     private GPTRequest gptRequest;
 
-    public ExplanationMetaData(String qanaryComponent, String method, String graph, String itemTemplate, String prefixTemplate, String lang, GPTRequest gptRequest) throws URISyntaxException {
+    public ExplanationMetaData(String qanaryComponent, String method, String graph, String itemTemplate, String prefixTemplate, String lang, AggregationSettings aggregationSettings, GPTRequest gptRequest) throws URISyntaxException {
         this.method = method;
         this.qanaryComponent = new QanaryComponent(qanaryComponent);
         this.graph = new URI(graph);
         this.itemTemplate = itemTemplate;
         this.prefixTemplate = prefixTemplate;
         this.lang = lang == null ? "en" : lang;
+        this.aggregationSettings = aggregationSettings;
         this.gptRequest = gptRequest;
     }
 
@@ -37,6 +39,14 @@ public class ExplanationMetaData {
 
     public void setGptRequest(GPTRequest gptRequest) {
         this.gptRequest = gptRequest;
+    }
+
+    public AggregationSettings getAggregationSettings() {
+        return aggregationSettings;
+    }
+
+    public void setAggregationSettings(AggregationSettings aggregationSettings) {
+        this.aggregationSettings = aggregationSettings;
     }
 
     public String getLang() {

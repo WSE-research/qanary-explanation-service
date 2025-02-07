@@ -1,0 +1,8 @@
+PREFIX  prov: <http://www.w3.org/ns/prov#>
+
+ASK
+FROM ?graph
+WHERE
+{
+    ?children prov:actedOnBehalfOf ?methodId;
+}

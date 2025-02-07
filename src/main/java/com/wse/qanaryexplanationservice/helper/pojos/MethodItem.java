@@ -11,6 +11,7 @@ public class MethodItem {
     String inputValues;
     String annotatedAt;
     String annotatedBy;
+    String explanation;
 
     public MethodItem(String caller, String callerName, String methodName, String outputType, String outputValue, String inputTypes, String inputValues, String annotatedAt, String annotatedBy) {
         this.caller = caller;
@@ -22,6 +23,14 @@ public class MethodItem {
         this.inputValues = inputValues;
         this.annotatedAt = annotatedAt;
         this.annotatedBy = annotatedBy;
+    }
+
+    public String getExplanation() {
+        return explanation;
+    }
+
+    public void setExplanation(String explanation) {
+        this.explanation = explanation;
     }
 
     public String getCallerName() {

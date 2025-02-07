@@ -599,14 +599,19 @@ public class TemplateExplanationsService {
      * @param resultSet Consist the prior executed SPARQL request's results
      * @return
      */
-    public String explain(ExplanationMetaData explanationMetaData, ResultSet resultSet) throws ExplanationException {
+    public String explain(ExplanationMetaData explanationMetaData, QuerySolution qs) throws ExplanationException {
         String itemTemplate = explanationMetaData.getItemTemplate();
         try {
-            QuerySolution qs = resultSet.next();
             return checkAndReplaceOuterPlaceholder(replaceProperties(ExplanationHelper.convertQuerySolutionToMap(qs), itemTemplate));
         } catch (Exception e) {
             throw new ExplanationException("SPARQL endpoint returned no result for requested query and method", e);
         }
+    }
+
+    public String explainMethodAggregated(Map<String, ExplanationService.ChildWithExplanation> childWithExplanationMap, ExplanationMetaData metaData) {
+        AtomicInteger i = new AtomicInteger(1);
+        StringBuilder explanationItems = new StringBuilder();
+
     }
 
 }
