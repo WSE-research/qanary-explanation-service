@@ -445,15 +445,16 @@ public class ExplanationService {
         } else throw new ExplanationException("Aggregated explanation 'type'-value isn't supported.");
     }
 
+    public record Method(String id, boolean isLeaf) {};
 
-
-    public Map<String, List<String>> createParentChildrenMap(ResultSet childParentPairs) {
+    public Map<Method, List<Method>> createParentChildrenMap(ResultSet childParentPairs) {
         Map<String, List<String>> childrenMap = new HashMap<>(); // Contains all 1-level subtree's
         while (childParentPairs.hasNext()) {
             QuerySolution qs = childParentPairs.next();
             String childId = qs.get("leaf").toString(); // TODO: Access "hasChilds" property
             String parentId = qs.get("parent").toString();
             String rootId = qs.get("root").toString();
+            boolean isLeaf = qs.get("hasChilds").toString().equals("0");
             childrenMap.putIfAbsent(parentId, new ArrayList<>());
             childrenMap.get(parentId).add(childId);
             if (childrenMap.containsKey(rootId))
