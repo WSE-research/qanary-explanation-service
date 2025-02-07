@@ -1,6 +1,7 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
+import com.wse.qanaryexplanationservice.exceptions.GenerativeExplanationException;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
@@ -83,12 +84,12 @@ public class ExplanationService {
                 i.getAndIncrement();
             });
         } else
-            explanationItems.append(generativeService.explain(explanationMetaData, loggedMethodsResultSet));
+            explanationItems.append(generativeService.explainSingleMethod(explanationMetaData, loggedMethodsResultSet));
 
         return prefixExplanation + explanationItems.toString();
     }
 
-    public String select_one_method(ExplanationMetaData explanationMetaData) throws Exception {
+    public String select_one_method(ExplanationMetaData explanationMetaData) throws IOException {
         QuerySolutionMap qsm = new QuerySolutionMap();
         qsm.add("methodIdentifier", ResourceFactory.createResource(explanationMetaData.getMethod()));
         qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
@@ -411,7 +412,7 @@ public class ExplanationService {
         return stringBuilder.toString();
     }
 
-    public String explainMethodSingle(ExplanationMetaData data) throws Exception {
+    public String explainMethodSingle(ExplanationMetaData data) throws ExplanationException, GenerativeExplanationException, Exception {
         String query = select_one_method(data);
         ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
         if (!resultSet.hasNext()) {
@@ -429,7 +430,7 @@ public class ExplanationService {
         }
 
         return data.getGptRequest().isDoGenerative()
-                ? generativeService.explain(data, resultSet)
+                ? generativeService.explainSingleMethod(data, resultSet)
                 : templateService.explain(data, resultSet);
     }
 

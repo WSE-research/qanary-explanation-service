@@ -1,6 +1,7 @@
 package com.wse.qanaryexplanationservice.controller;
 
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
+import com.wse.qanaryexplanationservice.exceptions.GenerativeExplanationException;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
@@ -295,8 +296,11 @@ public class ExplanationController {
     public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws Exception {
         try {
             return new ResponseEntity<>(explanationService.getAggregatedExplanations(explanationMetaData), HttpStatus.OK);
-        } catch(ExplanationException e) {
+        } catch(ExplanationException | GenerativeExplanationException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
+        } catch (Exception e) {
+            logger.error(e.toString());
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

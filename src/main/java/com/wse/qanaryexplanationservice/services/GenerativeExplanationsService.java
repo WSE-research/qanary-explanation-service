@@ -4,6 +4,7 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
+import com.wse.qanaryexplanationservice.exceptions.GenerativeExplanationException;
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.GptModel;
@@ -178,7 +179,7 @@ public class GenerativeExplanationsService {
         return QanaryTripleStoreConnector.readFileFromResources(path);
     }
 
-    public String sendPrompt(String prompt, GptModel gptModel) throws Exception {
+    public String sendPrompt(String prompt, GptModel gptModel) throws GenerativeExplanationException, Exception {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);
@@ -216,7 +217,7 @@ public class GenerativeExplanationsService {
      * TODO: Support one-/two-/multi-shot prompts, replace outer placeholders
      * @return
      */
-    public String explain(ExplanationMetaData explanationMetaData, ResultSet resultSet) throws Exception {
+    public String explainSingleMethod(ExplanationMetaData explanationMetaData, ResultSet resultSet) throws GenerativeExplanationException, Exception {
         QuerySolution methodSolution = resultSet.nextSolution();
         int shots = explanationMetaData.getGptRequest().getShots();
         String promptTemplate = ExplanationHelper.getStringFromFile(
@@ -269,7 +270,7 @@ public class GenerativeExplanationsService {
         return tmplExpService.createOutputExplanation(graphUri, component, lang);
     }
 
-    public String explainAggregatedMethods(String explanations, ExplanationMetaData data, MethodItem methodItem) throws Exception {
+    public String explainAggregatedMethods(String explanations, ExplanationMetaData data, MethodItem methodItem) throws GenerativeExplanationException, Exception {
         int shots = data.getGptRequest().getShots();
         String promptTemplate = ExplanationHelper.getStringFromFile(
                 PROMPT_TEMPLATE_PATH + "methods/aggregated/" + data.getLang() + "_" + shots

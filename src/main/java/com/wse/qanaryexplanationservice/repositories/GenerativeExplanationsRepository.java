@@ -44,7 +44,7 @@ public class GenerativeExplanationsRepository {
     public GenerativeExplanationsRepository() throws MalformedURLException {
     }
 
-    public String sendGptPrompt(String body, int tokens, GptModel gptModel) throws Exception {
+    public String sendGptPrompt(String body, int tokens, GptModel gptModel) throws GenerativeExplanationException, Exception {
         gptModel = selectGptModelBasedOnTokens(gptModel, tokens);
         ModelConfig config = MODEL_CONFIGS.get(gptModel);
         
@@ -52,7 +52,7 @@ public class GenerativeExplanationsRepository {
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
         
-        if (chatGptApiKey == null) {
+        if (chatGptApiKey.isEmpty()) {
             throw new GenerativeExplanationException("Missing ChatGPT/OpenAI API Key");
         }
         con.setRequestProperty("Authorization", "Bearer " + chatGptApiKey);
