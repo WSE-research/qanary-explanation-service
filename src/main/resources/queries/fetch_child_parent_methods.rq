@@ -8,7 +8,7 @@ PREFIX prov: <http://www.w3.org/ns/prov#>
 SELECT DISTINCT ?leaf ?parent ?root
 FROM ?graph
 WHERE {
+	BIND(?methodId AS ?root)
 	?leaf prov:actedOnBehalfOf+ ?root.
   	?leaf prov:actedOnBehalfOf ?parent .
-	FILTER(?root = ?methodId)
 }

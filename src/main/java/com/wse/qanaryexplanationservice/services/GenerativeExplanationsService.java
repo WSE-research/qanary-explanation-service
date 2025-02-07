@@ -5,10 +5,11 @@ import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
+import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.GptModel;
-import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -37,6 +38,8 @@ public class GenerativeExplanationsService {
 
     private final Random random = new Random();
     private final TemplateExplanationsService tmplExpService;
+    private final String PROMPT_TEMPLATE_PATH = "/prompt_templates/";
+    private final String CHECK_EXISTENCE_OF_OTHER_METHODS_QUERY = "/queries/check_if_other_methods_exist.rq";
     @Autowired
     private GenerativeExplanations generativeExplanations;
     @Autowired
@@ -45,8 +48,6 @@ public class GenerativeExplanationsService {
     private String questionIdReplacement;
     @Autowired
     private QanaryRepository qanaryRepository;
-    private final String PROMPT_TEMPLATE_PATH = "/prompt_templates/";
-    private final String CHECK_EXISTENCE_OF_OTHER_METHODS_QUERY = "/queries/check_if_other_methods_exist.rq";
 
     public GenerativeExplanationsService(TemplateExplanationsService tmplExpService) {
         this.tmplExpService = tmplExpService;
@@ -94,7 +95,7 @@ public class GenerativeExplanationsService {
 
             // Selection Question
             logger.info("Selecting question");
-            Integer randomQuestionID = random.nextInt(generativeExplanations.QADO_DATASET_QUESTION_COUNT);
+            Integer randomQuestionID = random.nextInt(GenerativeExplanations.QADO_DATASET_QUESTION_COUNT);
             String question = generativeExplanations.getRandomQuestion(randomQuestionID);
 
             // Resolve dependencies and select random components
@@ -149,7 +150,7 @@ public class GenerativeExplanationsService {
     }
 
     public QanaryComponent selectRandomComponentWithAnnotationType(String annotationType) {
-        QanaryComponent[] components = generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType);
+        QanaryComponent[] components = GenerativeExplanations.TYPE_AND_COMPONENTS.get(annotationType);
         return components[random.nextInt(components.length)];
     }
 
@@ -180,7 +181,7 @@ public class GenerativeExplanationsService {
     public String sendPrompt(String prompt, GptModel gptModel) throws Exception {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
         int tokens = encoding.countTokens(prompt);
-        logger.info("Calculated Token: {}", String.valueOf(tokens));
+        logger.info("Calculated Token: {}", tokens);
         return generativeExplanationsRepository.sendGptPrompt(prompt, tokens, gptModel);
     }
 
@@ -216,14 +217,14 @@ public class GenerativeExplanationsService {
      * @return
      */
     public String explain(ExplanationMetaData explanationMetaData, ResultSet resultSet) throws Exception {
-        // Differentiate between zero- and multi-shot prompts
+        QuerySolution methodSolution = resultSet.nextSolution();
         int shots = explanationMetaData.getGptRequest().getShots();
-        String promptTemplate = TemplateExplanationsService.getStringFromFile(
-                PROMPT_TEMPLATE_PATH + "methods/" + explanationMetaData.getLang() + "_" + String.valueOf(shots)
+        String promptTemplate = ExplanationHelper.getStringFromFile(
+                PROMPT_TEMPLATE_PATH + "methods/" + explanationMetaData.getLang() + "_" + shots
         );
 
         // Replace baseline and experiment data (i.e. component, method, method input/output values and types)
-        promptTemplate = tmplExpService.replaceProperties(tmplExpService.convertQuerySolutionToMap(resultSet.next()), promptTemplate);
+        promptTemplate = tmplExpService.replaceProperties(ExplanationHelper.convertQuerySolutionToMap(methodSolution), promptTemplate);
         logger.debug("Prompt Template: {}", promptTemplate);
 
         // Create further samples, depending on the shots passed (Outsource generalized method)
@@ -270,8 +271,8 @@ public class GenerativeExplanationsService {
 
     public String explainAggregatedMethods(String explanations, ExplanationMetaData data, MethodItem methodItem) throws Exception {
         int shots = data.getGptRequest().getShots();
-        String promptTemplate = TemplateExplanationsService.getStringFromFile(
-                PROMPT_TEMPLATE_PATH + "methods/aggregated/" + data.getLang() + "_" + String.valueOf(shots)
+        String promptTemplate = ExplanationHelper.getStringFromFile(
+                PROMPT_TEMPLATE_PATH + "methods/aggregated/" + data.getLang() + "_" + shots
         ).replace("${explanations}", explanations).replace("${methodName}", methodItem.getMethodName());
         if (shots == 0) {
             return sendPrompt(promptTemplate, data.getGptRequest().getGptModel());

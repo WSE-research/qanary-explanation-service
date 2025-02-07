@@ -5,14 +5,15 @@ PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#>
 PREFIX  x:    <http://example.org#>
 PREFIX  prov: <http://www.w3.org/ns/prov#>
 
-SELECT  ?id ?caller ?method ?annotatedBy ?outputDataType ?outputDataValue ?annotatedAt (GROUP_CONCAT(?inputDataValue; SEPARATOR=",") AS ?inputDataValues) (GROUP_CONCAT(?inputDataType; SEPARATOR=",") AS ?inputDataTypes)
-FROM ?graph
+SELECT  ?id ?caller ?callerName ?method ?annotatedBy ?outputDataType ?outputDataValue ?annotatedAt (GROUP_CONCAT(?inputDataValue; SEPARATOR=",") AS ?inputDataValues) (GROUP_CONCAT(?inputDataType; SEPARATOR=",") AS ?inputDataTypes)
+FROM <urn:graph:c8b0552f-be96-40c5-aa27-47191d2707cd>
 WHERE {
-  BIND(?methodId AS ?id)
+  BIND(?methodIdentifier AS ?id)
   BIND(?component AS ?annotatedBy)
   ?id  rdf:type              qa:AnnotationOfLogMethod ;
-        prov:actedOnBehalfOf  ?caller ;
-        qa:methodName         ?method ;
+        prov:actedOnBehalfOf  ?caller .
+  		?caller qa:methodName ?callerName .
+        ?id qa:methodName         ?method ;
         oa:annotatedAt        ?annotatedAt ;
         oa:annotatedBy        ?annotatedBy .
 
@@ -26,4 +27,4 @@ WHERE {
         	  rdf:value ?inputDataValue .
   		}
 }
-GROUP BY ?id ?caller ?outputDataType ?outputDataValue ?annotatedAt ?annotatedBy ?method
+GROUP BY ?id ?caller ?callerName ?outputDataType ?outputDataValue ?annotatedAt ?annotatedBy ?method

@@ -1,1 +1,1 @@
-${method} at ${annotatedAt} on behalf of ${caller} with input variables ${inputDataValues} (${inputDataTypes}) &{and returned ${outputDataValue} (${outputDataType})}&.
+The method '${method}' was called at ${annotatedAt} on behalf of '${callerName}' with input variables ${inputDataValues} (${inputDataTypes}) &{and returned ${outputDataValue} (${outputDataType})}&.

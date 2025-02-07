@@ -13,35 +13,22 @@ import java.net.URISyntaxException;
  */
 public class ExplanationMetaData {
 
-    private final Logger logger = LoggerFactory.getLogger(ExplanationMetaData.class);
     private QanaryComponent qanaryComponent;
-    private String methodName;
+    private String method;
     private URI graph;
     private String prefixTemplate;
     private String itemTemplate;
-    private String requestQuery;
     private String lang;
     private GPTRequest gptRequest;
-    private String methodId;
 
-    public ExplanationMetaData(String qanaryComponent, String methodName, String graph, String itemTemplate, String prefixTemplate, String query, String lang, GPTRequest gptRequest, String methodId) throws URISyntaxException {
-        this.methodName = methodName != null ? methodName : null;
-        this.methodId = methodId != null ? methodId : null;
+    public ExplanationMetaData(String qanaryComponent, String method, String graph, String itemTemplate, String prefixTemplate, String lang, GPTRequest gptRequest) throws URISyntaxException {
+        this.method = method;
         this.qanaryComponent = new QanaryComponent(qanaryComponent);
         this.graph = new URI(graph);
         this.itemTemplate = itemTemplate;
         this.prefixTemplate = prefixTemplate;
-        this.requestQuery = query;
         this.lang = lang == null ? "en" : lang;
         this.gptRequest = gptRequest;
-    }
-
-    public String getMethodId() {
-        return methodId;
-    }
-
-    public void setMethodId(String methodId) {
-        this.methodId = methodId;
     }
 
     public GPTRequest getGptRequest() {
@@ -60,12 +47,12 @@ public class ExplanationMetaData {
         this.lang = lang;
     }
 
-    public String getMethodName() {
-        return methodName;
+    public String getMethod() {
+        return method;
     }
 
-    public void setMethodName(String methodName) {
-        this.methodName = methodName;
+    public void setMethod(String method) {
+        this.method = method;
     }
 
     public String getPrefixTemplate() {
@@ -100,11 +87,4 @@ public class ExplanationMetaData {
         this.qanaryComponent = qanaryComponent;
     }
 
-    public String getRequestQuery() {
-        return requestQuery;
-    }
-
-    public void setRequestQuery(String requestQuery) {
-        this.requestQuery = requestQuery;
-    }
 }

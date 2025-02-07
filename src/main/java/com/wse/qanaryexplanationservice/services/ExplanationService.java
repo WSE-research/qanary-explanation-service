@@ -1,22 +1,28 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
+import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jena.query.*;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.QuerySolutionMap;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.io.FileNotFoundException;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -27,28 +33,30 @@ public class ExplanationService {
     private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
     private final String SELECT_ALL_LOGGED_METHODS = "/queries/fetch_all_logged_methods.rq";
     private final String SELECT_ONE_METHOD_WITH_ID = "/queries/fetch_one_method_id.rq";
-    private final String SELECT_ONE_METHOD_WITH_NAME = "/queries/fetch_one_method_name.rq";
     private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     private final String SELECT_CHILD_PARENT_METHODS = "/queries/fetch_child_parent_methods.rq";
 
-    @Autowired
-    private TemplateExplanationsService tmplExpService;
-    @Autowired
-    private GenerativeExplanationsService genExpService;
-    @Autowired
-    private QanaryRepository qanaryRepository;
+    private final TemplateExplanationsService templateService;
+    private final GenerativeExplanationsService generativeService;
+    private final QanaryRepository qanaryRepository;
+
+    public ExplanationService(TemplateExplanationsService templateService, GenerativeExplanationsService generativeService, QanaryRepository qanaryRepository) {
+        this.templateService = templateService;
+        this.generativeService = generativeService;
+        this.qanaryRepository = qanaryRepository;
+    }
 
     public String getQaSystemExplanation(String header, String graphUri) throws Exception {
-        return tmplExpService.explainQaSystem(header, graphUri);
+        return templateService.explainQaSystem(header, graphUri);
     }
 
     public String getTemplateComponentExplanation(String graphUri, QanaryComponent component, String header)
             throws Exception {
-        return tmplExpService.explainComponentAsRdf(graphUri, component, header);
+        return templateService.explainComponentAsRdf(graphUri, component, header);
     }
 
     public String getTemplateComponentInputExplanation(String graphUri, QanaryComponent component) throws IOException {
-        return tmplExpService.createInputExplanation(graphUri, component);
+        return templateService.createInputExplanation(graphUri, component);
     }
 
     public String explainComponentMethods(ExplanationMetaData explanationMetaData) throws Exception {
@@ -58,87 +66,37 @@ public class ExplanationService {
         StringBuilder explanationItems = new StringBuilder();
 
         qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
-        String query = explanationMetaData.getRequestQuery() == null
-                ? QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm)
-                : transformQueryStringToQuery(explanationMetaData.getRequestQuery(), qsm);
-
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm);
         logger.debug("Query: {}", query);
+
         ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(query);
         List<String> variables = loggedMethodsResultSet.getResultVars();
 
         if (!explanationMetaData.getGptRequest().isDoGenerative()) {
             loggedMethodsResultSet.forEachRemaining(querySolution -> {
                 if (prefixExplanation.get() == null) {
-                    prefixExplanation.set(tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(querySolution,
+                    prefixExplanation.set(templateService.replacePlaceholdersWithVarsFromQuerySolution(querySolution,
                             variables, explanationMetaData.getPrefixTemplate()));
                 }
-                explanationItems.append("\n" + i + ". " + tmplExpService.replacePlaceholdersWithVarsFromQuerySolution(
+                explanationItems.append("\n" + i + ". " + templateService.replacePlaceholdersWithVarsFromQuerySolution(
                         querySolution, variables, explanationMetaData.getItemTemplate()));
                 i.getAndIncrement();
             });
         } else
-            explanationItems.append(genExpService.explain(explanationMetaData, loggedMethodsResultSet));
+            explanationItems.append(generativeService.explain(explanationMetaData, loggedMethodsResultSet));
 
         return prefixExplanation + explanationItems.toString();
     }
 
     public String select_one_method(ExplanationMetaData explanationMetaData) throws Exception {
         QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("methodId", ResourceFactory.createResource(explanationMetaData.getMethodId()));
+        qsm.add("methodIdentifier", ResourceFactory.createResource(explanationMetaData.getMethod()));
         qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
-        qsm.add("methodName", ResourceFactory.createResource(explanationMetaData.getMethodName()));
         qsm.add("component", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
 
-        String query = explanationMetaData.getMethodId() == null ?
-                QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_NAME, qsm) :
-                QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
+        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
         logger.debug("Query: {}", query);
         return query;
-    }
-
-    // TODO: Later, combine both approaches (single method explanation as well as
-    // multiple method explanations)
-    // THis class in general sets up everything relevant to make explanations easy
-    // in responsible classes
-    public String explainComponentMethod(ExplanationMetaData explanationMetaData) throws Exception {
-        String query = select_one_method(explanationMetaData);
-
-        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
-        if (!resultSet.hasNext()) {
-            return "SPARQL query returned no results. Therefore, no explanation can be provided.";
-        }
-
-        try {
-            if (explanationMetaData.getItemTemplate() == null) {
-                explanationMetaData.setItemTemplate(
-                        TemplateExplanationsService.getStringFromFile(
-                                METHOD_EXPLANATION_TEMPLATE + "item/" + explanationMetaData.getLang()));
-            }
-            if (explanationMetaData.getPrefixTemplate() == null) {
-                explanationMetaData.setPrefixTemplate(
-                        TemplateExplanationsService.getStringFromFile(
-                                METHOD_EXPLANATION_TEMPLATE + "prefix/" + explanationMetaData.getLang()));
-            }
-        } catch (IOException e) {
-            return "For language " + explanationMetaData.getLang() + " no template exists.";
-        }
-
-        return explanationMetaData.getGptRequest().isDoGenerative()
-                ? genExpService.explain(explanationMetaData, resultSet)
-                : tmplExpService.explain(explanationMetaData, resultSet);
-    }
-
-    /**
-     * Replaces passed variables within the SPARQL query
-     * 
-     * @param queryString      Query with variables
-     * @param querySolutionMap Variable mappings
-     * @return Final query
-     */
-    public static String transformQueryStringToQuery(String queryString, QuerySolutionMap querySolutionMap) {
-        ParameterizedSparqlString pq = new ParameterizedSparqlString(queryString, querySolutionMap);
-        Query query = QueryFactory.create(pq.toString());
-        return query.toString();
     }
 
     /**
@@ -153,27 +111,26 @@ public class ExplanationService {
 
         generativeExplanationRequest.getQanaryComponents().forEach(component -> {
             try {
-                String templatebased = tmplExpService.createOutputExplanation( // compute template based explanation
+                String templatebased = templateService.createOutputExplanation( // compute template based explanation
                         composedExplanationDTO.getGraphUri(),
                         component,
                         "en");
 
-                GenerativeExplanationObject generativeExplanationObject = genExpService.createGenerativeExplanation(
+                GenerativeExplanationObject generativeExplanationObject = generativeService.createGenerativeExplanation(
                         component,
                         generativeExplanationRequest.getShots(),
                         composedExplanationDTO.getGraphUri());
 
-                String prompt = genExpService.createPrompt(
+                String prompt = generativeService.createPrompt(
                         generativeExplanationRequest.getShots(),
                         generativeExplanationObject);
 
-                String generativeExplanation = genExpService.sendPrompt(prompt,
+                String generativeExplanation = generativeService.sendPrompt(prompt,
                         generativeExplanationRequest.getGptModel());
 
                 composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt,
                         generativeExplanation, generativeExplanationObject.getTestComponent().getDataSet());
             } catch (Exception e) {
-                e.printStackTrace();
                 logger.error("{}", e.toString());
             }
         });
@@ -194,13 +151,13 @@ public class ExplanationService {
             String query = getBodyFromResultSet(results);
 
             String templatebasedExplanation = query == null ? "This component didn't used any query"
-                    : tmplExpService.createExplanationForQuery(query, graph, component);
+                    : templateService.createExplanationForQuery(query, graph, component);
 
-            String prompt = genExpService.getInputDataExplanationPrompt(
+            String prompt = generativeService.getInputDataExplanationPrompt(
                     component,
                     query == null ? "" : query,
                     composedExplanationDTO.getGenerativeExplanationRequest().getShots());
-            String gptExplanation = genExpService.sendPrompt(prompt,
+            String gptExplanation = generativeService.sendPrompt(prompt,
                     composedExplanationDTO.getGenerativeExplanationRequest().getGptModel());
             composedExplanation.addExplanationItem(component.getComponentName(), templatebasedExplanation, prompt,
                     gptExplanation, query);
@@ -232,11 +189,11 @@ public class ExplanationService {
      */
     public String explainPipelineOutput(String graphUri) throws IOException {
         ResultSet results = getPipelineInformation(graphUri);
-        return tmplExpService.getPipelineOutputExplanation(results, graphUri);
+        return templateService.getPipelineOutputExplanation(results, graphUri);
     }
 
     public String explainPipelineOutput(String graphUri, Map<String, String> explanations) throws IOException {
-        return tmplExpService.getPipelineOutputExplanation(explanations, graphUri);
+        return templateService.getPipelineOutputExplanation(explanations, graphUri);
     }
 
     public String explainPipelineInput(String graphUri) throws IOException {
@@ -248,7 +205,7 @@ public class ExplanationService {
                 questionId = result.get("questionId").toString();
         }
         String question = qanaryRepository.getQuestionFromQuestionId(questionId);
-        return tmplExpService.getPipelineInputExplanation(question);
+        return templateService.getPipelineInputExplanation(question);
     }
 
     // Caching candidate
@@ -261,7 +218,7 @@ public class ExplanationService {
     }
 
     public String getPipelineExplanation(String graph) throws IOException {
-        return tmplExpService.getPipelineOutputExplanation(
+        return templateService.getPipelineOutputExplanation(
                 this.getPipelineInformation(graph),
                 graph);
     }
@@ -269,35 +226,32 @@ public class ExplanationService {
     public String getComposedExplanation(QanaryExplanationData body) throws IOException {
         String graph = body.getGraph();
         String component = body.getComponent();
-        String explanation = null;
-        String inputExplanation = null;
-        String outputExplanation = null;
+        String inputExplanation;
+        String outputExplanation;
         if (component == null) {
-            inputExplanation = explainPipelineInput(graph);
-            outputExplanation = explainPipelineOutput(graph);
             return getPipelineExplanation(graph);
         } else {
             QanaryComponent qanaryComponent = new QanaryComponent(component);
             inputExplanation = getTemplateComponentInputExplanation(graph, qanaryComponent);
             outputExplanation = getTemplateComponentOutputExplanation(graph, qanaryComponent, "en");
         }
-        return tmplExpService.composeInputAndOutputExplanations(inputExplanation, outputExplanation, component);
+        return templateService.composeInputAndOutputExplanations(inputExplanation, outputExplanation, component);
     }
 
     public String getTemplateComponentOutputExplanation(String graph, QanaryComponent component, String lang)
             throws IOException {
-        return tmplExpService.createOutputExplanation(graph, component, lang);
+        return templateService.createOutputExplanation(graph, component, lang);
     }
 
     protected String getComponentExplanation(String graph, QanaryComponent qanaryComponent) throws IOException {
-        return tmplExpService.composeInputAndOutputExplanations(
+        return templateService.composeInputAndOutputExplanations(
                 getTemplateComponentInputExplanation(graph, qanaryComponent),
                 getTemplateComponentOutputExplanation(graph, qanaryComponent, "en"),
                 qanaryComponent.getComponentName());
     }
 
     protected String getPipelineExplanation(String graph, Map<String, String> explanations) throws IOException {
-        return tmplExpService.composeInputAndOutputExplanations(
+        return templateService.composeInputAndOutputExplanations(
                 explainPipelineInput(graph),
                 explainPipelineOutput(graph, explanations),
                 null);
@@ -316,7 +270,7 @@ public class ExplanationService {
         } else if (data.getComponent() != "" || data.getComponent() != null) { // componentName, componentExplanations,
                                                                                // questionId and graph are provided //
                                                                                // PaC-based explanation
-            String explanationTemplate = tmplExpService.getStringFromFile("/explanations/pipeline_component/en_prefix");
+            String explanationTemplate = ExplanationHelper.getStringFromFile("/explanations/pipeline_component/en_prefix");
             String components = StringUtils.join(data.getExplanations().keySet().toArray(), ", ");
             return explanationTemplate
                     .replace("${component}", data.getComponent())
@@ -342,7 +296,7 @@ public class ExplanationService {
     // Explanation Tree
     public String getAggregatedExplanations(ExplanationMetaData data) throws Exception {
         QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("methodId", ResourceFactory.createResource(data.getMethodId()));
+        qsm.add("methodId", ResourceFactory.createResource(data.getMethod()));
         qsm.add("graph", ResourceFactory.createResource(data.getGraph().toASCIIString()));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_CHILD_PARENT_METHODS, qsm);
         ResultSet childParentPairs = qanaryRepository.selectWithResultSet(query);
@@ -359,19 +313,17 @@ public class ExplanationService {
             childrenMap.get(parentId).add(childId);
             if (root == null)
                 root = rootId;
-            allMethods.putIfAbsent(childId, requestMethodItem(data, null, childId));
-            allMethods.putIfAbsent(parentId, requestMethodItem(data, null, parentId));
+            allMethods.putIfAbsent(childId, requestMethodItem(data,  childId));
+            allMethods.putIfAbsent(parentId, requestMethodItem(data, parentId));
         }
 
         JSONObject json = buildJsonTree(childrenMap, root, data, allMethods);
         return json.toString();
     }
 
-    public MethodItem requestMethodItem(ExplanationMetaData data, String methodName, String methodId)
+    public MethodItem requestMethodItem(ExplanationMetaData data, String method)
             throws Exception {
-        // is no call-by-reference
-        data.setMethodName(methodName);
-        data.setMethodId(methodId);
+        data.setMethod(method);
         String query = select_one_method(data);
         ResultSet result = qanaryRepository.selectWithResultSet(query);
         return transformQuerySolutionToMethodItem(result.next());
@@ -387,6 +339,7 @@ public class ExplanationService {
 
     public MethodItem transformQuerySolutionToMethodItem(QuerySolution qs) {
         String caller = safeGetString(qs, "caller");
+        String callerName = safeGetString(qs, "callerName");
         String method = safeGetString(qs, "method");
         String annotatedAt = safeGetString(qs, "annotatedAt");
         String annotatedBy = safeGetString(qs, "annotatedBy");
@@ -397,6 +350,7 @@ public class ExplanationService {
 
         return new MethodItem(
                 caller,
+                callerName,
                 method,
                 outputDataType, outputDataValue, inputDataTypes, inputDataValues,
                 annotatedAt,
@@ -416,10 +370,10 @@ public class ExplanationService {
                     childrenArray.put(buildJsonTree(childrenMap, child, data, allMethods));
                 } else {
                     // <-- Explain atomic methods
-                    data.setMethodId(child);
+                    data.setMethod(child);
                     JSONObject childExplanationObj = new JSONObject();
                     childExplanationObj.put("id", child);
-                    childExplanationObj.put("explanation", explainComponentMethod(data));
+                    childExplanationObj.put("explanation", explainMethodSingle(data));
                     childExplanationObj.put("method", allMethods.get(child).getMethodName());
                     childrenArray.put(childExplanationObj);
                 }
@@ -428,7 +382,7 @@ public class ExplanationService {
         // <-- Explain aggregated methods
         JSONObject jsonObj = new JSONObject();
         jsonObj.put("id", root);
-        jsonObj.put("explanation", data.getGptRequest().isDoGenerative() ? genExpService.explainAggregatedMethods(
+        jsonObj.put("explanation", data.getGptRequest().isDoGenerative() ? generativeService.explainAggregatedMethods(
                 aggregateExplanationsToOneExplanation(childrenArray),
                 data, allMethods.get(root)) : "Summarized template explanation are not yet supported.");
         jsonObj.put("method", allMethods.get(root).getMethodName());
@@ -439,7 +393,10 @@ public class ExplanationService {
 
     /**
      * Aggregated all explanations with two newlines in between
-     * @param explanations JSONArray of JSONObjects that contain the key "explanation" if atomic, otherwise "parent" -> "explanation"
+     * 
+     * @param explanations JSONArray of JSONObjects that contain the key
+     *                     "explanation" if atomic, otherwise "parent" ->
+     *                     "explanation"
      * @return Explanations separated with \n\n
      */
     public String aggregateExplanationsToOneExplanation(JSONArray explanations) {
@@ -454,14 +411,40 @@ public class ExplanationService {
         return stringBuilder.toString();
     }
 
-    public String explainMethodSingle() {
-        return null;
+    public String explainMethodSingle(ExplanationMetaData data) throws Exception {
+        String query = select_one_method(data);
+        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
+        if (!resultSet.hasNext()) {
+            return "SPARQL query returned no results. Therefore, no explanation can be provided.";
+        }
+
+        try {
+            if (data.getItemTemplate() == null) {
+                data.setItemTemplate(
+                        ExplanationHelper.getStringFromFile(
+                                METHOD_EXPLANATION_TEMPLATE + "item/" + data.getLang()));
+            }
+        } catch (IOException e) {
+            throw new ExplanationException("Template for language" + data.getLang() + " not found.", e);
+        }
+
+        return data.getGptRequest().isDoGenerative()
+                ? generativeService.explain(data, resultSet)
+                : templateService.explain(data, resultSet);
     }
 
+    /**
+     * Consists of prefix and numerated list of explanations
+     * @return
+     */
     public String explainMethodsAsList() {
         return null;
     }
 
+    /**
+     * Respect variants: Explanations or data? Which explanations? 
+     * @return
+     */
     public String explainMethodsAggregated() {
         return null;
     }

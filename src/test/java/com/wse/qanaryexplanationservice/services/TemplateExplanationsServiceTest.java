@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.*;
@@ -164,7 +165,7 @@ public class TemplateExplanationsServiceTest {
             Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
             Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
 
-            Map<String, String> comparedMap = templateExplanationsService.convertRdfNodeToStringValue(toBeConvertedMap);
+            Map<String, String> comparedMap = ExplanationHelper.convertRdfNodeToStringValue(toBeConvertedMap);
 
             assertEquals(comparingMap, comparedMap);
         }
@@ -192,14 +193,14 @@ public class TemplateExplanationsServiceTest {
 
             assertAll("Testing correct replacement for templates",
                     () -> {
-                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, templateExplanationsService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
+                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, ExplanationHelper.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/de_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
                         assertEquals(expectedOutcome, computedTemplate);
                     },
                     () -> {
-                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, templateExplanationsService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
+                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, ExplanationHelper.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/en_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
@@ -298,8 +299,8 @@ public class TemplateExplanationsServiceTest {
 
         @Nested
         class composeExplanationTests {
-            private List<String> explanations;
             QanaryComponent qanaryComponent;
+            private List<String> explanations;
 
             @BeforeEach
             public void setup() {
