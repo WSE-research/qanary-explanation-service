@@ -435,7 +435,7 @@ public class ExplanationService {
         qsm.add("graph", ResourceFactory.createResource(metaData.getGraph().toASCIIString()));
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_CHILD_PARENT_METHODS, qsm);
         ResultSet childParentPairs = qanaryRepository.selectWithResultSet(query);
-        Map<String, List<String>> childParentPairsMap = createParentChildrenMap(childParentPairs);
+        Map<Method, List<Method>> childParentPairsMap = createParentChildrenMap(childParentPairs);
 
         // Decide how generative explanations may be computed. In the case of "data", we don't need to explain the leafs as we solely use the data from the child methods.
         if (metaData.getAggregationSettings().getType() == "data")
@@ -447,6 +447,13 @@ public class ExplanationService {
 
     public record Method(String id, boolean isLeaf) {};
 
+    /**
+     * Takes a ResultSet containing leaf, parent, root and hasChilds variables.
+     * It creates mappings of parents and their childs. For the latter it additionally checks if the child is atomic, i.e. a leaf.
+     * This distinction is relevant, as
+     * @param childParentPairs
+     * @return
+     */
     public Map<Method, List<Method>> createParentChildrenMap(ResultSet childParentPairs) {
         Map<String, List<String>> childrenMap = new HashMap<>(); // Contains all 1-level subtree's
         while (childParentPairs.hasNext()) {
