@@ -2,6 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
+import com.wse.qanaryexplanationservice.helper.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
@@ -596,7 +597,6 @@ public class TemplateExplanationsService {
     /**
      * This method should serve as general method to explain anything based on the passed vars.
      * @param explanationMetaData Consist of the required meta data
-     * @param resultSet Consist the prior executed SPARQL request's results
      * @return
      */
     public String explain(ExplanationMetaData explanationMetaData, QuerySolution qs) throws ExplanationException {
@@ -608,10 +608,10 @@ public class TemplateExplanationsService {
         }
     }
 
-    public String explainMethodAggregated(Map<String, ExplanationService.ChildWithExplanation> childWithExplanationMap, ExplanationMetaData metaData) {
+    public String explainMethodAggregated(Map<Method, List<Method>> childWithExplanationMap, ExplanationMetaData metaData) {
         AtomicInteger i = new AtomicInteger(1);
         StringBuilder explanationItems = new StringBuilder();
-
+        return null;
     }
 
 }

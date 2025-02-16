@@ -4,10 +4,10 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
-import com.wse.qanaryexplanationservice.exceptions.GenerativeExplanationException;
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.GptModel;
+import com.wse.qanaryexplanationservice.helper.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
 import com.wse.qanaryexplanationservice.helper.pojos.*;
@@ -179,7 +179,7 @@ public class GenerativeExplanationsService {
         return QanaryTripleStoreConnector.readFileFromResources(path);
     }
 
-    public String sendPrompt(String prompt, GptModel gptModel) throws GenerativeExplanationException, Exception {
+    public String sendPrompt(String prompt, GptModel gptModel) throws Exception {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);
@@ -217,7 +217,7 @@ public class GenerativeExplanationsService {
      * TODO: Support one-/two-/multi-shot prompts, replace outer placeholders
      * @return
      */
-    public String explainSingleMethod(ExplanationMetaData explanationMetaData, QuerySolution qs) throws GenerativeExplanationException, Exception {
+    public String explainSingleMethod(ExplanationMetaData explanationMetaData, QuerySolution qs) throws Exception {
         int shots = explanationMetaData.getGptRequest().getShots();
         String promptTemplate = ExplanationHelper.getStringFromFile(
                 PROMPT_TEMPLATE_PATH + "methods/" + explanationMetaData.getLang() + "_" + shots
@@ -269,21 +269,37 @@ public class GenerativeExplanationsService {
         return tmplExpService.createOutputExplanation(graphUri, component, lang);
     }
 
-    public String explainAggregatedMethods(String explanations, ExplanationMetaData data, MethodItem methodItem) throws GenerativeExplanationException, Exception {
-        int shots = data.getGptRequest().getShots();
-        String promptTemplate = ExplanationHelper.getStringFromFile(
-                PROMPT_TEMPLATE_PATH + "methods/aggregated/" + data.getLang() + "_" + shots
-        ).replace("${explanations}", explanations).replace("${methodName}", methodItem.getMethodName());
-        if (shots == 0) {
-            return sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
-            // return "todo";
-        } else {
-            return "Not yet implemented.";
-        }
+    public Map<Method, List<Method>> explainMethodAggregatedWithExplanations(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData data) throws Exception {
+        boolean updated;
+
+        do {
+            updated = false;
+            for (Method parent : childParentPairsMap.keySet()) {
+                List<Method> childs = childParentPairsMap.get(parent);
+                // Only process parents that don't have an explanation yet
+                if ((parent.getExplanation() == null) && childs.stream().allMatch(child -> child.getExplanation() != null)) {
+                    MethodItem parentItem = qanaryRepository.requestMethodItem(data, parent.getId());
+                    parent.setExplanation(explainAggregatedMethodWithExplanations(parentItem, childs, data));
+                    updated = true; // Track if any explanation was added in this iteration
+                }
+            }
+        } while (updated); // Repeat until no more explanations can be added
+
+        return childParentPairsMap;
     }
 
-    public String explainMethodAggregated(Map<String, ExplanationService.ChildWithExplanation> childWithExplanationMap, ExplanationMetaData metaData) {
+    public String explainAggregatedMethodWithExplanations(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws Exception {
+        int shots = data.getGptRequest().getShots(); // Add data for current component
+        String promptTemplate = ExplanationHelper.getStringFromFile(
+                PROMPT_TEMPLATE_PATH + "methods/aggregated/" + data.getLang() + "_" + shots
+        ).replace("${methodName}", parent.getMethodName()).replace("${explanations}", String.join("\n\n", childMethods.stream().map(item -> item.getExplanation()).toList()));
+        logger.info("Prompt Template: {}", promptTemplate);
+        return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
+    }
 
+
+    public String explainMethodAggregatedWithData(Map<Method, List<Method>> childWithExplanationMap, ExplanationMetaData data) {
+        return null;
     }
 
 }

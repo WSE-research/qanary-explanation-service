@@ -2,7 +2,11 @@ package com.wse.qanaryexplanationservice.repositories;
 
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
+import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.*;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +20,7 @@ import virtuoso.jena.driver.VirtGraph;
 import virtuoso.jena.driver.VirtuosoQueryExecution;
 import virtuoso.jena.driver.VirtuosoQueryExecutionFactory;
 
+import java.io.IOException;
 import java.time.Duration;
 
 /**
@@ -26,7 +31,7 @@ public class QanaryRepository {
     private static final String QUESTION_ANSWERING_ENDPOINT = "/startquestionansweringwithtextquestion";
     private static final String HTTP_SCHEME = "http";
     private static final int TIMEOUT_SECONDS = 60;
-
+    private final String SELECT_ONE_METHOD_WITH_ID = "/queries/fetch_one_method_id.rq";
     private final WebClient webClient;
     private final Logger logger = LoggerFactory.getLogger(QanaryRepository.class);
 
@@ -105,5 +110,50 @@ public class QanaryRepository {
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
+    }
+
+    public String select_one_method(ExplanationMetaData explanationMetaData) throws IOException {
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("methodIdentifier", ResourceFactory.createResource(explanationMetaData.getMethod()));
+        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
+        qsm.add("component", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
+
+        return QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
+    }
+
+    public MethodItem transformQuerySolutionToMethodItem(QuerySolution qs) {
+        String caller = safeGetString(qs, "caller");
+        String callerName = safeGetString(qs, "callerName");
+        String method = safeGetString(qs, "method");
+        String annotatedAt = safeGetString(qs, "annotatedAt");
+        String annotatedBy = safeGetString(qs, "annotatedBy");
+        String outputDataType = safeGetString(qs, "outputDataType");
+        String outputDataValue = safeGetString(qs, "outputDataValue");
+        String inputDataTypes = safeGetString(qs, "inputDataTypes");
+        String inputDataValues = safeGetString(qs, "inputDataValues");
+
+        return new MethodItem(
+                caller,
+                callerName,
+                method,
+                outputDataType, outputDataValue, inputDataTypes, inputDataValues,
+                annotatedAt,
+                annotatedBy);
+    }
+
+    // New helper method to safely retrieve a variable from QuerySolution
+    private String safeGetString(QuerySolution qs, String key) {
+        if (qs.contains(key) && qs.get(key) != null) {
+            return qs.get(key).toString();
+        }
+        return null;
+    }
+
+    public MethodItem requestMethodItem(ExplanationMetaData data, String method)
+            throws Exception {
+        data.setMethod(method);
+        String query = select_one_method(data);
+        ResultSet result = this.selectWithResultSet(query);
+        return transformQuerySolutionToMethodItem(result.next());
     }
 }

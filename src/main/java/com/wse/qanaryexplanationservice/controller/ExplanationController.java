@@ -231,7 +231,7 @@ public class ExplanationController {
                     """))))
     public ResponseEntity<?> getMethodExplanations(@RequestBody ExplanationMetaData explanationMetaData)
             throws Exception {
-        return new ResponseEntity<>(explanationService.explainComponentMethods(explanationMetaData), HttpStatus.OK);
+        return new ResponseEntity<>(explanationService.explainMethod(explanationMetaData), HttpStatus.OK); // TODO: Remove endpoint later
     }
 
     /**
@@ -295,7 +295,7 @@ public class ExplanationController {
     @GetMapping("/explain/aggregatedexplanations")
     public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws Exception {
         try {
-            return new ResponseEntity<>(explanationService.getAggregatedExplanations(explanationMetaData), HttpStatus.OK);
+            return new ResponseEntity<>(explanationService.explainMethod(explanationMetaData), HttpStatus.OK);
         } catch(ExplanationException | GenerativeExplanationException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
         } catch (Exception e) {
