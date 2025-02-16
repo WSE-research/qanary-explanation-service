@@ -295,7 +295,9 @@ public class ExplanationController {
     @GetMapping("/explain/aggregatedexplanations")
     public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws Exception {
         try {
-            return new ResponseEntity<>(explanationService.explainMethod(explanationMetaData), HttpStatus.OK);
+            String explanation = explanationService.explainMethod(explanationMetaData);
+            logger.info("Explanation: {}", explanation);
+            return new ResponseEntity<>(explanation, HttpStatus.OK);
         } catch(ExplanationException | GenerativeExplanationException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
         } catch (Exception e) {

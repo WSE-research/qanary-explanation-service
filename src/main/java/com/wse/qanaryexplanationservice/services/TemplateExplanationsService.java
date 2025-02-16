@@ -4,6 +4,7 @@ import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -29,6 +30,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class TemplateExplanationsService {
@@ -37,6 +40,7 @@ public class TemplateExplanationsService {
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/fetch_all_annotation_types.rq";
     private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
+    private static final String AGGREGATED_EXPLANATION_TEMPLATE = "/explanations/methods/aggregated/";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
@@ -608,10 +612,16 @@ public class TemplateExplanationsService {
         }
     }
 
-    public String explainMethodAggregated(Map<Method, List<Method>> childWithExplanationMap, ExplanationMetaData metaData) {
-        AtomicInteger i = new AtomicInteger(1);
-        StringBuilder explanationItems = new StringBuilder();
-        return null;
+    public String explainAggregatedMethodWithExplanations(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws IOException {
+        String template = ExplanationHelper.getStringFromFile(AGGREGATED_EXPLANATION_TEMPLATE + data.getLang());
+        String childExplanations = IntStream.range(0, childMethods.size())
+                .mapToObj(i -> (i + 1) + ". " + childMethods.get(i).getExplanation())
+                .collect(Collectors.joining("\n"));
+        return template
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentMethod" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getMethodName())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentMethodId" + TEMPLATE_PLACEHOLDER_SUFFIX, data.getMethod())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentCaller" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getCaller())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "explanations" + TEMPLATE_PLACEHOLDER_SUFFIX, childExplanations);
     }
 
 }

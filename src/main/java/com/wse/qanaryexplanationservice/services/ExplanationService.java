@@ -417,13 +417,40 @@ public class ExplanationService {
             return childrenMap;
     }
 
+    public String convertExplanationsToTree(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData metaData) {
+        return null;
+    }
+
     public String explainMethodAggregatedExplanationBased(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData metaData) throws Exception {
         childParentPairsMap = explainAllLeafs(childParentPairsMap, metaData);
-        if (Objects.equals(metaData.getAggregationSettings().getApproach(), "template"))
-            return templateService.explainMethodAggregated(childParentPairsMap, metaData);
-        else if (Objects.equals(metaData.getAggregationSettings().getApproach(), "generative"))
-            return generativeExplanationsService.explainMethodAggregatedWithExplanations(childParentPairsMap, metaData).keySet().stream().map(item -> item.getExplanation()).collect(Collectors.joining("\n\n"));
-        else throw new ExplanationException("Aggregated explanation 'approach'-value isn't supported.");
+        childParentPairsMap = recursiveParentExplanation(childParentPairsMap, metaData);
+        return metaData.getTree()
+                ? convertExplanationsToTree(childParentPairsMap, metaData)
+                : childParentPairsMap.keySet().stream()
+                .filter(item -> item.getId() == metaData.getMethod())
+                .map(item -> item.getExplanation())
+                .findFirst()
+                .orElse(null);
+    }
+
+    public Map<Method, List<Method>> recursiveParentExplanation(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData data) throws Exception {
+        boolean updated;
+        do {
+            updated = false;
+            for (Method parent : childParentPairsMap.keySet()) {
+                List<Method> childs = childParentPairsMap.get(parent);
+                // Only process parents that don't have an explanation yet
+                if ((parent.getExplanation() == null) && childs.stream().allMatch(child -> child.getExplanation() != null)) {
+                    MethodItem parentItem = qanaryRepository.requestMethodItem(data, parent.getId());
+                    String parentExplanation = Objects.equals(data.getAggregationSettings().getApproach(), "generative")
+                            ? generativeExplanationsService.explainAggregatedMethodWithExplanations(parentItem, childs, data)
+                            : templateService.explainAggregatedMethodWithExplanations(parentItem, childs, data); // first generative, fallback template (applies when template is defined, too)
+                    parent.setExplanation(parentExplanation);
+                    updated = true; // Track if any explanation was added in this iteration
+                }
+            }
+        } while (updated); // Repeat until no more explanations can be added
+        return childParentPairsMap;
     }
 
     public Map<Method, List<Method>> explainAllLeafs(Map<Method, List<Method>> childrenMap, ExplanationMetaData metaData) throws Exception {

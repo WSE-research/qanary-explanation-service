@@ -21,16 +21,26 @@ public class ExplanationMetaData {
     private String lang;
     private AggregationSettings aggregationSettings;
     private GPTRequest gptRequest;
+    private boolean tree;
 
-    public ExplanationMetaData(String qanaryComponent, String method, String graph, String itemTemplate, String prefixTemplate, String lang, AggregationSettings aggregationSettings, GPTRequest gptRequest) throws URISyntaxException {
+    public ExplanationMetaData(String qanaryComponent, String method, String graph, boolean tree, String itemTemplate, String prefixTemplate, String lang, AggregationSettings aggregationSettings, GPTRequest gptRequest) throws URISyntaxException {
         this.method = method;
         this.qanaryComponent = new QanaryComponent(qanaryComponent);
         this.graph = new URI(graph);
+        this.tree = tree;
         this.itemTemplate = itemTemplate;
         this.prefixTemplate = prefixTemplate;
         this.lang = lang == null ? "en" : lang;
         this.aggregationSettings = aggregationSettings;
         this.gptRequest = gptRequest;
+    }
+
+    public boolean getTree() {
+        return tree;
+    }
+
+    public void setTree(boolean tree) {
+        this.tree = tree;
     }
 
     public GPTRequest getGptRequest() {
