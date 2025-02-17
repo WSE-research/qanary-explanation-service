@@ -14,8 +14,11 @@ import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +44,8 @@ public class GenerativeExplanationsService {
     private final TemplateExplanationsService tmplExpService;
     private final String PROMPT_TEMPLATE_PATH = "/prompt_templates/";
     private final String CHECK_EXISTENCE_OF_OTHER_METHODS_QUERY = "/queries/check_if_other_methods_exist.rq";
+    private final String SELECT_ALL_METHODS_WITH_DATA_FROM_ROOT = "/queries/select_all_methods_with_data_from_root.rq";
+    private final String PROMPT_AGGREGATED_DATA = "/prompt_templates/methods/aggregated/aggregated_data/";
     @Autowired
     private GenerativeExplanations generativeExplanations;
     @Autowired
@@ -269,25 +274,6 @@ public class GenerativeExplanationsService {
         return tmplExpService.createOutputExplanation(graphUri, component, lang);
     }
 
-    public Map<Method, List<Method>> explainMethodAggregatedWithExplanations(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData data) throws Exception {
-        boolean updated;
-
-        do {
-            updated = false;
-            for (Method parent : childParentPairsMap.keySet()) {
-                List<Method> childs = childParentPairsMap.get(parent);
-                // Only process parents that don't have an explanation yet
-                if ((parent.getExplanation() == null) && childs.stream().allMatch(child -> child.getExplanation() != null)) {
-                    MethodItem parentItem = qanaryRepository.requestMethodItem(data, parent.getId());
-                    parent.setExplanation(explainAggregatedMethodWithExplanations(parentItem, childs, data));
-                    updated = true; // Track if any explanation was added in this iteration
-                }
-            }
-        } while (updated); // Repeat until no more explanations can be added
-
-        return childParentPairsMap;
-    }
-
     public String explainAggregatedMethodWithExplanations(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws Exception {
         int shots = data.getGptRequest().getShots(); // Add data for current component
         String promptTemplate = ExplanationHelper.getStringFromFile(
@@ -297,9 +283,42 @@ public class GenerativeExplanationsService {
         return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
     }
 
+    // We get the list of children and need to // TODO: Probably cache
+    public String explainMethodAggregatedWithData(MethodItem parent, ExplanationMetaData data) throws Exception {
+        // Alternatively we could rebuild the parent - childs relationship with the complete map
+        List<MethodItem> methodsWithData = getAllMethodsWithDataFromParent(parent.getMethod(), data.getGraph().toASCIIString());
+        String promptTemplate = ExplanationHelper.getStringFromFile(PROMPT_AGGREGATED_DATA)
+                .replace("${methodName}", parent.getMethodName())
+                .replace("${data}", StringUtils.join(methodsWithData.stream().map(item -> item.toString()).toList(), "\n\n"));
+        return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
+    }
 
-    public String explainMethodAggregatedWithData(Map<Method, List<Method>> childWithExplanationMap, ExplanationMetaData data) {
-        return null;
+    public List<MethodItem> getAllMethodsWithDataFromParent(String parent, String graphUri) throws IOException {
+        List<MethodItem> methodsWithData = new ArrayList<>();
+        QuerySolutionMap qsm = new QuerySolutionMap();
+        qsm.add("graph", ResourceFactory.createResource(graphUri));
+        qsm.add("rootId", ResourceFactory.createResource(parent));
+        ResultSet methodsWithDataResultSet = qanaryRepository.selectWithResultSet(
+                QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_METHODS_WITH_DATA_FROM_ROOT, qsm)
+        );
+
+        while(methodsWithDataResultSet.hasNext()) {
+            QuerySolution qs = methodsWithDataResultSet.next();
+            MethodItem method = new MethodItem(
+                qs.get("caller").toString(),
+                    qs.get("callerName").toString(),
+                    qs.get("method").toString(),
+                    qs.get("outputType").toString(),
+                    qs.get("outputValue").toString(),
+                    qs.get("inputDataTypes").toString(),
+                    qs.get("inputDataValues").toString(),
+                    qs.get("annotatedAt").toString(),
+                    qs.get("annotatedBy").toString()
+            );
+            method.setMethod(qs.get("leaf").toString());
+            methodsWithData.add(method);
+        }
+        return methodsWithData;
     }
 
 }

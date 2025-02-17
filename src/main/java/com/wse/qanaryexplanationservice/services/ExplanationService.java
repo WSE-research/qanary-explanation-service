@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class ExplanationService {
@@ -388,6 +387,7 @@ public class ExplanationService {
         String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_CHILD_PARENT_METHODS, qsm);
         ResultSet childParentPairs = qanaryRepository.selectWithResultSet(query);
         Map<Method, List<Method>> childParentPairsMap = createParentChildrenMap(childParentPairs);
+        childParentPairsMap = explainAllLeafs(childParentPairsMap, metaData);
 
         // Decide how generative explanations may be computed. In the case of "data", we don't need to explain the leafs as we solely use the data from the child methods.
         //logger.info("Selected type: {}", metaData.getAggregationSettings().getType()); // TODO: Add logger that shows all settings
@@ -422,7 +422,6 @@ public class ExplanationService {
     }
 
     public String explainMethodAggregatedExplanationBased(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData metaData) throws Exception {
-        childParentPairsMap = explainAllLeafs(childParentPairsMap, metaData);
         childParentPairsMap = recursiveParentExplanation(childParentPairsMap, metaData);
         return metaData.getTree()
                 ? convertExplanationsToTree(childParentPairsMap, metaData)
@@ -443,7 +442,7 @@ public class ExplanationService {
                 if ((parent.getExplanation() == null) && childs.stream().allMatch(child -> child.getExplanation() != null)) {
                     MethodItem parentItem = qanaryRepository.requestMethodItem(data, parent.getId());
                     String parentExplanation = Objects.equals(data.getAggregationSettings().getApproach(), "generative")
-                            ? generativeExplanationsService.explainAggregatedMethodWithExplanations(parentItem, childs, data)
+                            ? (Objects.equals(data.getAggregationSettings().getType(), "data") ? generativeExplanationsService.explainMethodAggregatedWithData(parentItem, data) : generativeExplanationsService.explainAggregatedMethodWithExplanations(parentItem, childs, data))
                             : templateService.explainAggregatedMethodWithExplanations(parentItem, childs, data); // first generative, fallback template (applies when template is defined, too)
                     parent.setExplanation(parentExplanation);
                     updated = true; // Track if any explanation was added in this iteration
