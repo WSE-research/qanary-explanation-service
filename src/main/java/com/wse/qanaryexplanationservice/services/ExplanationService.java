@@ -57,37 +57,6 @@ public class ExplanationService {
         return templateService.createInputExplanation(graphUri, component);
     }
 
-    /*
-    public String explainComponentMethods(ExplanationMetaData explanationMetaData) throws Exception {
-        QuerySolutionMap qsm = new QuerySolutionMap();
-        AtomicReference<String> prefixExplanation = new AtomicReference<>();
-        AtomicInteger i = new AtomicInteger(1);
-        StringBuilder explanationItems = new StringBuilder();
-
-        qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_LOGGED_METHODS, qsm);
-        logger.debug("Query: {}", query);
-
-        ResultSet loggedMethodsResultSet = qanaryRepository.selectWithResultSet(query);
-        List<String> variables = loggedMethodsResultSet.getResultVars();
-
-        if (!explanationMetaData.getGptRequest().isDoGenerative()) {
-            loggedMethodsResultSet.forEachRemaining(querySolution -> {
-                if (prefixExplanation.get() == null) {
-                    prefixExplanation.set(templateService.replacePlaceholdersWithVarsFromQuerySolution(querySolution,
-                            variables, explanationMetaData.getPrefixTemplate()));
-                }
-                explanationItems.append("\n" + i + ". " + templateService.replacePlaceholdersWithVarsFromQuerySolution(
-                        querySolution, variables, explanationMetaData.getItemTemplate()));
-                i.getAndIncrement();
-            });
-        } else
-            explanationItems.append(generativeService.explainSingleMethod(explanationMetaData, loggedMethodsResultSet));
-
-        return prefixExplanation + explanationItems.toString();
-    }
-    */
-
     /**
      * Controller called method to start the process explaining several components
      * with both approaches;
@@ -349,7 +318,6 @@ public class ExplanationService {
                     JSONObject childObject = new JSONObject();
                     childObject.put("id", child.getId());
                     childObject.put("explanation", child.getExplanation());
-                    logger.info("Created child object {}", childObject.toString());
                     jsonArray.put(childObject);
                 }
             }

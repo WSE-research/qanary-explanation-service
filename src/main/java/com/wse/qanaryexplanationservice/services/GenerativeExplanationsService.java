@@ -16,9 +16,7 @@ import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -188,6 +186,7 @@ public class GenerativeExplanationsService {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);
+        logger.info("Prompt: {}", prompt);
         return generativeExplanationsRepository.sendGptPrompt(prompt, tokens, gptModel);
     }
 
@@ -220,6 +219,7 @@ public class GenerativeExplanationsService {
     /**
      * Care:
      * TODO: Support one-/two-/multi-shot prompts, replace outer placeholders
+     *
      * @return
      */
     public String explainSingleMethod(ExplanationMetaData explanationMetaData, QuerySolution qs) throws Exception {
@@ -256,7 +256,7 @@ public class GenerativeExplanationsService {
         QuerySolution qs = null;
         try {
             qs = requestComponentAndMethodResult.next();
-        } catch(NoSuchElementException e) {
+        } catch (NoSuchElementException e) {
             logger.error("No other methods were executed, therefore no examples can be computed.");
             throw new RuntimeException("No other methods were executed, therefore no examples for the prompt could be generated."); // Handle Runtime exceptions in the controller; return other HttpStatus
         }
@@ -265,8 +265,7 @@ public class GenerativeExplanationsService {
         // When we create only one explanation we'd need to check for this used method in the next call.
 
 
-
-    return null;
+        return null;
 
     }
 
@@ -287,7 +286,9 @@ public class GenerativeExplanationsService {
     public String explainMethodAggregatedWithData(MethodItem parent, ExplanationMetaData data) throws Exception {
         // Alternatively we could rebuild the parent - childs relationship with the complete map
         List<MethodItem> methodsWithData = getAllMethodsWithDataFromParent(parent.getMethod(), data.getGraph().toASCIIString());
-        String promptTemplate = ExplanationHelper.getStringFromFile(PROMPT_AGGREGATED_DATA)
+        String promptTemplate = ExplanationHelper.getStringFromFile(PROMPT_AGGREGATED_DATA + data.getLang() + "_" + data.getGptRequest().getShots())
+                // add parent data TODO
+                .replace("${parentData}", parent.toString())
                 .replace("${methodName}", parent.getMethodName())
                 .replace("${data}", StringUtils.join(methodsWithData.stream().map(item -> item.toString()).toList(), "\n\n"));
         return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
@@ -295,29 +296,29 @@ public class GenerativeExplanationsService {
 
     public List<MethodItem> getAllMethodsWithDataFromParent(String parent, String graphUri) throws IOException {
         List<MethodItem> methodsWithData = new ArrayList<>();
-        QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("graph", ResourceFactory.createResource(graphUri));
-        qsm.add("rootId", ResourceFactory.createResource(parent));
-        ResultSet methodsWithDataResultSet = qanaryRepository.selectWithResultSet(
-                QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ALL_METHODS_WITH_DATA_FROM_ROOT, qsm)
-        );
+        String query = ExplanationHelper.getStringFromFile(SELECT_ALL_METHODS_WITH_DATA_FROM_ROOT)
+                .replace("?graph", "<" + graphUri + ">")
+                .replace("?rootId", "<" + parent + ">");
+        ResultSet methodsWithDataResultSet = qanaryRepository.selectWithResultSet(query);
 
-        while(methodsWithDataResultSet.hasNext()) {
+        while (methodsWithDataResultSet.hasNext()) {
             QuerySolution qs = methodsWithDataResultSet.next();
             MethodItem method = new MethodItem(
-                qs.get("caller").toString(),
-                    qs.get("callerName").toString(),
-                    qs.get("method").toString(),
-                    qs.get("outputType").toString(),
-                    qs.get("outputValue").toString(),
-                    qs.get("inputDataTypes").toString(),
-                    qs.get("inputDataValues").toString(),
-                    qs.get("annotatedAt").toString(),
-                    qs.get("annotatedBy").toString()
+                    qanaryRepository.safeGetString(qs, "caller"),
+                    qanaryRepository.safeGetString(qs, "callerName"),
+                    qanaryRepository.safeGetString(qs, "method"),
+                    qanaryRepository.safeGetString(qs, "outputDataType"),
+                    qanaryRepository.safeGetString(qs, "outputDataValue"),
+                    qanaryRepository.safeGetString(qs, "inputDataTypes"),
+                    qanaryRepository.safeGetString(qs, "inputDataValues"),
+                    qanaryRepository.safeGetString(qs, "annotatedAt"),
+                    qanaryRepository.safeGetString(qs, "annotatedAt")
             );
-            method.setMethod(qs.get("leaf").toString());
+            method.setMethod(qanaryRepository.safeGetString(qs, "leaf"));
             methodsWithData.add(method);
         }
+
+        logger.debug("Methods with data: {}", methodsWithData.size());
         return methodsWithData;
     }
 

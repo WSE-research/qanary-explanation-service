@@ -61,7 +61,7 @@ public class QanaryRepository {
 
     public QanaryResponseObject executeQanaryPipeline(QanaryRequestObject qanaryRequestObject) {
         MultiValueMap<String, String> requestParams = createRequestParams(qanaryRequestObject);
-        
+
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .scheme(HTTP_SCHEME)
@@ -131,7 +131,6 @@ public class QanaryRepository {
         String outputDataValue = safeGetString(qs, "outputDataValue");
         String inputDataTypes = safeGetString(qs, "inputDataTypes");
         String inputDataValues = safeGetString(qs, "inputDataValues");
-
         return new MethodItem(
                 caller,
                 callerName,
@@ -142,7 +141,7 @@ public class QanaryRepository {
     }
 
     // New helper method to safely retrieve a variable from QuerySolution
-    private String safeGetString(QuerySolution qs, String key) {
+    public String safeGetString(QuerySolution qs, String key) {
         if (qs.contains(key) && qs.get(key) != null) {
             return qs.get(key).toString();
         }
@@ -154,6 +153,8 @@ public class QanaryRepository {
         data.setMethod(method);
         String query = select_one_method(data);
         ResultSet result = this.selectWithResultSet(query);
-        return transformQuerySolutionToMethodItem(result.next());
+        MethodItem methodItem = transformQuerySolutionToMethodItem(result.next());
+        methodItem.setMethod(method);
+        return methodItem;
     }
 }
