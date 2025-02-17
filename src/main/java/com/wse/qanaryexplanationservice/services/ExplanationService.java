@@ -282,91 +282,6 @@ public class ExplanationService {
         return composedExplanations.toString();
     }
 
-    /*
-    // Explanation Tree
-    public String getAggregatedExplanations(ExplanationMetaData data) throws Exception {
-        QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("methodId", ResourceFactory.createResource(data.getMethod()));
-        qsm.add("graph", ResourceFactory.createResource(data.getGraph().toASCIIString()));
-        String query = QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_CHILD_PARENT_METHODS, qsm);
-        ResultSet childParentPairs = qanaryRepository.selectWithResultSet(query);
-        Map<String, List<String>> childrenMap = new HashMap<>();
-        Map<String, MethodItem> allMethods = new HashMap<>();
-        String root = null;
-
-        while (childParentPairs.hasNext()) {
-            QuerySolution qs = childParentPairs.next();
-            String childId = qs.get("leaf").toString();
-            String parentId = qs.get("parent").toString();
-            String rootId = qs.get("root").toString();
-            childrenMap.putIfAbsent(parentId, new ArrayList<>());
-            childrenMap.get(parentId).add(childId);
-            if (root == null)
-                root = rootId;
-            allMethods.putIfAbsent(childId, qanaryRepository.requestMethodItem(data,  childId));
-            allMethods.putIfAbsent(parentId, qanaryRepository.requestMethodItem(data, parentId));
-        }
-
-        JSONObject json = buildJsonTree(childrenMap, root, data, allMethods);
-        return json.toString();
-    }
-
-    public JSONObject buildJsonTree(Map<String, List<String>> childrenMap, String root, ExplanationMetaData data,
-            Map<String, MethodItem> allMethods) throws Exception { // TODO: Add decision between gen and
-                                                                   // tmpl-explanation
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("parent", root);
-
-        JSONArray childrenArray = new JSONArray();
-        if (childrenMap.containsKey(root)) {
-            for (String child : childrenMap.get(root)) {
-                if (childrenMap.containsKey(child)) {
-                    childrenArray.put(buildJsonTree(childrenMap, child, data, allMethods));
-                } else {
-                    // <-- Explain atomic methods
-                    data.setMethod(child);
-                    JSONObject childExplanationObj = new JSONObject();
-                    childExplanationObj.put("id", child);
-                    childExplanationObj.put("explanation", explainMethodSingle(data));
-                    childExplanationObj.put("method", allMethods.get(child).getMethodName());
-                    childrenArray.put(childExplanationObj);
-                }
-            }
-        }
-        // <-- Explain aggregated methods
-        JSONObject jsonObj = new JSONObject();
-        jsonObj.put("id", root);
-        jsonObj.put("explanation", data.getGptRequest().isDoGenerative() ? generativeService.explainAggregatedMethods(
-                aggregateExplanationsToOneExplanation(childrenArray),
-                data, allMethods.get(root)) : "Summarized template explanation are not yet supported.");
-        jsonObj.put("method", allMethods.get(root).getMethodName());
-        jsonObject.put("parent", jsonObj);
-        jsonObject.put("children", childrenArray);
-        return jsonObject;
-    }
-    */
-
-    /**
-     * Aggregated all explanations with two newlines in between
-     * 
-     * @param explanations JSONArray of JSONObjects that contain the key
-     *                     "explanation" if atomic, otherwise "parent" ->
-     *                     "explanation"
-     * @return Explanations separated with \n\n
-
-    public String aggregateExplanationsToOneExplanation(JSONArray explanations) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < explanations.length(); i++) {
-            JSONObject explanationObj = explanations.getJSONObject(i);
-            if (explanationObj.has("parent"))
-                explanationObj = explanationObj.getJSONObject("parent");
-            logger.debug("Json object: {}", explanationObj);
-            stringBuilder.append(explanationObj.get("explanation").toString() + "\n\n");
-        }
-        return stringBuilder.toString();
-    }
-    */
-
     /**
      * Wrapper method that decides whether the target method is atomic or a parent of other methods. Based on this result, the path to the dark or bright side is chosen.
      * @param metaData
@@ -397,8 +312,6 @@ public class ExplanationService {
                 .findFirst()
                 .orElse(null);
 
-        logger.info("Tree? {}", metaData.getTree());
-        logger.info("Root? {}", root);
         return metaData.getTree()
                 ? convertExplanationsToTree(childParentPairsMap, root, metaData)
                 : root.getExplanation();
@@ -429,7 +342,6 @@ public class ExplanationService {
 
         JSONArray jsonArray = new JSONArray();
         if(childParentPairsMap.containsKey(root)) {
-            logger.info("Found child parent pairs");
             for(Method child : childParentPairsMap.get(root)) {
                 if(childParentPairsMap.containsKey(child)) {
                     jsonArray.put(convertExplanationsToTree(childParentPairsMap, child, metaData));
