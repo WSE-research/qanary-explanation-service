@@ -1,10 +1,5 @@
 package com.wse.qanaryexplanationservice.helper.pojos;
 
-import com.wse.qanaryexplanationservice.helper.GptModel;
-import com.wse.qanaryexplanationservice.services.TemplateExplanationsService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -79,6 +74,10 @@ public class ExplanationMetaData {
         return prefixTemplate;
     }
 
+    public void setPrefixTemplate(String prefixTemplate) {
+        this.prefixTemplate = prefixTemplate;
+    }
+
     public String getItemTemplate() {
         return itemTemplate;
     }
@@ -87,12 +86,12 @@ public class ExplanationMetaData {
         this.itemTemplate = itemTemplate;
     }
 
-    public void setPrefixTemplate(String prefixTemplate) {
-        this.prefixTemplate = prefixTemplate;
-    }
-
     public QanaryComponent getQanaryComponent() {
         return qanaryComponent;
+    }
+
+    public void setQanaryComponent(QanaryComponent qanaryComponent) {
+        this.qanaryComponent = qanaryComponent;
     }
 
     public URI getGraph() {
@@ -103,8 +102,14 @@ public class ExplanationMetaData {
         this.graph = graph;
     }
 
-    public void setQanaryComponent(QanaryComponent qanaryComponent) {
-        this.qanaryComponent = qanaryComponent;
+    @Override
+    public String toString() {
+        return "Qanary component: " + this.qanaryComponent.getPrefixedComponentName() + "\n" +
+                "Method: " + this.method + "\n" +
+                "Graph: " + this.graph.toASCIIString() + "\n" +
+                "Language: " + this.lang + "\n" +
+                "Tree: " + this.tree + "\n" +
+                "Aggregation Settings: " + this.aggregationSettings.toString() + "\n" +
+                "Gpt Request: " + this.gptRequest.toString();
     }
-
 }

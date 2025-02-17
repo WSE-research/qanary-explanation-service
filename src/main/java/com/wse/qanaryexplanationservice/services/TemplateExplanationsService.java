@@ -83,9 +83,6 @@ public class TemplateExplanationsService {
     @Value("${questionId.replacement}")
     private String questionIdReplacement;
 
-    public TemplateExplanationsService() {
-    }
-
     public static String checkAndReplaceOuterPlaceholder(String template) {
         Pattern pattern = Pattern.compile(OUTER_TEMPLATE_REGEX);
         Matcher matcher = pattern.matcher(template);
@@ -208,7 +205,6 @@ public class TemplateExplanationsService {
      */
     public String convertToDesiredFormat(String header, Model model) {
         StringWriter writer = new StringWriter();
-
         model.write(writer, headerFormatMap.getOrDefault(header, "TURTLE"));
         return writer.toString();
     }
@@ -224,7 +220,6 @@ public class TemplateExplanationsService {
             bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource(component.getPrefixedComponentName()));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
-
     }
 
     /**
@@ -236,7 +231,6 @@ public class TemplateExplanationsService {
      * @param graphURI the only parameter given for a qa-system
      */
     public String explainQaSystem(String graphURI, String header) throws Exception {
-
         List<QanaryComponent> components = getUsedComponents(graphURI);
         Map<String, Model> models = new HashMap<>();
 
@@ -247,7 +241,6 @@ public class TemplateExplanationsService {
 
         String questionURI = fetchQuestionUri(graphURI);
         Model systemExplanationModel = createSystemModel(models, components, questionURI, graphURI);
-
         return convertToDesiredFormat(header, systemExplanationModel);
     }
 
@@ -271,9 +264,8 @@ public class TemplateExplanationsService {
         try {
             return resultSet.next().get("source").toString();
         } catch (Exception e) {
-            throw new Exception("Couldn't fetch the question!", e);
+            throw new Exception("Question request failed", e);
         }
-
     }
 
     /**
@@ -330,7 +322,7 @@ public class TemplateExplanationsService {
         // Logging the created model as TURTLE-String
         StringWriter stringWriter = new StringWriter();
         systemExplanationModel.write(stringWriter, "TURTLE");
-        logger.info("Created Turtle: {}", stringWriter);
+        logger.debug("Created Turtle: {}", stringWriter);
 
         return systemExplanationModel;
     }
@@ -384,14 +376,11 @@ public class TemplateExplanationsService {
      */
     public List<String> createSpecificExplanation(String type, String graphURI, String lang, QanaryComponent component) throws IOException {
         String query = buildSparqlQuery(graphURI, component, annotationsTypeAndQuery.get(type));
-
-        // TODO: Cache the ResultSet as map for further usage w/ different languages
-
         ResultSet results = qanaryRepository.selectWithResultSet(query);
 
         List<String> explanationsForCurrentType = addingExplanations(type, lang, results);
 
-        logger.info("Created explanations: {}", explanationsForCurrentType);
+        logger.debug("Created explanations: {}", explanationsForCurrentType);
         return explanationsForCurrentType;
     }
 
@@ -425,14 +414,13 @@ public class TemplateExplanationsService {
      * @return Template with replaced placeholders
      */
     public String replaceProperties(Map<String, String> convertedMap, String template) {
-
         // Replace all placeholders with values from map
         template = StringSubstitutor
                 .replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX)
                 .replace(questionIdReplacement + "/question/stored-question__text_", "questionID:");
         template = checkAndReplaceOuterPlaceholder(template);
 
-        logger.info("Template with inserted params: {}", template);
+        logger.debug("Template with inserted params: {}", template);
         return template;
     }
 
