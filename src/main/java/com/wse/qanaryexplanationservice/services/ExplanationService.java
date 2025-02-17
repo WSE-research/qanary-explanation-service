@@ -13,6 +13,8 @@ import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -390,13 +392,14 @@ public class ExplanationService {
         childParentPairsMap = explainAllLeafs(childParentPairsMap, metaData);
 
         childParentPairsMap = recursiveParentExplanation(childParentPairsMap, metaData);
-        return metaData.getTree()
-                ? convertExplanationsToTree(childParentPairsMap, metaData)
-                : childParentPairsMap.keySet().stream()
-                .filter(item -> item.getId() == metaData.getMethod())
-                .map(item -> item.getExplanation())
+        Method root = childParentPairsMap.keySet().stream()
+                .filter(method -> method.getId().equals(metaData.getMethod()))
                 .findFirst()
                 .orElse(null);
+
+        return metaData.getTree()
+                ? convertExplanationsToTree(childParentPairsMap, root, metaData)
+                : root.getExplanation();
     }
 
         /**
@@ -418,8 +421,30 @@ public class ExplanationService {
             return childrenMap;
     }
 
-    public String convertExplanationsToTree(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData metaData) {
-        return null;
+    public String convertExplanationsToTree(Map<Method, List<Method>> childParentPairsMap, Method root, ExplanationMetaData metaData) {
+        JSONObject jsonObject = new JSONObject();
+
+        JSONArray jsonArray = new JSONArray();
+        if(childParentPairsMap.containsKey(root)) {
+            for(Method child : childParentPairsMap.get(root)) {
+                if(childParentPairsMap.containsKey(child)) {
+                    jsonArray.put(convertExplanationsToTree(childParentPairsMap, child, metaData));
+                } else {
+                    metaData.setMethod(child.getId());
+                    JSONObject childObject = new JSONObject();
+                    childObject.put("id", child.getId());
+                    childObject.put("explanation", child.getExplanation());
+                    jsonArray.put(childObject);
+                }
+            }
+        }
+        JSONObject jsonObj = new JSONObject();
+        jsonObj.put("id", root);
+        jsonObj.put("explanation", root.toString());
+        jsonObject.put("parent", jsonObj);
+        jsonObject.put("children", jsonArray);
+
+        return jsonObject.toString();
     }
 
     public Map<Method, List<Method>> recursiveParentExplanation(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData data) throws Exception {
