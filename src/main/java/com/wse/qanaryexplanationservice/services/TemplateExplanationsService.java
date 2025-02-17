@@ -621,6 +621,7 @@ public class TemplateExplanationsService {
                 .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentMethod" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getMethodName())
                 .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentMethodId" + TEMPLATE_PLACEHOLDER_SUFFIX, data.getMethod())
                 .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentCaller" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getCaller())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentCallerName" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getCallerName())
                 .replace(TEMPLATE_PLACEHOLDER_PREFIX + "explanations" + TEMPLATE_PLACEHOLDER_SUFFIX, childExplanations);
     }
 

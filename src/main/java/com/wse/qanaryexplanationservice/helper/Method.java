@@ -45,4 +45,9 @@ public class Method {
     public int hashCode() {
         return Objects.hash(getId());  // assuming getId() returns a unique identifier for each Method
     }
+
+    @Override
+    public String toString() {
+        return "ID: " + getId() + ", isLeaf: " + isLeaf + ", explanation: " + explanation;
+    }
 }

@@ -397,12 +397,14 @@ public class ExplanationService {
                 .findFirst()
                 .orElse(null);
 
+        logger.info("Tree? {}", metaData.getTree());
+        logger.info("Root? {}", root);
         return metaData.getTree()
                 ? convertExplanationsToTree(childParentPairsMap, root, metaData)
                 : root.getExplanation();
     }
 
-        /**
+    /**
      * Takes a ResultSet containing leaf, parent, root and hasChilds variables.
      * It creates mappings of parents and their childs. For the latter it additionally checks if the child is atomic, i.e. a leaf.
      * This distinction is relevant, as
@@ -423,26 +425,29 @@ public class ExplanationService {
 
     public String convertExplanationsToTree(Map<Method, List<Method>> childParentPairsMap, Method root, ExplanationMetaData metaData) {
         JSONObject jsonObject = new JSONObject();
+        jsonObject.put("parent", root.getId());
 
         JSONArray jsonArray = new JSONArray();
         if(childParentPairsMap.containsKey(root)) {
+            logger.info("Found child parent pairs");
             for(Method child : childParentPairsMap.get(root)) {
                 if(childParentPairsMap.containsKey(child)) {
                     jsonArray.put(convertExplanationsToTree(childParentPairsMap, child, metaData));
                 } else {
-                    metaData.setMethod(child.getId());
                     JSONObject childObject = new JSONObject();
                     childObject.put("id", child.getId());
                     childObject.put("explanation", child.getExplanation());
+                    logger.info("Created child object {}", childObject.toString());
                     jsonArray.put(childObject);
                 }
             }
         }
         JSONObject jsonObj = new JSONObject();
-        jsonObj.put("id", root);
-        jsonObj.put("explanation", root.toString());
+        jsonObj.put("id", root.getId());
+        jsonObj.put("explanation", root.getExplanation());
         jsonObject.put("parent", jsonObj);
         jsonObject.put("children", jsonArray);
+        logger.info("JSON: {}", jsonObject.toString());
 
         return jsonObject.toString();
     }
@@ -502,22 +507,6 @@ public class ExplanationService {
         else if(Objects.equals(data.getAggregationSettings().getLeafs(), "generative"))
             return generativeService.explainSingleMethod(data, qs);
         else throw new ExplanationException("Please provide a valid value for \"leaf\": Either \"template\" or \"generative\".");
-    }
-
-    /**
-     * Consists of prefix and numerated list of explanations
-     * @return
-     */
-    public String explainMethodsAsList() {
-        return null;
-    }
-
-    /**
-     * Respect variants: Explanations or data? Which explanations?
-     * @return
-     */
-    public String explainMethodsAggregated() {
-        return null;
     }
 
 }
