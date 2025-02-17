@@ -389,13 +389,14 @@ public class ExplanationService {
         Map<Method, List<Method>> childParentPairsMap = createParentChildrenMap(childParentPairs);
         childParentPairsMap = explainAllLeafs(childParentPairsMap, metaData);
 
-        // Decide how generative explanations may be computed. In the case of "data", we don't need to explain the leafs as we solely use the data from the child methods.
-        //logger.info("Selected type: {}", metaData.getAggregationSettings().getType()); // TODO: Add logger that shows all settings
-        if (Objects.equals(metaData.getAggregationSettings().getType(), "data"))
-            return generativeExplanationsService.explainMethodAggregatedWithData(childParentPairsMap, metaData);
-        else if (Objects.equals(metaData.getAggregationSettings().getType(), "explanations")) {
-            return explainMethodAggregatedExplanationBased(childParentPairsMap, metaData);
-        } else throw new ExplanationException("Aggregated explanation 'type'-value isn't supported.");
+        childParentPairsMap = recursiveParentExplanation(childParentPairsMap, metaData);
+        return metaData.getTree()
+                ? convertExplanationsToTree(childParentPairsMap, metaData)
+                : childParentPairsMap.keySet().stream()
+                .filter(item -> item.getId() == metaData.getMethod())
+                .map(item -> item.getExplanation())
+                .findFirst()
+                .orElse(null);
     }
 
         /**
@@ -419,17 +420,6 @@ public class ExplanationService {
 
     public String convertExplanationsToTree(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData metaData) {
         return null;
-    }
-
-    public String explainMethodAggregatedExplanationBased(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData metaData) throws Exception {
-        childParentPairsMap = recursiveParentExplanation(childParentPairsMap, metaData);
-        return metaData.getTree()
-                ? convertExplanationsToTree(childParentPairsMap, metaData)
-                : childParentPairsMap.keySet().stream()
-                .filter(item -> item.getId() == metaData.getMethod())
-                .map(item -> item.getExplanation())
-                .findFirst()
-                .orElse(null);
     }
 
     public Map<Method, List<Method>> recursiveParentExplanation(Map<Method, List<Method>> childParentPairsMap, ExplanationMetaData data) throws Exception {
