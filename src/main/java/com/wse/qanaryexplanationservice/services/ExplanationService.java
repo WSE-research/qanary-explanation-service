@@ -89,7 +89,7 @@ public class ExplanationService {
                 composedExplanation.addExplanationItem(component.getComponentName(), templatebased, prompt,
                         generativeExplanation, generativeExplanationObject.getTestComponent().getDataSet());
             } catch (Exception e) {
-                logger.error("{}", e.toString());
+                logger.error("{}", e.getMessage());
             }
         });
         return composedExplanation;
@@ -327,7 +327,7 @@ public class ExplanationService {
         jsonObj.put("explanation", root.getExplanation());
         jsonObject.put("parent", jsonObj);
         jsonObject.put("children", jsonArray);
-        logger.info("JSON: {}", jsonObject.toString());
+        logger.debug("JSON: {}", jsonObject);
 
         return jsonObject.toString();
     }

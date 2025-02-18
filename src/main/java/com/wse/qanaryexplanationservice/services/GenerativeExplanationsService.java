@@ -21,7 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -240,12 +242,8 @@ public class GenerativeExplanationsService {
         }
     }
 
-    // Create method examples
-    // Needed: Component, Method, input data value/type, output data value/type
-    // Request all components where at least one method is logged
-    // take a random method from a random component
-    // Follow the template-based approach
-    // Return
+
+    // TODO: Needed for multi-shot method explanation
     public String getMethodExample(String graph, QanaryComponent component, String method, int shots) throws IOException {
         ResultSet requestComponentAndMethodResult = qanaryRepository.selectWithResultSet(
                 QanaryTripleStoreConnector.readFileFromResources(CHECK_EXISTENCE_OF_OTHER_METHODS_QUERY)
@@ -294,6 +292,8 @@ public class GenerativeExplanationsService {
         return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
     }
 
+    @Scheduled(fixedRate = 3600000)  // Every 1 hour
+    @CacheEvict(value = "methodsWithData", allEntries = true)
     public List<MethodItem> getAllMethodsWithDataFromParent(String parent, String graphUri) throws IOException {
         List<MethodItem> methodsWithData = new ArrayList<>();
         String query = ExplanationHelper.getStringFromFile(SELECT_ALL_METHODS_WITH_DATA_FROM_ROOT)
