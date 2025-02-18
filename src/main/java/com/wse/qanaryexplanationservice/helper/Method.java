@@ -11,6 +11,11 @@ public class Method {
         this.id = id;
         this.isLeaf = isLeaf;
     }
+    public Method(String id, boolean isLeaf, String explanation) {
+        this.id = id;
+        this.isLeaf = isLeaf;
+        this.explanation = explanation;
+    }
 
     public String getExplanation() {
         return explanation;

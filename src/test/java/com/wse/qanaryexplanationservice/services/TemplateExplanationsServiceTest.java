@@ -1,6 +1,9 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
+import com.wse.qanaryexplanationservice.helper.Method;
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.*;
@@ -15,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,17 +31,21 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class TemplateExplanationsServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+    private static final String TEMPLATE_AGG = "Parent: ${parentMethod}, ID: ${parentMethodId}, Caller: ${parentCaller}, Caller Name: ${parentCallerName}, Explanations:\n${explanations}";
+    private static final String EXPECTED_TEMPLATE_AGG = "Parent: myMethod, ID: methodId123, Caller: myCaller, Caller Name: myCallerName, Explanations:\n1. Explanation 1\n2. Explanation 2";
     private final ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
     protected ClassLoader classLoader = this.getClass().getClassLoader();
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsServiceTest.class);
@@ -329,6 +338,31 @@ public class TemplateExplanationsServiceTest {
                 Assertions.assertEquals(expectedEn,computedEn);
             }
         }
+    }
+
+    @Nested
+    @ExtendWith(MockitoExtension.class)
+    class aggregatedMethodTests {
+        private static final String TEMPLATE = "Parent: ${parentMethod}, ID: ${parentMethodId}, Caller: ${parentCaller}, Caller Name: ${parentCallerName}, Explanations:\n${explanations}";
+        private static final String EXPECTED_TEMPLATE = "Parent: myMethod, ID: methodId123, Caller: myCaller, Caller Name: myCallerName, Explanations:\n1. Explanation 1\n2. Explanation 2";
+
+        @Test
+        void testExplainAggregatedMethodWithExplanations_Success() throws IOException, URISyntaxException {
+            try (MockedStatic<ExplanationHelper> mockedHelper = mockStatic(ExplanationHelper.class)) {
+                mockedHelper.when(() -> ExplanationHelper.getStringFromFile(any()))
+                        .thenReturn(TEMPLATE);
+                MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", "outputType", "outputValue", "inputTypes", "inputValues", "annotatedAt", "annotatedBy");
+                List<Method> childMethods = List.of(
+                        new Method("id1", true, "Explanation 1"),
+                        new Method("id2", true, "Explanation 2")
+                );
+                ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null);
+                String result = templateExplanationsService.explainAggregatedMethodWithExplanations(methodItem, childMethods, explanationMetaData);
+
+                assertEquals(EXPECTED_TEMPLATE, result);
+            }
+        }
+
 
     }
 
