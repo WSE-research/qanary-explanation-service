@@ -38,18 +38,18 @@ public class ExplanationController {
      * @return Explanation for system or component as RDF
      */
     @CrossOrigin
-    @GetMapping(value = { "/explanations/{graphURI}", "/explanations/{graphURI}/{component}" }, produces = {
+    @GetMapping(value = {"/explanations/{graphURI}", "/explanations/{graphURI}/{component}"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
-            "*/*" })
+            "*/*"})
     @Operation(summary = "Get either the explanation for a the whole QA-system on a graphURI"
             + "or the explanation for a specific component by attaching the componentURI", description = """
-                    This endpoint currently offers two sort of requests:\s
-                     1. Explanation for a QA-system by providing a graphURI and\s
-                     2. Explanation for a component within a QA-process by providing the graphURI
-                     as well as the URI for the component
-                     Note: You must at least provide a graphURI to use this endpoint""")
+            This endpoint currently offers two sort of requests:\s
+             1. Explanation for a QA-system by providing a graphURI and\s
+             2. Explanation for a component within a QA-process by providing the graphURI
+             as well as the URI for the component
+             Note: You must at least provide a graphURI to use this endpoint""")
     public ResponseEntity<?> getExplanations(
             @PathVariable String graphURI,
             @PathVariable(required = false) QanaryComponent component,
@@ -70,11 +70,11 @@ public class ExplanationController {
     }
 
     @CrossOrigin
-    @GetMapping(value = { "/inputdata/{graphURI}/{componentURI}" }, produces = {
+    @GetMapping(value = {"/inputdata/{graphURI}/{componentURI}"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
-            "*/*" })
+            "*/*"})
     @Operation(summary = "Computes the rulebased explanation for a specific component", description = """
             This endpoint doesn't require a body and only takes the graph and component as path variables.
             The component must include the prefixes, e.g. 'urn:qanary:'
@@ -95,7 +95,7 @@ public class ExplanationController {
     }
 
     @CrossOrigin
-    @GetMapping(value = { "/outputdata/{graphURI}/{componentURI}" }, produces = {
+    @GetMapping(value = {"/outputdata/{graphURI}/{componentURI}"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
@@ -125,11 +125,11 @@ public class ExplanationController {
     }
 
     @CrossOrigin
-    @PostMapping(value = { "/composedexplanations/inputdata" }, produces = {
+    @PostMapping(value = {"/composedexplanations/inputdata"}, produces = {
             "application/rdf+xml",
             "text/turtle",
             "application/ld+json",
-            "*/*" })
+            "*/*"})
     @Operation(summary = "Computes the rulebased and generative input-data explanations for all components included in the body.", description = """
             The Request body should follow this structure:
                     {
@@ -163,7 +163,7 @@ public class ExplanationController {
 
     }
 
-    @PostMapping(value = { "/composedexplanations/outputdata" })
+    @PostMapping(value = {"/composedexplanations/outputdata"})
     @Operation(summary = "Computes the rulebased and generative output-data explanations for all components included in the body.", description = """
             The Request body should follow this structure:
                     {
@@ -198,12 +198,12 @@ public class ExplanationController {
 
     /**
      * Endpoint explaining a component / pipeline input and output data
-     * 
+     *
      * @param body TODO
      * @return
      * @throws IOException
      */
-    @PostMapping(value = { "/explain" })
+    @PostMapping(value = {"/explain"})
     @Operation()
     public ResponseEntity<?> getComposedExplanation(@RequestBody QanaryExplanationData body)
             throws ExplanationException { // TODO: Extend methods
@@ -220,15 +220,15 @@ public class ExplanationController {
     @Operation(summary = "Explains all methods for the passed component with the desired template", description = "Explains all methods for the passed component. The templates can be specified depending on the requirements."
             +
             "Additionally, a specific SPARQL query can be passed. The variables used in the SPARQL query must match the placeholder-names within the passed template.", requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "JSON body", content = @Content(schema = @Schema(example = """
-                    {
-                        "qanaryComponent": "REQUIRED",
-                        "graph": "REQUIRED",
-                        "doGenerative": "DECIDE WHETHER TO GENERATE LLM OR TEMPLATE EXPLANATIONS (true or false)",
-                        "itemTemplate": "INSERT SPECIFIC ITEM TEMPLATE (null if not)",
-                        "prefixTemplate": "INSERT SPECIFIC PREFIX TEMPLATE (null if not)",
-                        "requestQuery": "PASS SPECIFIC SPARQL QUERY (CARE THAT VARIABLE NAMES MATCH WITH PLACEHOLDERS) (null if not)"
-                    }
-                    """))))
+            {
+                "qanaryComponent": "REQUIRED",
+                "graph": "REQUIRED",
+                "doGenerative": "DECIDE WHETHER TO GENERATE LLM OR TEMPLATE EXPLANATIONS (true or false)",
+                "itemTemplate": "INSERT SPECIFIC ITEM TEMPLATE (null if not)",
+                "prefixTemplate": "INSERT SPECIFIC PREFIX TEMPLATE (null if not)",
+                "requestQuery": "PASS SPECIFIC SPARQL QUERY (CARE THAT VARIABLE NAMES MATCH WITH PLACEHOLDERS) (null if not)"
+            }
+            """))))
     public ResponseEntity<?> getMethodExplanations(@RequestBody ExplanationMetaData explanationMetaData)
             throws Exception {
         return new ResponseEntity<>(explanationService.explainMethod(explanationMetaData), HttpStatus.OK); // TODO: Remove endpoint later
@@ -236,7 +236,6 @@ public class ExplanationController {
 
     /**
      * The template must match the variables from the SPARQL query
-     *
      */
 
     @GetMapping("/method")
@@ -247,26 +246,25 @@ public class ExplanationController {
 
     /**
      * Creates the explanation for one (the passed) method
-     * 
+     *
      * @param graph     Knowledge graph
      * @param component Component name
      * @return Explanation as String
      * @throws URISyntaxException
      * @throws IOException
      *//*
-        * @GetMapping("/explainmethod")
-        * public ResponseEntity<?> getMethodExplanation(@RequestParam String
-        * graph, @RequestParam String component, @RequestParam String method) throws
-        * URISyntaxException, IOException {
-        * ExplanationMetaData explanationMetaData = new ExplanationMetaData(component,
-        * graph, null, null, false, null);
-        * String explanation =
-        * explanationService.explainComponentMethod(explanationMetaData, method);
-        * return new ResponseEntity<>(explanation, HttpStatus.OK);
-        * }
-        */
-
-    @GetMapping(value = { "/explain/{graph}", "/explain/{graph}/{component}" })
+     * @GetMapping("/explainmethod")
+     * public ResponseEntity<?> getMethodExplanation(@RequestParam String
+     * graph, @RequestParam String component, @RequestParam String method) throws
+     * URISyntaxException, IOException {
+     * ExplanationMetaData explanationMetaData = new ExplanationMetaData(component,
+     * graph, null, null, false, null);
+     * String explanation =
+     * explanationService.explainComponentMethod(explanationMetaData, method);
+     * return new ResponseEntity<>(explanation, HttpStatus.OK);
+     * }
+     */
+    @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
     @Operation()
     public ResponseEntity<?> getComposedExplanation(
             @PathVariable(required = true) String graph,
@@ -282,10 +280,6 @@ public class ExplanationController {
         }
     }
 
-    // TODO: Decide whether to add the explanation to the origin graph, to a new
-    // graph or
-    // TODO: to no graph at all
-
     @GetMapping("/explain/pipeline/{graph}")
     @Operation()
     public ResponseEntity<?> getPipelineExplanation(@PathVariable String graph) throws IOException {
@@ -293,12 +287,42 @@ public class ExplanationController {
     }
 
     @GetMapping("/explain/aggregatedexplanations")
+    @Operation(
+            summary = "Get aggregated explanations for component methods",
+            description = "Retrieves and aggregates explanations for component methods based on the provided metadata",
+            parameters = {},
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Explanation metadata configuration",
+                    required = true,
+                    content = @Content(schema = @Schema(example = """
+                            {
+                              "qanaryComponent": "NED-DBpediaSpotlight",
+                              "method": "methodId",
+                              "graph": "urn:graph:xyz",
+                              "prefixTemplate": "custom prefix template",
+                              "itemTemplate": "custom item template",
+                              "lang": "en",
+                              "aggregationSettings": {
+                                "leafs": "Describes the way the leafs should be explained: template/generative",
+                                "type": "Describes how explanations are aggregated, either by summarizing 'explanations' or by providing all sub-method 'data'",
+                                "approach": "Aggregation approach: template/generative - For type 'data' only generative is possible"
+                              },
+                              "gptRequest": {
+                                "doGenerative": true,
+                                "gptModel": "GPT_4",
+                                "shots": 1
+                              },
+                              "tree": false
+                            }
+                            """))
+            )
+    )
     public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws Exception {
         try {
             String explanation = explanationService.explainMethod(explanationMetaData);
             logger.info("Explanation: {}", explanation);
             return new ResponseEntity<>(explanation, HttpStatus.OK);
-        } catch(ExplanationException | GenerativeExplanationException e) {
+        } catch (ExplanationException | GenerativeExplanationException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
         } catch (Exception e) {
             logger.error(e.toString());
