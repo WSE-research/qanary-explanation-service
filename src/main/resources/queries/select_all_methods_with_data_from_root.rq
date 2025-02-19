@@ -1,0 +1,34 @@
+PREFIX  qa:   <http://www.wdaqua.eu/qa#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  oa:   <http://www.w3.org/ns/openannotation/core/>
+PREFIX  x:    <http://example.org#>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX  dbr:  <http://dbpedia.org/resource/>
+PREFIX  prov: <http://www.w3.org/ns/prov#>
+
+SELECT ?leaf ?caller ?callerName ?method ?annotatedAt ?annotatedBy ?outputDataType ?outputDataValue (GROUP_CONCAT(?inputDataValue; SEPARATOR=",") AS ?inputDataValues) (GROUP_CONCAT(?inputDataType; SEPARATOR=",") AS ?inputDataTypes)
+FROM ?graph
+WHERE
+  { BIND(?rootId AS ?root)
+    ?leaf (prov:actedOnBehalfOf)+ ?root .
+
+  	# Get all data for each leaf
+  	?leaf rdf:type              qa:AnnotationOfLogMethod ;
+        prov:actedOnBehalfOf  ?caller .
+  		?caller qa:methodName ?callerName .
+        ?leaf qa:methodName         ?method ;
+        oa:annotatedAt        ?annotatedAt ;
+        oa:annotatedBy        ?annotatedBy .
+
+        OPTIONAL {
+        ?leaf x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
+  		}
+  		OPTIONAL {
+	    ?leaf x:input ?input .
+  		?input (rdf:rest*/rdf:first) ?item .
+  		?item rdf:type ?inputDataType ;
+        	  rdf:value ?inputDataValue .
+  		}
+
+  } GROUP BY ?leaf ?caller ?callerName ?method ?annotatedAt ?annotatedBy ?outputDataType ?outputDataValue

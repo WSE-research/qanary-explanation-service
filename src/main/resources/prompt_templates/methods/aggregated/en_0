@@ -1,0 +1,11 @@
+Given the following context:
+Here, we consider explanations for several executed java methods called from the parent method ${methodName}.
+As a user I'd like to understand what happened inside this parent method.
+For this purpose, a summarized and text-based explanation has to be generated.
+In the following, the explanations that should be summarized are listed and separated by new lines.
+
+Explanations:
+
+${explanations}
+
+Don't introduce your answer and only return the result.

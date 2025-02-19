@@ -1,6 +1,10 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
+import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
+import com.wse.qanaryexplanationservice.helper.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
@@ -16,20 +20,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.FileCopyUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class TemplateExplanationsService {
@@ -38,6 +40,7 @@ public class TemplateExplanationsService {
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/fetch_all_annotation_types.rq";
     private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
+    private static final String AGGREGATED_EXPLANATION_TEMPLATE = "/explanations/methods/aggregated/";
     private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
     private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
@@ -71,9 +74,8 @@ public class TemplateExplanationsService {
         put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
     }};
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations#";
-    private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation/en";
-    private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     static Logger logger = LoggerFactory.getLogger(TemplateExplanationsService.class);
+    private final String COMPOSED_EXPLANATION_TEMPLATE = "/explanations/input_output_explanation/en";
     @Autowired
     private QanaryRepository qanaryRepository;
     @Value("${explanations.dataset.limit}")
@@ -81,7 +83,21 @@ public class TemplateExplanationsService {
     @Value("${questionId.replacement}")
     private String questionIdReplacement;
 
-    public TemplateExplanationsService() {
+    public static String checkAndReplaceOuterPlaceholder(String template) {
+        Pattern pattern = Pattern.compile(OUTER_TEMPLATE_REGEX);
+        Matcher matcher = pattern.matcher(template);
+
+        while (matcher.find()) {
+            String a = matcher.group();
+            if (a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
+                template = template.replace(a, "");
+            } else
+                template = template.replace(
+                        a,
+                        a.replace(OUTER_TEMPLATE_PLACEHOLDER_PREFIX, "")
+                                .replace(OUTER_TEMPLATE_PLACEHOLDER_SUFFIX, ""));
+        }
+        return template;
     }
 
     /**
@@ -126,7 +142,7 @@ public class TemplateExplanationsService {
                     + prefix + ":";
         }
         for(int counter = 0; counter < explanations.size(); counter++) {
-            result += (" " + String.valueOf(counter+1) + ". " + explanations.get(counter));
+            result += (" " + (counter + 1) + ". " + explanations.get(counter));
         }
         return result;
     }
@@ -138,7 +154,6 @@ public class TemplateExplanationsService {
      * @return Model including
      */
     public Model createModel(String graphUri, QanaryComponent component) throws IOException {
-
         List<String> types = fetchAllAnnotations(graphUri, component); // Can be cached
         String contentDE = createTextualExplanation(graphUri, component, "de", types);
         String contentEN = createTextualExplanation(graphUri, component, "en", types);
@@ -190,7 +205,6 @@ public class TemplateExplanationsService {
      */
     public String convertToDesiredFormat(String header, Model model) {
         StringWriter writer = new StringWriter();
-
         model.write(writer, headerFormatMap.getOrDefault(header, "TURTLE"));
         return writer.toString();
     }
@@ -206,7 +220,6 @@ public class TemplateExplanationsService {
             bindingsForSparqlQuery.add("annotatedBy", ResourceFactory.createResource(component.getPrefixedComponentName()));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(rawQuery, bindingsForSparqlQuery);
-
     }
 
     /**
@@ -218,7 +231,6 @@ public class TemplateExplanationsService {
      * @param graphURI the only parameter given for a qa-system
      */
     public String explainQaSystem(String graphURI, String header) throws Exception {
-
         List<QanaryComponent> components = getUsedComponents(graphURI);
         Map<String, Model> models = new HashMap<>();
 
@@ -229,7 +241,6 @@ public class TemplateExplanationsService {
 
         String questionURI = fetchQuestionUri(graphURI);
         Model systemExplanationModel = createSystemModel(models, components, questionURI, graphURI);
-
         return convertToDesiredFormat(header, systemExplanationModel);
     }
 
@@ -253,9 +264,8 @@ public class TemplateExplanationsService {
         try {
             return resultSet.next().get("source").toString();
         } catch (Exception e) {
-            throw new Exception("Couldn't fetch the question!", e);
+            throw new Exception("Question request failed", e);
         }
-
     }
 
     /**
@@ -312,7 +322,7 @@ public class TemplateExplanationsService {
         // Logging the created model as TURTLE-String
         StringWriter stringWriter = new StringWriter();
         systemExplanationModel.write(stringWriter, "TURTLE");
-        logger.info("Created Turtle: {}", stringWriter);
+        logger.debug("Created Turtle: {}", stringWriter);
 
         return systemExplanationModel;
     }
@@ -366,14 +376,11 @@ public class TemplateExplanationsService {
      */
     public List<String> createSpecificExplanation(String type, String graphURI, String lang, QanaryComponent component) throws IOException {
         String query = buildSparqlQuery(graphURI, component, annotationsTypeAndQuery.get(type));
-
-        // TODO: Cache the ResultSet as map for further usage w/ different languages
-
         ResultSet results = qanaryRepository.selectWithResultSet(query);
 
         List<String> explanationsForCurrentType = addingExplanations(type, lang, results);
 
-        logger.info("Created explanations: {}", explanationsForCurrentType);
+        logger.debug("Created explanations: {}", explanationsForCurrentType);
         return explanationsForCurrentType;
     }
 
@@ -385,16 +392,16 @@ public class TemplateExplanationsService {
      * @param results The ResultSet for the actual type
      * @return A list of explanations for the given type in the given language
      */
-    public List<String> addingExplanations(String type, String lang, ResultSet results) {
+    public List<String> addingExplanations(String type, String lang, ResultSet results) throws IOException {
 
         List<String> explanationsForCurrentType = new ArrayList<>();
-        String langExplanationPrefix = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_prefix");
+        String langExplanationPrefix = ExplanationHelper.getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_prefix");
         explanationsForCurrentType.add(langExplanationPrefix);
-        String template = getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
+        String template = ExplanationHelper.getStringFromFile(annotationTypeExplanationTemplate.get(type) + lang + "_list_item");
 
         while (results.hasNext() && results.getRowNumber() < EXPLANATIONS_DATASET_LIMIT) {
             QuerySolution querySolution = results.next();
-            explanationsForCurrentType.add(replaceProperties(convertQuerySolutionToMap(querySolution), template));
+            explanationsForCurrentType.add(replaceProperties(ExplanationHelper.convertQuerySolutionToMap(querySolution), template));
         }
 
         return explanationsForCurrentType;
@@ -407,75 +414,14 @@ public class TemplateExplanationsService {
      * @return Template with replaced placeholders
      */
     public String replaceProperties(Map<String, String> convertedMap, String template) {
-
         // Replace all placeholders with values from map
         template = StringSubstitutor
                 .replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX)
                 .replace(questionIdReplacement + "/question/stored-question__text_", "questionID:");
         template = checkAndReplaceOuterPlaceholder(template);
 
-        logger.info("Template with inserted params: {}", template);
+        logger.debug("Template with inserted params: {}", template);
         return template;
-    }
-
-    public String checkAndReplaceOuterPlaceholder(String template) {
-        Pattern pattern = Pattern.compile(OUTER_TEMPLATE_REGEX);
-        Matcher matcher = pattern.matcher(template);
-
-        while (matcher.find()) {
-            String a = matcher.group();
-            if (a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
-                template = template.replace(a, "");
-            } else
-                template = template.replace(
-                        a,
-                        a.replace(OUTER_TEMPLATE_PLACEHOLDER_PREFIX, "")
-                                .replace(OUTER_TEMPLATE_PLACEHOLDER_SUFFIX, ""));
-        }
-
-        return template;
-    }
-
-    public Map<String, String> convertQuerySolutionToMap(QuerySolution querySolution) {
-        QuerySolutionMap querySolutionMap = new QuerySolutionMap();
-        querySolutionMap.addAll(querySolution);
-        Map<String, RDFNode> querySolutionMapAsMap = querySolutionMap.asMap();
-        return convertRdfNodeToStringValue(querySolutionMapAsMap);
-    }
-
-    /**
-     * Converts RDFNodes to Strings without the XML datatype declaration and leaves resources as they are.
-     *
-     * @param map Key = variable from sparql-query, Value = its corresponding RDFNode
-     * @return Map with value::String instead of value::RDFNode
-     */
-    public Map<String, String> convertRdfNodeToStringValue(Map<String, RDFNode> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> {
-                    if (entry.getValue().isResource())
-                        return entry.getValue().toString();
-                    else
-                        return entry.getValue().asNode().getLiteralValue().toString();
-                }
-        ));
-    }
-
-    /**
-     * Reads a file and parses the content to a string
-     *
-     * @param path Given path
-     * @return String with the file's content
-     */
-    public static String getStringFromFile(String path) throws RuntimeException {
-        ClassPathResource cpr = new ClassPathResource(path);
-        try {
-            byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
-            return new String(bdata, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            logger.error("{}", e.getMessage());
-            throw new RuntimeException();
-        }
     }
 
     /**
@@ -531,7 +477,7 @@ public class TemplateExplanationsService {
         }
 
         // create Prefix
-        String prefix = getStringFromFile("/explanations/input_data/prefixes/en"); // adopt for any other languages
+        String prefix = ExplanationHelper.getStringFromFile("/explanations/input_data/prefixes/en"); // adopt for any other languages
         prefix = prefix.replace("${numberOfQueries}", resultSetSize +
                 (resultSetSize == 1 ? " SPARQL query" : " SPARQL queries")
         );
@@ -563,7 +509,7 @@ public class TemplateExplanationsService {
         // for each language
         String listItem;
         try {
-            listItem = getStringFromFile("/explanations/input_data/" + annotationType + "/english");
+            listItem = ExplanationHelper.getStringFromFile("/explanations/input_data/" + annotationType + "/english");
         } catch (RuntimeException e) {
             logger.error("{}", e.getMessage());
             listItem = "For annotation type " + annotationType + " no explanation is available.";
@@ -577,7 +523,7 @@ public class TemplateExplanationsService {
         while (line != null) {
             if (line.contains("AnnotationOf")) {
                 String modifiedLine = line.substring(line.indexOf("qa:AnnotationOf")); // Current String equals "AnnotationOfSOMEWHAT ...." -> Need to remove the last part
-                String annotationType = modifiedLine.replace(modifiedLine.substring(modifiedLine.indexOf(" "), modifiedLine.length()), "").replace("qa:", "");
+                String annotationType = modifiedLine.replace(modifiedLine.substring(modifiedLine.indexOf(" ")), "").replace("qa:", "");
                 logger.info("Found annotationType: {}", annotationType);
                 return annotationType;
             }
@@ -587,23 +533,23 @@ public class TemplateExplanationsService {
         throw new RuntimeException("No annotation type could be dissambled");
     }
 
-    public String getPipelineInputExplanation(String question) {
-        String explanation = getStringFromFile("/explanations/input_data/pipeline/en");
+    public String getPipelineInputExplanation(String question) throws IOException {
+        String explanation = ExplanationHelper.getStringFromFile("/explanations/input_data/pipeline/en");
         return explanation.replace("${question}", question);
     }
 
     // Computes the explanation itself
-    public String getPipelineOutputExplanation(ResultSet results, String graphUri) {
-        String explanation = getStringFromFile("/explanations/pipeline/en_prefix")
+    public String getPipelineOutputExplanation(ResultSet results, String graphUri) throws IOException {
+        String explanation = ExplanationHelper.getStringFromFile("/explanations/pipeline/en_prefix")
                 .replace("${graph}", graphUri);
-        String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
+        String componentTemplate = ExplanationHelper.getStringFromFile("/explanations/pipeline/en_list_item");
         String questionId = "";
         List<String> explanations = new ArrayList<>();
         while (results.hasNext()) {
             QuerySolution querySolution = results.next();
             if(querySolution.get("questionId") != null)
                 questionId = querySolution.get("questionId").toString();
-            explanations.add(replaceProperties(convertQuerySolutionToMap(querySolution), componentTemplate));
+            explanations.add(replaceProperties(ExplanationHelper.convertQuerySolutionToMap(querySolution), componentTemplate));
         }
         return explanation
                 .replace("${questionId}", questionId)
@@ -612,9 +558,9 @@ public class TemplateExplanationsService {
     }
 
     // Composes the passed explanations
-    public String getPipelineOutputExplanation(Map<String,String> explanations, String graphUri) {
-        String explanation = getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
-        String componentTemplate = getStringFromFile("/explanations/pipeline/en_list_item");
+    public String getPipelineOutputExplanation(Map<String,String> explanations, String graphUri) throws IOException {
+        String explanation = ExplanationHelper.getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
+        String componentTemplate = ExplanationHelper.getStringFromFile("/explanations/pipeline/en_list_item");
         List<String> explanationsList = new ArrayList<>();
         explanations.forEach((key,value) -> {
             explanationsList.add(componentTemplate.replace("${component}", key).replace("${componentExplanation}", value));
@@ -623,7 +569,7 @@ public class TemplateExplanationsService {
     }
 
     public String composeInputAndOutputExplanations(String inputExplanation, String outputExplanation, String componentUri) throws IOException {
-        String explanationTemplate = getStringFromFile(COMPOSED_EXPLANATION_TEMPLATE);
+        String explanationTemplate = ExplanationHelper.getStringFromFile(COMPOSED_EXPLANATION_TEMPLATE);
         String component = componentUri == null ? "pipeline" : "component " + componentUri;
 
         return explanationTemplate
@@ -638,6 +584,33 @@ public class TemplateExplanationsService {
             template = template.replace("${" + variable + "}", querySolution.get(variable).toString().replace("<//>", "\n"));
         }
         return template;
+    }
+
+    /**
+     * This method should serve as general method to explain anything based on the passed vars.
+     * @param explanationMetaData Consist of the required meta data
+     * @return
+     */
+    public String explain(ExplanationMetaData explanationMetaData, QuerySolution qs) throws ExplanationException {
+        String itemTemplate = explanationMetaData.getItemTemplate();
+        try {
+            return checkAndReplaceOuterPlaceholder(replaceProperties(ExplanationHelper.convertQuerySolutionToMap(qs), itemTemplate));
+        } catch (Exception e) {
+            throw new ExplanationException("SPARQL endpoint returned no result for requested query and method", e);
+        }
+    }
+
+    public String explainAggregatedMethodWithExplanations(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws IOException {
+        String template = ExplanationHelper.getStringFromFile(AGGREGATED_EXPLANATION_TEMPLATE + data.getLang());
+        String childExplanations = IntStream.range(0, childMethods.size())
+                .mapToObj(i -> (i + 1) + ". " + childMethods.get(i).getExplanation())
+                .collect(Collectors.joining("\n"));
+        return template
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentMethod" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getMethodName())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentMethodId" + TEMPLATE_PLACEHOLDER_SUFFIX, data.getMethod())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentCaller" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getCaller())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentCallerName" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getCallerName())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "explanations" + TEMPLATE_PLACEHOLDER_SUFFIX, childExplanations);
     }
 
 }

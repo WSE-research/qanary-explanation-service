@@ -1,37 +1,81 @@
 package com.wse.qanaryexplanationservice.helper.pojos;
 
-import com.wse.qanaryexplanationservice.services.TemplateExplanationsService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
- * Contains relevant data for the creation of (template-based) explanations
+ * Contains relevant data for the creation of (template-based) explanations for both methods and components
  */
 public class ExplanationMetaData {
 
     private QanaryComponent qanaryComponent;
+    private String method;
     private URI graph;
     private String prefixTemplate;
     private String itemTemplate;
-    private boolean doGenerative;
-    private final Logger logger = LoggerFactory.getLogger(ExplanationMetaData.class);
-    private String requestQuery;
-    private final String DEFAULT_METHOD_TEMPLATE_ROOT_PATH = "/explanations/methods/";
+    private String lang;
+    private AggregationSettings aggregationSettings;
+    private GPTRequest gptRequest;
+    private boolean tree;
 
-    public ExplanationMetaData(String qanaryComponent, String graph, String itemTemplate, String prefixTemplate, boolean doGenerative, String query) throws URISyntaxException {
+    public ExplanationMetaData(String qanaryComponent, String method, String graph, boolean tree, String itemTemplate, String prefixTemplate, String lang, AggregationSettings aggregationSettings, GPTRequest gptRequest) throws URISyntaxException {
+        this.method = method;
         this.qanaryComponent = new QanaryComponent(qanaryComponent);
         this.graph = new URI(graph);
-        this.doGenerative = doGenerative;
-        this.itemTemplate = itemTemplate != null ? itemTemplate : TemplateExplanationsService.getStringFromFile(DEFAULT_METHOD_TEMPLATE_ROOT_PATH + "item/en");
-        this.prefixTemplate = prefixTemplate != null ? prefixTemplate : TemplateExplanationsService.getStringFromFile(DEFAULT_METHOD_TEMPLATE_ROOT_PATH + "prefix/en");
-        this.requestQuery = query;
+        this.tree = tree;
+        this.itemTemplate = itemTemplate;
+        this.prefixTemplate = prefixTemplate;
+        this.lang = lang == null ? "en" : lang;
+        this.aggregationSettings = aggregationSettings;
+        this.gptRequest = gptRequest;
+    }
+
+    public boolean getTree() {
+        return tree;
+    }
+
+    public void setTree(boolean tree) {
+        this.tree = tree;
+    }
+
+    public GPTRequest getGptRequest() {
+        return gptRequest;
+    }
+
+    public void setGptRequest(GPTRequest gptRequest) {
+        this.gptRequest = gptRequest;
+    }
+
+    public AggregationSettings getAggregationSettings() {
+        return aggregationSettings;
+    }
+
+    public void setAggregationSettings(AggregationSettings aggregationSettings) {
+        this.aggregationSettings = aggregationSettings;
+    }
+
+    public String getLang() {
+        return lang;
+    }
+
+    public void setLang(String lang) {
+        this.lang = lang;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public void setMethod(String method) {
+        this.method = method;
     }
 
     public String getPrefixTemplate() {
         return prefixTemplate;
+    }
+
+    public void setPrefixTemplate(String prefixTemplate) {
+        this.prefixTemplate = prefixTemplate;
     }
 
     public String getItemTemplate() {
@@ -42,20 +86,12 @@ public class ExplanationMetaData {
         this.itemTemplate = itemTemplate;
     }
 
-    public void setPrefixTemplate(String prefixTemplate) {
-        this.prefixTemplate = prefixTemplate;
-    }
-
-    public boolean isDoGenerative() {
-        return doGenerative;
-    }
-
-    public void setDoGenerative(boolean doGenerative) {
-        this.doGenerative = doGenerative;
-    }
-
     public QanaryComponent getQanaryComponent() {
         return qanaryComponent;
+    }
+
+    public void setQanaryComponent(QanaryComponent qanaryComponent) {
+        this.qanaryComponent = qanaryComponent;
     }
 
     public URI getGraph() {
@@ -66,15 +102,14 @@ public class ExplanationMetaData {
         this.graph = graph;
     }
 
-    public void setQanaryComponent(QanaryComponent qanaryComponent) {
-        this.qanaryComponent = qanaryComponent;
-    }
-
-    public String getRequestQuery() {
-        return requestQuery;
-    }
-
-    public void setRequestQuery(String requestQuery) {
-        this.requestQuery = requestQuery;
+    @Override
+    public String toString() {
+        return "Qanary component: " + this.qanaryComponent.getPrefixedComponentName() + "\n" +
+                "Method: " + this.method + "\n" +
+                "Graph: " + this.graph.toASCIIString() + "\n" +
+                "Language: " + this.lang + "\n" +
+                "Tree: " + this.tree + "\n" +
+                "Aggregation Settings: " + this.aggregationSettings.toString() + "\n" +
+                "Gpt Request: " + this.gptRequest.toString();
     }
 }

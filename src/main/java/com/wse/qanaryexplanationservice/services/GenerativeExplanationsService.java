@@ -5,26 +5,29 @@ import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
+import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.GptModel;
+import com.wse.qanaryexplanationservice.helper.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.TestDataObject;
-import com.wse.qanaryexplanationservice.helper.pojos.GenerativeExplanationObject;
-import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.GenerativeExplanationsRepository;
+import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
+import org.apache.commons.lang.StringUtils;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * This service is used to create [...]
@@ -39,12 +42,18 @@ public class GenerativeExplanationsService {
 
     private final Random random = new Random();
     private final TemplateExplanationsService tmplExpService;
+    private final String PROMPT_TEMPLATE_PATH = "/prompt_templates/";
+    private final String CHECK_EXISTENCE_OF_OTHER_METHODS_QUERY = "/queries/check_if_other_methods_exist.rq";
+    private final String SELECT_ALL_METHODS_WITH_DATA_FROM_ROOT = "/queries/select_all_methods_with_data_from_root.rq";
+    private final String PROMPT_AGGREGATED_DATA = "/prompt_templates/methods/aggregated/aggregated_data/";
     @Autowired
     private GenerativeExplanations generativeExplanations;
     @Autowired
     private GenerativeExplanationsRepository generativeExplanationsRepository;
     @Value("${questionId.replacement}")
     private String questionIdReplacement;
+    @Autowired
+    private QanaryRepository qanaryRepository;
 
     public GenerativeExplanationsService(TemplateExplanationsService tmplExpService) {
         this.tmplExpService = tmplExpService;
@@ -92,7 +101,7 @@ public class GenerativeExplanationsService {
 
             // Selection Question
             logger.info("Selecting question");
-            Integer randomQuestionID = random.nextInt(generativeExplanations.QADO_DATASET_QUESTION_COUNT);
+            Integer randomQuestionID = random.nextInt(GenerativeExplanations.QADO_DATASET_QUESTION_COUNT);
             String question = generativeExplanations.getRandomQuestion(randomQuestionID);
 
             // Resolve dependencies and select random components
@@ -147,7 +156,7 @@ public class GenerativeExplanationsService {
     }
 
     public QanaryComponent selectRandomComponentWithAnnotationType(String annotationType) {
-        QanaryComponent[] components = generativeExplanations.TYPE_AND_COMPONENTS.get(annotationType);
+        QanaryComponent[] components = GenerativeExplanations.TYPE_AND_COMPONENTS.get(annotationType);
         return components[random.nextInt(components.length)];
     }
 
@@ -179,6 +188,7 @@ public class GenerativeExplanationsService {
         Encoding encoding = encodingRegistry.getEncodingForModel(ModelType.GPT_3_5_TURBO);
         int tokens = encoding.countTokens(prompt);
         logger.info("Calculated Token: {}", tokens);
+        logger.info("Prompt: {}", prompt);
         return generativeExplanationsRepository.sendGptPrompt(prompt, tokens, gptModel);
     }
 
@@ -209,15 +219,107 @@ public class GenerativeExplanationsService {
     }
 
     /**
-     * TODO
+     * Care:
+     * TODO: Support one-/two-/multi-shot prompts, replace outer placeholders
+     *
      * @return
      */
-    public String explainMethod() {
-        return "Not yet implemented";
+    public String explainSingleMethod(ExplanationMetaData explanationMetaData, QuerySolution qs) throws Exception {
+        int shots = explanationMetaData.getGptRequest().getShots();
+        String promptTemplate = ExplanationHelper.getStringFromFile(
+                PROMPT_TEMPLATE_PATH + "methods/" + explanationMetaData.getLang() + "_" + shots
+        );
+
+        // Replace baseline and experiment data (i.e. component, method, method input/output values and types)
+        promptTemplate = tmplExpService.replaceProperties(ExplanationHelper.convertQuerySolutionToMap(qs), promptTemplate);
+        logger.debug("Prompt Template: {}", promptTemplate);
+
+        // Create further samples, depending on the shots passed (Outsource generalized method)
+        if (shots == 0) {
+            return this.sendPrompt(promptTemplate, explanationMetaData.getGptRequest().getGptModel());
+        } else {
+            return "Not yet implemented.";
+        }
+    }
+
+
+    // TODO: Needed for multi-shot method explanation
+    public String getMethodExample(String graph, QanaryComponent component, String method, int shots) throws IOException {
+        ResultSet requestComponentAndMethodResult = qanaryRepository.selectWithResultSet(
+                QanaryTripleStoreConnector.readFileFromResources(CHECK_EXISTENCE_OF_OTHER_METHODS_QUERY)
+                        .replace("?graph", "<" + graph + ">")
+                        .replace("?component", "<" + component.getPrefixedComponentName() + ">")
+                        .replace("?methodName", "\"" + method + "\"")
+        );
+        QuerySolution qs = null;
+        try {
+            qs = requestComponentAndMethodResult.next();
+        } catch (NoSuchElementException e) {
+            logger.error("No other methods were executed, therefore no examples can be computed.");
+            throw new RuntimeException("No other methods were executed, therefore no examples for the prompt could be generated."); // Handle Runtime exceptions in the controller; return other HttpStatus
+        }
+
+        // TODO: How to continue?
+        // When we create only one explanation we'd need to check for this used method in the next call.
+
+
+        return null;
+
     }
 
     public String getTemplateExplanation(String graphUri, QanaryComponent component, String lang) throws IOException {
         return tmplExpService.createOutputExplanation(graphUri, component, lang);
+    }
+
+    public String explainAggregatedMethodWithExplanations(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws Exception {
+        int shots = data.getGptRequest().getShots(); // Add data for current component
+        String promptTemplate = ExplanationHelper.getStringFromFile(
+                PROMPT_TEMPLATE_PATH + "methods/aggregated/" + data.getLang() + "_" + shots
+        ).replace("${methodName}", parent.getMethodName()).replace("${explanations}", String.join("\n\n", childMethods.stream().map(item -> item.getExplanation()).toList()));
+        logger.info("Prompt Template: {}", promptTemplate);
+        return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
+    }
+
+    // We get the list of children and need to // TODO: Probably cache
+    public String explainMethodAggregatedWithData(MethodItem parent, ExplanationMetaData data) throws Exception {
+        // Alternatively we could rebuild the parent - childs relationship with the complete map
+        List<MethodItem> methodsWithData = getAllMethodsWithDataFromParent(parent.getMethod(), data.getGraph().toASCIIString());
+        String promptTemplate = ExplanationHelper.getStringFromFile(PROMPT_AGGREGATED_DATA + data.getLang() + "_" + data.getGptRequest().getShots())
+                // add parent data TODO
+                .replace("${parentData}", parent.toString())
+                .replace("${methodName}", parent.getMethodName())
+                .replace("${data}", StringUtils.join(methodsWithData.stream().map(item -> item.toString()).toList(), "\n\n"));
+        return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
+    }
+
+    @Scheduled(fixedRate = 3600000)  // Every 1 hour
+    @CacheEvict(value = "methodsWithData", allEntries = true)
+    public List<MethodItem> getAllMethodsWithDataFromParent(String parent, String graphUri) throws IOException {
+        List<MethodItem> methodsWithData = new ArrayList<>();
+        String query = ExplanationHelper.getStringFromFile(SELECT_ALL_METHODS_WITH_DATA_FROM_ROOT)
+                .replace("?graph", "<" + graphUri + ">")
+                .replace("?rootId", "<" + parent + ">");
+        ResultSet methodsWithDataResultSet = qanaryRepository.selectWithResultSet(query);
+
+        while (methodsWithDataResultSet.hasNext()) {
+            QuerySolution qs = methodsWithDataResultSet.next();
+            MethodItem method = new MethodItem(
+                    qanaryRepository.safeGetString(qs, "caller"),
+                    qanaryRepository.safeGetString(qs, "callerName"),
+                    qanaryRepository.safeGetString(qs, "method"),
+                    qanaryRepository.safeGetString(qs, "outputDataType"),
+                    qanaryRepository.safeGetString(qs, "outputDataValue"),
+                    qanaryRepository.safeGetString(qs, "inputDataTypes"),
+                    qanaryRepository.safeGetString(qs, "inputDataValues"),
+                    qanaryRepository.safeGetString(qs, "annotatedAt"),
+                    qanaryRepository.safeGetString(qs, "annotatedAt")
+            );
+            method.setMethod(qanaryRepository.safeGetString(qs, "leaf"));
+            methodsWithData.add(method);
+        }
+
+        logger.debug("Methods with data: {}", methodsWithData.size());
+        return methodsWithData;
     }
 
 }

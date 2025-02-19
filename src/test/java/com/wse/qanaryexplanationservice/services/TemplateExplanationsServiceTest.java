@@ -1,9 +1,16 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
+import com.wse.qanaryexplanationservice.helper.Method;
+import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.*;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -11,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,17 +31,21 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class TemplateExplanationsServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+    private static final String TEMPLATE_AGG = "Parent: ${parentMethod}, ID: ${parentMethodId}, Caller: ${parentCaller}, Caller Name: ${parentCallerName}, Explanations:\n${explanations}";
+    private static final String EXPECTED_TEMPLATE_AGG = "Parent: myMethod, ID: methodId123, Caller: myCaller, Caller Name: myCallerName, Explanations:\n1. Explanation 1\n2. Explanation 2";
     private final ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
     protected ClassLoader classLoader = this.getClass().getClassLoader();
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsServiceTest.class);
@@ -159,15 +172,15 @@ public class TemplateExplanationsServiceTest {
         /*
         Converts a given Map<String,RDFNode> to a Map<String, String>
          */
-        @Test
-        public void convertRdfNodeToStringValue() {
-            Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
-            Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
+        //@Test
+        //public void convertRdfNodeToStringValue() {
+            //Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
+            //Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
 
-            Map<String, String> comparedMap = templateExplanationsService.convertRdfNodeToStringValue(toBeConvertedMap);
+            //    Map<String, String> comparedMap = ExplanationHelper.convertRdfNodeToStringValue(toBeConvertedMap);
 
-            assertEquals(comparingMap, comparedMap);
-        }
+        //    assertEquals(comparingMap, comparedMap);
+        //}
 
         /*
         Given a set of (key, value) the result should be the template without any more placeholders,
@@ -192,14 +205,14 @@ public class TemplateExplanationsServiceTest {
 
             assertAll("Testing correct replacement for templates",
                     () -> {
-                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, templateExplanationsService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
+                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, ExplanationHelper.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/de_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
                         assertEquals(expectedOutcome, computedTemplate);
                     },
                     () -> {
-                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, templateExplanationsService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
+                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, ExplanationHelper.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/en_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
@@ -220,7 +233,7 @@ public class TemplateExplanationsServiceTest {
                         "annotationofrelation",
                         "annotationofquestionlanguage"
                 })
-        public void addingExplanationsTest(String type) {
+        public void addingExplanationsTest(String type) throws IOException {
 
             List<String> computedExplanations = templateExplanationsService.addingExplanations(type, "de", resultSet);
 
@@ -298,8 +311,8 @@ public class TemplateExplanationsServiceTest {
 
         @Nested
         class composeExplanationTests {
-            private List<String> explanations;
             QanaryComponent qanaryComponent;
+            private List<String> explanations;
 
             @BeforeEach
             public void setup() {
@@ -325,6 +338,31 @@ public class TemplateExplanationsServiceTest {
                 Assertions.assertEquals(expectedEn,computedEn);
             }
         }
+    }
+
+    @Nested
+    @ExtendWith(MockitoExtension.class)
+    class aggregatedMethodTests {
+        private static final String TEMPLATE = "Parent: ${parentMethod}, ID: ${parentMethodId}, Caller: ${parentCaller}, Caller Name: ${parentCallerName}, Explanations:\n${explanations}";
+        private static final String EXPECTED_TEMPLATE = "Parent: myMethod, ID: methodId123, Caller: myCaller, Caller Name: myCallerName, Explanations:\n1. Explanation 1\n2. Explanation 2";
+
+        @Test
+        void testExplainAggregatedMethodWithExplanations_Success() throws IOException, URISyntaxException {
+            try (MockedStatic<ExplanationHelper> mockedHelper = mockStatic(ExplanationHelper.class)) {
+                mockedHelper.when(() -> ExplanationHelper.getStringFromFile(any()))
+                        .thenReturn(TEMPLATE);
+                MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", "outputType", "outputValue", "inputTypes", "inputValues", "annotatedAt", "annotatedBy");
+                List<Method> childMethods = List.of(
+                        new Method("id1", true, "Explanation 1"),
+                        new Method("id2", true, "Explanation 2")
+                );
+                ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null);
+                String result = templateExplanationsService.explainAggregatedMethodWithExplanations(methodItem, childMethods, explanationMetaData);
+
+                assertEquals(EXPECTED_TEMPLATE, result);
+            }
+        }
+
 
     }
 

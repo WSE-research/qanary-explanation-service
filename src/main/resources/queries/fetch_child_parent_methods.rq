@@ -1,0 +1,18 @@
+PREFIX  qa:   <http://www.wdaqua.eu/qa#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT DISTINCT ?leaf ?parent ?root (BOUND(?child) AS ?hasChilds)
+FROM ?graph
+WHERE {
+	BIND(?methodId AS ?root)
+	?leaf prov:actedOnBehalfOf+ ?root.
+  	?leaf prov:actedOnBehalfOf ?parent .
+    OPTIONAL {
+        ?child prov:actedOnBehalfOf ?leaf .
+    }
+
+}

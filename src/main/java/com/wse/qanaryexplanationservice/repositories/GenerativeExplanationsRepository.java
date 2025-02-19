@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.repositories;
 
+import com.wse.qanaryexplanationservice.exceptions.GenerativeExplanationException;
 import com.wse.qanaryexplanationservice.helper.GptModel;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -12,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,85 +24,84 @@ import java.util.Map;
 @Repository
 public class GenerativeExplanationsRepository {
 
-
     private final Logger logger = LoggerFactory.getLogger(GenerativeExplanationsRepository.class);
-    private final URL COMPLETIONS_ENDPOINT = new URL("https://api.openai.com/v1/completions");
-    private final URL CHAT_COMPLETIONS_ENDPOINT = new URL("https://api.openai.com/v1/chat/completions");
+    private final URL COMPLETIONS_ENDPOINT = URI.create("https://api.openai.com/v1/completions").toURL();
+    private final URL CHAT_COMPLETIONS_ENDPOINT = URI.create("https://api.openai.com/v1/chat/completions").toURL();
     private final int RESPONSE_TOKEN = 1000;
+    
     @Value("${chatgpt.api.key}")
     private String chatGptApiKey;
-    private final Map<GptModel, URL> GPT_MODEL_ENDPOINT = new HashMap<>() {{
-        put(GptModel.GPT_3_5, COMPLETIONS_ENDPOINT);
-        put(GptModel.GPT_3_5_16K, CHAT_COMPLETIONS_ENDPOINT);
-        put(GptModel.GPT_4, CHAT_COMPLETIONS_ENDPOINT);
-        put(GptModel.GPT_4_O, null);
+
+    private final Map<GptModel, ModelConfig> MODEL_CONFIGS = new HashMap<>() {{
+        put(GptModel.GPT_3_5, new ModelConfig(COMPLETIONS_ENDPOINT, "gpt-3.5-turbo-instruct"));
+        put(GptModel.GPT_3_5_16K, new ModelConfig(CHAT_COMPLETIONS_ENDPOINT, "gpt-3.5-turbo-16k"));
+        put(GptModel.GPT_4, new ModelConfig(CHAT_COMPLETIONS_ENDPOINT, "gpt-4-0613"));
+        put(GptModel.GPT_4_O, new ModelConfig(null, ""));
     }};
 
-    private final Map<GptModel, String> GPT_CONCRETE_MODEL = new HashMap<>() {{
-        put(GptModel.GPT_3_5, "gpt-3.5-turbo-instruct");
-        put(GptModel.GPT_3_5_16K, "gpt-3.5-turbo-16k");
-        put(GptModel.GPT_4, "gpt-4-0613");
-        put(GptModel.GPT_4_O, "");
-    }};
+    private record ModelConfig(URL endpoint, String modelName) {}
 
     public GenerativeExplanationsRepository() throws MalformedURLException {
     }
 
-    public String sendGptPrompt(String body, int tokens, GptModel gptModel) throws Exception {
-
+    public String sendGptPrompt(String body, int tokens, GptModel gptModel) throws GenerativeExplanationException, Exception {
         gptModel = selectGptModelBasedOnTokens(gptModel, tokens);
-
-        HttpURLConnection con = (HttpURLConnection) GPT_MODEL_ENDPOINT.get(gptModel).openConnection();
-
+        ModelConfig config = MODEL_CONFIGS.get(gptModel);
+        
+        HttpURLConnection con = (HttpURLConnection) config.endpoint().openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
-        if (this.chatGptApiKey != null)
-            con.setRequestProperty("Authorization", "Bearer " + chatGptApiKey);
-        else
-            throw new Exception("Missing ChatGPT/OpenAI API Key");
+        
+        if (chatGptApiKey.isEmpty()) {
+            throw new GenerativeExplanationException("Missing ChatGPT/OpenAI API Key");
+        }
+        con.setRequestProperty("Authorization", "Bearer " + chatGptApiKey);
 
-        JSONObject data = (GPT_MODEL_ENDPOINT.get(gptModel) == COMPLETIONS_ENDPOINT) ?
-                createRequestForCompletions(body, gptModel) : createRequestForChatCompletions(body,gptModel);
-
-        logger.info("Json Request: {}", data);
+        JSONObject data = createRequest(body, gptModel);
+        logger.debug("Json Request: {}", data);
 
         con.setDoOutput(true);
-        con.getOutputStream().write(data.toString().getBytes());
+        try (var out = con.getOutputStream()) {
+            out.write(data.toString().getBytes());
+        }
 
+        try (var reader = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+            String output = reader.lines()
+                .reduce((a, b) -> a + b)
+                .orElseThrow(() -> new GenerativeExplanationException("Empty response from GPT API"));
+            return parseResponse(output, config.endpoint() == COMPLETIONS_ENDPOINT);
+        }
+    }
 
-        String output = new BufferedReader(new InputStreamReader(con.getInputStream())).lines()
-                .reduce((a, b) -> a + b).get();
-
-        return GPT_MODEL_ENDPOINT.get(gptModel) == COMPLETIONS_ENDPOINT ? // gptModel ist GPT_3_5 and therefore the 4K token model
-                new JSONObject(output).getJSONArray("choices").getJSONObject(0).getString("text")
-                :
-                new JSONObject(output).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+    private String parseResponse(String output, boolean isCompletionsEndpoint) {
+        JSONObject response = new JSONObject(output);
+        JSONObject choice = response.getJSONArray("choices").getJSONObject(0);
+        return isCompletionsEndpoint ? 
+            choice.getString("text") : 
+            choice.getJSONObject("message").getString("content");
     }
 
     public GptModel selectGptModelBasedOnTokens(GptModel gptModel, int tokens) {
-        return (gptModel.equals(GptModel.GPT_3_5) && tokens > (4096 - RESPONSE_TOKEN)) ? GptModel.GPT_3_5_16K : gptModel;
+        return (gptModel.equals(GptModel.GPT_3_5) && tokens > (4096 - RESPONSE_TOKEN)) ? 
+            GptModel.GPT_3_5_16K : gptModel;
     }
 
-    public JSONObject createRequestForCompletions(String body, GptModel gptModel) {
+    private JSONObject createRequest(String body, GptModel gptModel) {
+        ModelConfig config = MODEL_CONFIGS.get(gptModel);
         JSONObject data = new JSONObject();
-        data.put("model", GPT_CONCRETE_MODEL.get(gptModel));
-        data.put("prompt", body);
-        data.put("max_tokens", RESPONSE_TOKEN);
+        data.put("model", config.modelName());
+
+        if (config.endpoint() == COMPLETIONS_ENDPOINT) {
+            data.put("prompt", body);
+            data.put("max_tokens", RESPONSE_TOKEN);
+        } else {
+            JSONArray messages = new JSONArray()
+                .put(new JSONObject()
+                    .put("role", "user")
+                    .put("content", body));
+            data.put("messages", messages);
+        }
 
         return data;
     }
-
-    public JSONObject createRequestForChatCompletions(String body, GptModel gptModel) {
-        JSONObject data = new JSONObject();
-        JSONArray jsonArray = new JSONArray();
-        JSONObject arrayEntity = new JSONObject();
-        arrayEntity.put("role", "user");
-        arrayEntity.put("content", body);
-        jsonArray.put(arrayEntity);
-        data.put("model", GPT_CONCRETE_MODEL.get(gptModel));
-        data.put("messages", jsonArray);
-
-        return data;
-    }
-
 }
