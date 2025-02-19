@@ -11,20 +11,21 @@ WHERE {
   BIND(?methodIdentifier AS ?id)
   BIND(?component AS ?annotatedBy)
   ?id  rdf:type              qa:AnnotationOfLogMethod ;
-        prov:actedOnBehalfOf  ?caller .
-  		?caller qa:methodName ?callerName .
-        ?id qa:methodName         ?method ;
-        oa:annotatedAt        ?annotatedAt ;
-        oa:annotatedBy        ?annotatedBy .
-
-        OPTIONAL {
-        ?id x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
-  		}
-  		OPTIONAL {
-	    ?id x:input ?input .
-  		?input (rdf:rest*/rdf:first) ?item .
-  		?item rdf:type ?inputDataType ;
-        	  rdf:value ?inputDataValue .
-  		}
+       prov:actedOnBehalfOf  ?caller .
+  OPTIONAL {
+        ?caller qa:methodName ?callerName .
+  }
+  ?id qa:methodName         ?method ;
+      oa:annotatedAt        ?annotatedAt ;
+      oa:annotatedBy        ?annotatedBy .
+  OPTIONAL {
+      ?id x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
+  }
+  OPTIONAL {
+	  ?id x:input ?input .
+  	    ?input (rdf:rest*/rdf:first) ?item .
+  		    ?item rdf:type ?inputDataType ;
+        	      rdf:value ?inputDataValue .
+  }
 }
 GROUP BY ?id ?caller ?callerName ?outputDataType ?outputDataValue ?annotatedAt ?annotatedBy ?method

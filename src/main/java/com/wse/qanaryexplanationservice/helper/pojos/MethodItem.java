@@ -16,7 +16,7 @@ public class MethodItem {
 
     public MethodItem(String caller, String callerName, String methodName, String outputType, String outputValue, String inputTypes, String inputValues, String annotatedAt, String annotatedBy) {
         this.caller = caller;
-        this.callerName = callerName;
+        this.callerName = callerName == null ? caller : callerName;
         this.methodName = methodName;
         this.outputType = outputType;
         this.outputValue = outputValue;
