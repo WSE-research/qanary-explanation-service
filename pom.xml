@@ -10,11 +10,11 @@
     </parent>
     <groupId>com.wse</groupId>
     <artifactId>qanary-explanation-service</artifactId>
-    <version>3.11.0</version>
+    <version>3.11.1</version>
     <name>Qanary explanation service</name>
     <description>Webservice for rule-based explanation of QA-Systems as well as specific components</description>
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
     </properties>
     <dependencies>
         <dependency>
