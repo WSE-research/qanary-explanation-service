@@ -306,13 +306,17 @@ public class ExplanationService {
 
     public String convertExplanationsToTree(Map<Method, List<Method>> childParentPairsMap, Method root, ExplanationMetaData metaData) {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("parent", root.getId());
+
+        // Create the root node JSON object
+        JSONObject rootObject = new JSONObject();
+        rootObject.put("id", root.getId());
+        rootObject.put("explanation", root.getExplanation());
 
         JSONArray jsonArray = new JSONArray();
         if(childParentPairsMap.containsKey(root)) {
             for(Method child : childParentPairsMap.get(root)) {
                 if(childParentPairsMap.containsKey(child)) {
-                    jsonArray.put(convertExplanationsToTree(childParentPairsMap, child, metaData));
+                    jsonArray.put(new JSONObject (convertExplanationsToTree(childParentPairsMap, child, metaData)));
                 } else {
                     JSONObject childObject = new JSONObject();
                     childObject.put("id", child.getId());
@@ -321,10 +325,7 @@ public class ExplanationService {
                 }
             }
         }
-        JSONObject jsonObj = new JSONObject();
-        jsonObj.put("id", root.getId());
-        jsonObj.put("explanation", root.getExplanation());
-        jsonObject.put("parent", jsonObj);
+        jsonObject.put("parent", rootObject);
         jsonObject.put("children", jsonArray);
         logger.debug("JSON: {}", jsonObject);
 
