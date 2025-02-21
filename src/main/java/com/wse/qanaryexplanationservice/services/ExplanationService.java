@@ -405,4 +405,24 @@ public class ExplanationService {
         else throw new ExplanationException("Please provide a valid value for \"leaf\": Either \"template\" or \"generative\".");
     }
 
+    record InputVariable(String value, String type) {}
+
+    public List<InputVariable> extractVarsAndType(String separator, QuerySolution querySolution) {
+        String inputDataValues = qanaryRepository.safeGetString(querySolution, "inputDataValues");
+        String inputDataTypes = qanaryRepository.safeGetString(querySolution, "inputDataTypes");
+        if(inputDataTypes == null | inputDataValues ==null)
+            return new ArrayList<>();
+        String[] inputDataValueArray = inputDataValues.split(separator);
+        String[] inputDataTypesArray = inputDataTypes.split(separator);
+        List<InputVariable> inputVariables = new ArrayList<>();
+        if (inputDataTypesArray.length == inputDataValueArray.length) {
+            for (int i = 0; i < inputDataValueArray.length; i++) {
+                inputVariables.add(new InputVariable(inputDataTypesArray[i], inputDataValueArray[i]));
+            }
+        } else {
+            throw new IllegalStateException("Mismatch between input data values and types.");
+        }
+        return inputVariables;
+    }
+
 }
