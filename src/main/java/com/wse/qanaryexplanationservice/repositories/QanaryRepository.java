@@ -4,9 +4,12 @@ import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryReques
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
+import com.wse.qanaryexplanationservice.helper.pojos.Variable;
+import com.wse.qanaryexplanationservice.services.ExplanationService;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.aspectj.weaver.ast.Var;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +25,10 @@ import virtuoso.jena.driver.VirtuosoQueryExecutionFactory;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides different request methods against the Qanary pipeline or the underlying triplestore
@@ -34,6 +41,23 @@ public class QanaryRepository {
     private final String SELECT_ONE_METHOD_WITH_ID = "/queries/fetch_one_method_id.rq";
     private final WebClient webClient;
     private final Logger logger = LoggerFactory.getLogger(QanaryRepository.class);
+    private final Map<String,String> SPARQL_VARNAME_INPUT_VARIABLES = new HashMap<>() {{
+        put("type", "inputDataTypes");
+        put("value", "inputDataValues");
+    }};
+    private final Map<String,String> SPARQL_VARNAME_OUTPUT_VARIABLES = new HashMap<>() {{
+        put("type", "outputDataType");
+        put("value", "outputDataValue");
+    }};
+
+    public Map<String, String> getSPARQL_VARNAME_INPUT_VARIABLES() {
+        return SPARQL_VARNAME_INPUT_VARIABLES;
+    }
+
+    public Map<String, String> getSPARQL_VARNAME_OUTPUT_VARIABLES() {
+        return SPARQL_VARNAME_OUTPUT_VARIABLES;
+    }
+
 
     @Value("${virtuoso.triplestore.endpoint}")
     private String virtuosoEndpoint;
@@ -129,19 +153,39 @@ public class QanaryRepository {
         String annotatedBy = safeGetString(qs, "annotatedBy");
         String outputDataType = safeGetString(qs, "outputDataType");
         String outputDataValue = safeGetString(qs, "outputDataValue");
-        String inputDataTypes = safeGetString(qs, "inputDataTypes");
-        String inputDataValues = safeGetString(qs, "inputDataValues");
+        List<Variable> inputVariables = this.extractVarsAndType(",", qs, this.SPARQL_VARNAME_INPUT_VARIABLES);
+        List<Variable> outputVariables = this.extractVarsAndType(",", qs, this.SPARQL_VARNAME_OUTPUT_VARIABLES);
         return new MethodItem(
                 caller,
                 callerName,
                 method,
-                outputDataType, outputDataValue, inputDataTypes, inputDataValues,
+                inputVariables,
+                outputVariables,
                 annotatedAt,
                 annotatedBy);
     }
 
+    public List<Variable> extractVarsAndType(String separator, QuerySolution querySolution, Map<String,String> variableNamesMap) {
+        String dataValues = this.safeGetString(querySolution, variableNamesMap.get("value"));
+        String dataTypes = this.safeGetString(querySolution, variableNamesMap.get("type"));
+        if(dataTypes == null | dataValues == null)
+            return new ArrayList<>();
+        String[] dataValueArray = dataValues.split(separator);
+        String[] dataTypesArray = dataTypes.split(separator);
+        List<Variable> inputVariables = new ArrayList<>();
+        if (dataTypesArray.length == dataValueArray.length) {
+            for (int i = 0; i < dataValueArray.length; i++) {
+                inputVariables.add(new Variable(dataValueArray[i], dataTypesArray[i]));
+            }
+        } else {
+            throw new IllegalStateException("Mismatch between input data values and types.");
+        }
+        return inputVariables;
+    }
+
+
     // New helper method to safely retrieve a variable from QuerySolution
-    public String safeGetString(QuerySolution qs, String key) {
+    public static String safeGetString(QuerySolution qs, String key) {
         if (qs.contains(key) && qs.get(key) != null) {
             return qs.get(key).toString();
         }

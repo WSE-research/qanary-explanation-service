@@ -351,7 +351,7 @@ public class TemplateExplanationsServiceTest {
             try (MockedStatic<ExplanationHelper> mockedHelper = mockStatic(ExplanationHelper.class)) {
                 mockedHelper.when(() -> ExplanationHelper.getStringFromFile(any()))
                         .thenReturn(TEMPLATE);
-                MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", "outputType", "outputValue", "inputTypes", "inputValues", "annotatedAt", "annotatedBy");
+                MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", null, null, "annotatedAt", "annotatedBy");
                 List<Method> childMethods = List.of(
                         new Method("id1", true, "Explanation 1"),
                         new Method("id2", true, "Explanation 2")

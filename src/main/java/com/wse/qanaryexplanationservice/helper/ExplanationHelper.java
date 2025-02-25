@@ -1,5 +1,7 @@
 package com.wse.qanaryexplanationservice.helper;
 
+import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
+import com.wse.qanaryexplanationservice.services.ExplanationService;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.RDFNode;
@@ -9,6 +11,8 @@ import org.springframework.util.FileCopyUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 

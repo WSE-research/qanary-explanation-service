@@ -288,7 +288,7 @@ public class GenerativeExplanationsService {
                 // add parent data TODO
                 .replace("${parentData}", parent.toString())
                 .replace("${methodName}", parent.getMethodName())
-                .replace("${data}", StringUtils.join(methodsWithData.stream().map(item -> item.toString()).toList(), "\n\n"));
+                .replace("${data}", StringUtils.join(methodsWithData.stream().map(item -> item.toString()).toList(), "\n\n")); // Adjust prompt as discussed (4-part)
         return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
     }
 
@@ -303,17 +303,7 @@ public class GenerativeExplanationsService {
 
         while (methodsWithDataResultSet.hasNext()) {
             QuerySolution qs = methodsWithDataResultSet.next();
-            MethodItem method = new MethodItem(
-                    qanaryRepository.safeGetString(qs, "caller"),
-                    qanaryRepository.safeGetString(qs, "callerName"),
-                    qanaryRepository.safeGetString(qs, "method"),
-                    qanaryRepository.safeGetString(qs, "outputDataType"),
-                    qanaryRepository.safeGetString(qs, "outputDataValue"),
-                    qanaryRepository.safeGetString(qs, "inputDataTypes"),
-                    qanaryRepository.safeGetString(qs, "inputDataValues"),
-                    qanaryRepository.safeGetString(qs, "annotatedAt"),
-                    qanaryRepository.safeGetString(qs, "annotatedAt")
-            );
+            MethodItem method = qanaryRepository.transformQuerySolutionToMethodItem(qs); // TODO: Here, the method toString() is used in prompt, adjust with regard to new Variable class
             method.setMethod(qanaryRepository.safeGetString(qs, "leaf"));
             methodsWithData.add(method);
         }

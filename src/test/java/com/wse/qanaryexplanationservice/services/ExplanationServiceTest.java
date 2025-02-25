@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
+import com.wse.qanaryexplanationservice.helper.pojos.Variable;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.QuerySolutionMap;
@@ -67,12 +68,13 @@ class ExplanationServiceTest {
 
     @Nested
     class ExtractVarsAndTypeTest {
+        private QanaryRepository qanaryRepository = new QanaryRepository();
 
         @Test
         public void extractVarsAndTypeTestWithNullQs() {
             QuerySolution qs = null;
             Assertions.assertThrows(NullPointerException.class, () -> {
-                List<ExplanationService.Variable> inputVariables = explanationService.extractVarsAndType(",", qs, explanationService.getSPARQL_VARNAME_INPUT_VARIABLES());
+                List<Variable> inputVariables = qanaryRepository.extractVarsAndType(",", qs, qanaryRepository.getSPARQL_VARNAME_INPUT_VARIABLES());
             });
         }
 
@@ -80,7 +82,7 @@ class ExplanationServiceTest {
         public void extractVarsAndTypeTestWithEmptyQs() {
             QuerySolutionMap qs = new QuerySolutionMap();
             qs.add("graph", ResourceFactory.createResource(TEST_GRAPH));
-            List<ExplanationService.Variable> inputVariables = explanationService.extractVarsAndType(",", qs, explanationService.getSPARQL_VARNAME_INPUT_VARIABLES());
+            List<Variable> inputVariables = qanaryRepository.extractVarsAndType(",", qs, qanaryRepository.getSPARQL_VARNAME_INPUT_VARIABLES());
             Assertions.assertEquals(0, inputVariables.size());
         }
 
@@ -90,7 +92,7 @@ class ExplanationServiceTest {
             qs.add("graph", ResourceFactory.createResource(TEST_GRAPH));
             qs.add("inputDataValues", ResourceFactory.createPlainLiteral("value1,value2,value3"));
             qs.add("inputDataTypes", ResourceFactory.createStringLiteral("type1,type2,type3"));
-            List<ExplanationService.Variable> inputVariables = explanationService.extractVarsAndType(",", qs, explanationService.getSPARQL_VARNAME_INPUT_VARIABLES());
+            List<Variable> inputVariables = qanaryRepository.extractVarsAndType(",", qs, qanaryRepository.getSPARQL_VARNAME_INPUT_VARIABLES());
             Assertions.assertEquals(3, inputVariables.size());
         }
 
@@ -100,7 +102,7 @@ class ExplanationServiceTest {
             qs.add("graph", ResourceFactory.createResource(TEST_GRAPH));
             qs.add("outputDataValue", ResourceFactory.createPlainLiteral("value1"));
             qs.add("outputDataType", ResourceFactory.createStringLiteral("type1"));
-            List<ExplanationService.Variable> outputVariables = explanationService.extractVarsAndType(",", qs, explanationService.getSPARQL_VARNAME_OUTPUT_VARIABLES());
+            List<Variable> outputVariables = qanaryRepository.extractVarsAndType(",", qs, qanaryRepository.getSPARQL_VARNAME_OUTPUT_VARIABLES());
             Assertions.assertEquals(1, outputVariables.size());
         }
     }
