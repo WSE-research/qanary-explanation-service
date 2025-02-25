@@ -31,6 +31,22 @@ public class ExplanationService {
     private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     private final String SELECT_CHILD_PARENT_METHODS = "/queries/fetch_child_parent_methods.rq";
     private final String ASK_IF_CHILDS_EXIST = "/queries/ask_if_method_has_childs.rq";
+    private final Map<String,String> SPARQL_VARNAME_INPUT_VARIABLES = new HashMap<>() {{
+       put("type", "inputDataTypes");
+       put("value", "inputDataValues");
+    }};
+    private final Map<String,String> SPARQL_VARNAME_OUTPUT_VARIABLES = new HashMap<>() {{
+        put("type", "outputDataType");
+        put("value", "outputDataValue");
+    }};
+
+    public Map<String, String> getSPARQL_VARNAME_INPUT_VARIABLES() {
+        return SPARQL_VARNAME_INPUT_VARIABLES;
+    }
+
+    public Map<String, String> getSPARQL_VARNAME_OUTPUT_VARIABLES() {
+        return SPARQL_VARNAME_OUTPUT_VARIABLES;
+    }
 
     private final TemplateExplanationsService templateService;
     private final GenerativeExplanationsService generativeService;
@@ -405,19 +421,19 @@ public class ExplanationService {
         else throw new ExplanationException("Please provide a valid value for \"leaf\": Either \"template\" or \"generative\".");
     }
 
-    record InputVariable(String value, String type) {}
+    record Variable(String value, String type) {}
 
-    public List<InputVariable> extractVarsAndType(String separator, QuerySolution querySolution) {
-        String inputDataValues = qanaryRepository.safeGetString(querySolution, "inputDataValues");
-        String inputDataTypes = qanaryRepository.safeGetString(querySolution, "inputDataTypes");
-        if(inputDataTypes == null | inputDataValues ==null)
+    public List<Variable> extractVarsAndType(String separator, QuerySolution querySolution, Map<String,String> variableNamesMap) {
+        String dataValues = qanaryRepository.safeGetString(querySolution, variableNamesMap.get("value"));
+        String dataTypes = qanaryRepository.safeGetString(querySolution, variableNamesMap.get("type"));
+        if(dataTypes == null | dataValues == null)
             return new ArrayList<>();
-        String[] inputDataValueArray = inputDataValues.split(separator);
-        String[] inputDataTypesArray = inputDataTypes.split(separator);
-        List<InputVariable> inputVariables = new ArrayList<>();
+        String[] inputDataValueArray = dataValues.split(separator);
+        String[] inputDataTypesArray = dataTypes.split(separator);
+        List<Variable> inputVariables = new ArrayList<>();
         if (inputDataTypesArray.length == inputDataValueArray.length) {
             for (int i = 0; i < inputDataValueArray.length; i++) {
-                inputVariables.add(new InputVariable(inputDataTypesArray[i], inputDataValueArray[i]));
+                inputVariables.add(new Variable(inputDataTypesArray[i], inputDataValueArray[i]));
             }
         } else {
             throw new IllegalStateException("Mismatch between input data values and types.");

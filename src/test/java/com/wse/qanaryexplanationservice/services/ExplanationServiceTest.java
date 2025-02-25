@@ -71,26 +71,37 @@ class ExplanationServiceTest {
         @Test
         public void extractVarsAndTypeTestWithNullQs() {
             QuerySolution qs = null;
-            List<ExplanationService.InputVariable> inputVariables = explanationService.extractVarsAndType(",", qs);
-            Assertions.assertEquals(0, inputVariables.size());
+            Assertions.assertThrows(NullPointerException.class, () -> {
+                List<ExplanationService.Variable> inputVariables = explanationService.extractVarsAndType(",", qs, explanationService.getSPARQL_VARNAME_INPUT_VARIABLES());
+            });
         }
 
         @Test
         public void extractVarsAndTypeTestWithEmptyQs() {
             QuerySolutionMap qs = new QuerySolutionMap();
             qs.add("graph", ResourceFactory.createResource(TEST_GRAPH));
-            List<ExplanationService.InputVariable> inputVariables = explanationService.extractVarsAndType(",", qs);
+            List<ExplanationService.Variable> inputVariables = explanationService.extractVarsAndType(",", qs, explanationService.getSPARQL_VARNAME_INPUT_VARIABLES());
             Assertions.assertEquals(0, inputVariables.size());
         }
 
         @Test
-        public void extractVarsAndTypeTestWithNonEmptyQs() {
+        public void extractVarsAndTypeTestWithInputDataVariables() {
             QuerySolutionMap qs = new QuerySolutionMap();
             qs.add("graph", ResourceFactory.createResource(TEST_GRAPH));
             qs.add("inputDataValues", ResourceFactory.createPlainLiteral("value1,value2,value3"));
             qs.add("inputDataTypes", ResourceFactory.createStringLiteral("type1,type2,type3"));
-            List<ExplanationService.InputVariable> inputVariables = explanationService.extractVarsAndType(",", qs);
+            List<ExplanationService.Variable> inputVariables = explanationService.extractVarsAndType(",", qs, explanationService.getSPARQL_VARNAME_INPUT_VARIABLES());
             Assertions.assertEquals(3, inputVariables.size());
+        }
+
+        @Test
+        public void extractVarsAndTypeTestWithOutputDataVariables() {
+            QuerySolutionMap qs = new QuerySolutionMap();
+            qs.add("graph", ResourceFactory.createResource(TEST_GRAPH));
+            qs.add("outputDataValue", ResourceFactory.createPlainLiteral("value1"));
+            qs.add("outputDataType", ResourceFactory.createStringLiteral("type1"));
+            List<ExplanationService.Variable> outputVariables = explanationService.extractVarsAndType(",", qs, explanationService.getSPARQL_VARNAME_OUTPUT_VARIABLES());
+            Assertions.assertEquals(1, outputVariables.size());
         }
     }
 
