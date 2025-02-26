@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.repositories;
 
+import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
@@ -147,7 +148,10 @@ public class QanaryRepository {
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
     }
 
-    public MethodItem transformQuerySolutionToMethodItem(QuerySolution qs) {
+    public MethodItem transformQuerySolutionToMethodItem(QuerySolution qs) throws ExplanationException {
+        if(qs == null){
+            throw new ExplanationException("SPARQL query returned no results. Therefore, no explanation can be provided.");
+        }
         String caller = safeGetString(qs, "caller");
         String callerName = safeGetString(qs, "callerName");
         String method = safeGetString(qs, "method");
@@ -172,21 +176,21 @@ public class QanaryRepository {
             return new ArrayList<>();
         String[] dataValueArray = dataValues.split(separator);
         String[] dataTypesArray = dataTypes.split(separator);
-        List<Variable> inputVariables = new ArrayList<>();
+        List<Variable> variables = new ArrayList<>();
         if (dataTypesArray.length == dataValueArray.length) {
             for (int i = 0; i < dataValueArray.length; i++) {
-                inputVariables.add(new Variable(dataValueArray[i], dataTypesArray[i]));
+                variables.add(new Variable(dataTypesArray[i], dataValueArray[i]));
             }
         } else {
             throw new IllegalStateException("Mismatch between input data values and types.");
         }
-        return inputVariables;
+        return variables;
     }
 
 
     // New helper method to safely retrieve a variable from QuerySolution
     public static String safeGetString(QuerySolution qs, String key) {
-        if (qs.contains(key) && qs.get(key) != null) {
+        if (qs.contains(key) && !qs.get(key).toString().strip().isEmpty()) {
             return qs.get(key).toString();
         }
         return null;

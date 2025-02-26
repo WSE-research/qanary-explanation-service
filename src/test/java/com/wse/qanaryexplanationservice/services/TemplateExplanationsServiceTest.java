@@ -5,12 +5,14 @@ import com.wse.qanaryexplanationservice.helper.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.pojos.Variable;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -31,6 +33,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Array;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.*;
@@ -362,7 +365,57 @@ public class TemplateExplanationsServiceTest {
                 assertEquals(EXPECTED_TEMPLATE, result);
             }
         }
+    }
 
+    @Nested
+    class explainSingleMethodTests {
+
+        @Test
+        void testExplainSingleMethodWithNonEmptyMethodItem() throws URISyntaxException, IOException {
+            ArrayList inputvars = new ArrayList() {{
+                add(new Variable("inputType", "inputValue"));
+            }};
+            ArrayList outputvarrs = new ArrayList<>() {{
+                add(new Variable("outputType", "outputValue"));
+            }};
+            MethodItem method = new MethodItem(
+                    "caller",
+                    "callerName",
+                    "methodName",
+                    inputvars,
+                    outputvarrs,
+                    "date",
+                    "component"
+            );
+            ExplanationMetaData data = new ExplanationMetaData("component",null,"graph",true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null,null,null, null);
+            String explanation = templateExplanationsService.explain(data, method);
+            Assertions.assertTrue(explanation.contains("* inputType: inputValue"));
+            Assertions.assertTrue(explanation.contains("* outputType: outputValue"));
+        }
+
+        @Test
+        void testExplainSingleMethodWithEmptyMethodItemVars() throws URISyntaxException, IOException {
+            MethodItem method = getStandardMethodItem(new ArrayList<>(), new ArrayList<>());
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null,null,null, null);
+            String explanation = templateExplanationsService.explain(data, method);
+            logger.info("explanation: {}", explanation);
+            Assertions.assertTrue(explanation.contains("Input values:\n" +
+                    "Void"));
+            Assertions.assertTrue(explanation.contains("Output (return) values:\n" +
+                    "Void"));
+        }
+
+        public MethodItem getStandardMethodItem(List<Variable> inputvars, List<Variable> outputvars) {
+            return new MethodItem(
+                    "caller",
+                    "callerName",
+                    "methodName",
+                    inputvars,
+                    outputvars,
+                    "date",
+                    "component"
+            );
+        }
 
     }
 

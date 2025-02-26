@@ -6,6 +6,7 @@ import com.wse.qanaryexplanationservice.helper.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.pojos.Variable;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -586,6 +587,27 @@ public class TemplateExplanationsService {
         return template;
     }
 
+    public String replacePlaceholdersWithVarsFromMethodItem(String template, MethodItem method) {
+        return template
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "method" + TEMPLATE_PLACEHOLDER_SUFFIX, method.getMethodName())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "callerName" + TEMPLATE_PLACEHOLDER_SUFFIX, method.getCallerName())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "annotatedAt" + TEMPLATE_PLACEHOLDER_SUFFIX, method.getAnnotatedAt())
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "input" + TEMPLATE_PLACEHOLDER_SUFFIX, convertVariablesToStringRepresentation(method.getInputVariables()))
+                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "output" + TEMPLATE_PLACEHOLDER_SUFFIX, convertVariablesToStringRepresentation(method.getOutputVariables()));
+    }
+
+    public String convertVariablesToStringRepresentation(List<Variable> variables) {
+        StringBuilder builder = new StringBuilder();
+        if(!variables.isEmpty()) {
+            for (Variable variable : variables) {
+                builder.append("* " + variable.getType() + ": " + variable.getValue() + "\n");
+            }
+            return builder.toString();
+        }
+        else
+            return "Void";
+    }
+
     /**
      * This method should serve as general method to explain anything based on the passed vars.
      * @param explanationMetaData Consist of the required meta data
@@ -598,6 +620,11 @@ public class TemplateExplanationsService {
         } catch (Exception e) {
             throw new ExplanationException("SPARQL endpoint returned no result for requested query and method", e);
         }
+    }
+
+    public String explain(ExplanationMetaData data, MethodItem method) {
+        String itemTemplate = data.getItemTemplate();
+        return replacePlaceholdersWithVarsFromMethodItem(itemTemplate, method);
     }
 
     public String explainAggregatedMethodWithExplanations(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws IOException {

@@ -4,6 +4,7 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.ModelType;
+import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.GptModel;
@@ -224,14 +225,14 @@ public class GenerativeExplanationsService {
      *
      * @return
      */
-    public String explainSingleMethod(ExplanationMetaData explanationMetaData, QuerySolution qs) throws Exception {
+    public String explainSingleMethod(ExplanationMetaData explanationMetaData, MethodItem method) throws Exception {
         int shots = explanationMetaData.getGptRequest().getShots();
         String promptTemplate = ExplanationHelper.getStringFromFile(
                 PROMPT_TEMPLATE_PATH + "methods/" + explanationMetaData.getLang() + "_" + shots
         );
 
         // Replace baseline and experiment data (i.e. component, method, method input/output values and types)
-        promptTemplate = tmplExpService.replaceProperties(ExplanationHelper.convertQuerySolutionToMap(qs), promptTemplate);
+        // TODO: promptTemplate = tmplExpService.replaceProperties(ExplanationHelper.convertQuerySolutionToMap(qs), promptTemplate);
         logger.debug("Prompt Template: {}", promptTemplate);
 
         // Create further samples, depending on the shots passed (Outsource generalized method)
@@ -294,7 +295,7 @@ public class GenerativeExplanationsService {
 
     @Scheduled(fixedRate = 3600000)  // Every 1 hour
     @CacheEvict(value = "methodsWithData", allEntries = true)
-    public List<MethodItem> getAllMethodsWithDataFromParent(String parent, String graphUri) throws IOException {
+    public List<MethodItem> getAllMethodsWithDataFromParent(String parent, String graphUri) throws IOException, ExplanationException {
         List<MethodItem> methodsWithData = new ArrayList<>();
         String query = ExplanationHelper.getStringFromFile(SELECT_ALL_METHODS_WITH_DATA_FROM_ROOT)
                 .replace("?graph", "<" + graphUri + ">")

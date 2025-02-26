@@ -382,26 +382,23 @@ public class ExplanationService {
         return childrenMap;
     }
 
-        public String explainMethodSingle(ExplanationMetaData data) throws Exception {
-        String query = qanaryRepository.select_one_method(data);
-        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
-        if (!resultSet.hasNext()) {return "SPARQL query returned no results. Therefore, no explanation can be provided.";}
-        QuerySolution qs = resultSet.next();
+    public String explainMethodSingle(ExplanationMetaData data) throws Exception {
+        MethodItem method = qanaryRepository.requestMethodItem(data, data.getMethod());
 
         try {
             if (data.getItemTemplate() == null) {
                 data.setItemTemplate(
                         ExplanationHelper.getStringFromFile(
-                                METHOD_EXPLANATION_TEMPLATE + "item/" + data.getLang())); // TODO: Is it possible, to provide the placeholders somewhere where they can be seen from OpenAPI def. for example?
+                                METHOD_EXPLANATION_TEMPLATE + data.getLang())); // TODO: Is it possible, to provide the placeholders somewhere where they can be seen from OpenAPI def. for example?
             }
         } catch (IOException e) {
             throw new ExplanationException("Template for language" + data.getLang() + " not found. Please use a different language or provide your own template with the designated json property.", e);
         }
 
         if(Objects.equals(data.getAggregationSettings().getLeafs(), "template"))
-            return templateService.explain(data, qs);
+            return templateService.explain(data, method);
         else if(Objects.equals(data.getAggregationSettings().getLeafs(), "generative"))
-            return generativeService.explainSingleMethod(data, qs);
+            return generativeService.explainSingleMethod(data, method);
         else throw new ExplanationException("Please provide a valid value for \"leaf\": Either \"template\" or \"generative\".");
     }
 
