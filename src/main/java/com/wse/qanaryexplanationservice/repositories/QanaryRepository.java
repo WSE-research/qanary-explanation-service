@@ -1,5 +1,6 @@
 package com.wse.qanaryexplanationservice.repositories;
 
+import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
@@ -141,6 +142,7 @@ public class QanaryRepository {
         qsm.add("methodIdentifier", ResourceFactory.createResource(explanationMetaData.getMethod()));
         qsm.add("graph", ResourceFactory.createResource(explanationMetaData.getGraph().toASCIIString()));
         qsm.add("component", ResourceFactory.createResource(explanationMetaData.getQanaryComponent().getPrefixedComponentName()));
+        qsm.add("separator", ResourceFactory.createStringLiteral(ExplanationHelper.VARIABLE_SEPARATOR));
 
         return QanaryTripleStoreConnector.readFileFromResourcesWithMap(SELECT_ONE_METHOD_WITH_ID, qsm);
     }
@@ -151,10 +153,8 @@ public class QanaryRepository {
         String method = safeGetString(qs, "method");
         String annotatedAt = safeGetString(qs, "annotatedAt");
         String annotatedBy = safeGetString(qs, "annotatedBy");
-        String outputDataType = safeGetString(qs, "outputDataType");
-        String outputDataValue = safeGetString(qs, "outputDataValue");
-        List<Variable> inputVariables = this.extractVarsAndType(",", qs, this.SPARQL_VARNAME_INPUT_VARIABLES);
-        List<Variable> outputVariables = this.extractVarsAndType(",", qs, this.SPARQL_VARNAME_OUTPUT_VARIABLES);
+        List<Variable> inputVariables = this.extractVarsAndType(ExplanationHelper.VARIABLE_SEPARATOR, qs, this.SPARQL_VARNAME_INPUT_VARIABLES);
+        List<Variable> outputVariables = this.extractVarsAndType(ExplanationHelper.VARIABLE_SEPARATOR, qs, this.SPARQL_VARNAME_OUTPUT_VARIABLES);
         return new MethodItem(
                 caller,
                 callerName,

@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 @Service
 public class ExplanationHelper {
 
+    public static final String VARIABLE_SEPARATOR = "////";
+
     /**
      * Converts one QuerySolution to a Map with variable-value mappings, where the RDFNode values are converted to Strings
      * @param qs Single QuerySolution
