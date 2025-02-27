@@ -296,16 +296,19 @@ public class ExplanationController {
                               "itemTemplate": "custom item template",
                               "lang": "en",
                               "aggregationSettings": {
-                                "leafs": "Describes the way the leafs should be explained: template/generative",
-                                "type": "Describes how explanations are aggregated, either by summarizing 'explanations' or by providing all sub-method 'data'",
-                                "approach": "Aggregation approach: template/generative - For type 'data' only generative is possible"
+                                "leafs": "template/generative",
+                                "type": "explanations/data",
+                                "approach": "template/generative"
                               },
                               "gptRequest": {
-                                "doGenerative": true,
                                 "gptModel": "GPT_4",
                                 "shots": 1
                               },
-                              "tree": false
+                              "tree": false,
+                              "processingInformation": {
+                                "docstring": false,
+                                "sourcecode": true
+                              }
                             }
                             """))
             )
