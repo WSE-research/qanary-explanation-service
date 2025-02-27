@@ -2,11 +2,10 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
-import com.wse.qanaryexplanationservice.helper.Method;
-import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.dtos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
-import com.wse.qanaryexplanationservice.helper.pojos.Variable;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.commons.lang3.StringUtils;
@@ -28,11 +27,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Service
 public class TemplateExplanationsService {
@@ -41,9 +37,6 @@ public class TemplateExplanationsService {
     private static final String QUESTION_QUERY = "/queries/question_query.rq";
     private static final String ANNOTATIONS_QUERY = "/queries/fetch_all_annotation_types.rq";
     private static final String COMPONENTS_SPARQL_QUERY = "/queries/components_sparql_query.rq";
-    private static final String AGGREGATED_EXPLANATION_TEMPLATE = "/explanations/methods/aggregated/";
-    private static final String TEMPLATE_PLACEHOLDER_PREFIX = "${";
-    private static final String TEMPLATE_PLACEHOLDER_SUFFIX = "}";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_PREFIX = "&{";
     private static final String OUTER_TEMPLATE_PLACEHOLDER_SUFFIX = "}&";
     private static final String OUTER_TEMPLATE_REGEX = "&\\{.*}&";
@@ -90,7 +83,7 @@ public class TemplateExplanationsService {
 
         while (matcher.find()) {
             String a = matcher.group();
-            if (a.contains(TEMPLATE_PLACEHOLDER_PREFIX)) {
+            if (a.contains(ExplanationHelper.TEMPLATE_PLACEHOLDER_PREFIX)) {
                 template = template.replace(a, "");
             } else
                 template = template.replace(
@@ -131,21 +124,20 @@ public class TemplateExplanationsService {
      * @return Explanation as String
      */
     public String composeExplanations(QanaryComponent component, String lang, List<String> explanations, String prefix) {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         String componentURI = component.getComponentName();
-        explanations.remove(0); // remove prefix
-        AtomicInteger i = new AtomicInteger(0);
+        explanations.remove(0);
         if (Objects.equals(lang, "en")) {
-            result = "The component " + componentURI + " has added " + (explanations.size() == 5 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
-                    + prefix + ":";
+            result = new StringBuilder("The component " + componentURI + " has added " + (explanations.size() == 5 ? "at least " : "") + explanations.size() + " annotation(s) to the graph"
+                    + prefix + ":");
         } else if (Objects.equals(lang, "de")) {
-            result = "Die Komponente " + componentURI + " hat " + (explanations.size() == 5 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
-                    + prefix + ":";
+            result = new StringBuilder("Die Komponente " + componentURI + " hat " + (explanations.size() == 5 ? "mindestens " : "") + explanations.size() + " Annotation(en) zum Graph hinzugefügt"
+                    + prefix + ":");
         }
-        for(int counter = 0; counter < explanations.size(); counter++) {
-            result += (" " + (counter + 1) + ". " + explanations.get(counter));
+        for (int counter = 0; counter < explanations.size(); counter++) {
+            result.append(" ").append(counter + 1).append(". ").append(explanations.get(counter));
         }
-        return result;
+        return result.toString();
     }
 
     /**
@@ -417,7 +409,7 @@ public class TemplateExplanationsService {
     public String replaceProperties(Map<String, String> convertedMap, String template) {
         // Replace all placeholders with values from map
         template = StringSubstitutor
-                .replace(template, convertedMap, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX)
+                .replace(template, convertedMap, ExplanationHelper.TEMPLATE_PLACEHOLDER_PREFIX, ExplanationHelper.TEMPLATE_PLACEHOLDER_SUFFIX)
                 .replace(questionIdReplacement + "/question/stored-question__text_", "questionID:");
         template = checkAndReplaceOuterPlaceholder(template);
 
@@ -515,7 +507,7 @@ public class TemplateExplanationsService {
             logger.error("{}", e.getMessage());
             listItem = "For annotation type " + annotationType + " no explanation is available.";
         }
-        return StringSubstitutor.replace(listItem, items, TEMPLATE_PLACEHOLDER_PREFIX, TEMPLATE_PLACEHOLDER_SUFFIX);
+        return StringSubstitutor.replace(listItem, items, ExplanationHelper.TEMPLATE_PLACEHOLDER_PREFIX, ExplanationHelper.TEMPLATE_PLACEHOLDER_SUFFIX);
     }
 
     public String disassembleAnnotationTypeFromQuery(String sparql) throws IOException {
@@ -548,7 +540,7 @@ public class TemplateExplanationsService {
         List<String> explanations = new ArrayList<>();
         while (results.hasNext()) {
             QuerySolution querySolution = results.next();
-            if(querySolution.get("questionId") != null)
+            if (querySolution.get("questionId") != null)
                 questionId = querySolution.get("questionId").toString();
             explanations.add(replaceProperties(ExplanationHelper.convertQuerySolutionToMap(querySolution), componentTemplate));
         }
@@ -559,14 +551,12 @@ public class TemplateExplanationsService {
     }
 
     // Composes the passed explanations
-    public String getPipelineOutputExplanation(Map<String,String> explanations, String graphUri) throws IOException {
+    public String getPipelineOutputExplanation(Map<String, String> explanations, String graphUri) throws IOException {
         String explanation = ExplanationHelper.getStringFromFile("/explanations/pipeline/en_prefix").replace("${graph}", graphUri);
         String componentTemplate = ExplanationHelper.getStringFromFile("/explanations/pipeline/en_list_item");
         List<String> explanationsList = new ArrayList<>();
-        explanations.forEach((key,value) -> {
-            explanationsList.add(componentTemplate.replace("${component}", key).replace("${componentExplanation}", value));
-        });
-        return explanation + "\n" + StringUtils.join(explanationsList,"\n\n");
+        explanations.forEach((key, value) -> explanationsList.add(componentTemplate.replace("${component}", key).replace("${componentExplanation}", value)));
+        return explanation + "\n" + StringUtils.join(explanationsList, "\n\n");
     }
 
     public String composeInputAndOutputExplanations(String inputExplanation, String outputExplanation, String componentUri) throws IOException {
@@ -579,41 +569,24 @@ public class TemplateExplanationsService {
                 .replace("${outputExplanation}", outputExplanation);
     }
 
-    // TODO: Make the same as for the template for SPARQL queries, too. Hence, this would provide a great and flexible playground for both researcher and user.
+    /**
+     * Replaces placeholder inside the passed template with values from the passed QuerySolution.
+     * To do so the variable names of the QuerySolution should match the template variable names.
+     */
     public String replacePlaceholdersWithVarsFromQuerySolution(QuerySolution querySolution, List<String> variables, String template) {
         for (String variable : variables) {
-            template = template.replace("${" + variable + "}", querySolution.get(variable).toString().replace("<//>", "\n"));
+            template = template.replace(ExplanationHelper.TEMPLATE_PLACEHOLDER_PREFIX + variable + ExplanationHelper.TEMPLATE_PLACEHOLDER_SUFFIX, querySolution.get(variable).toString().replace("<//>", "\n"));
         }
         return template;
     }
 
-    public String replacePlaceholdersWithVarsFromMethodItem(String template, MethodItem method) {
-        return template
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "method" + TEMPLATE_PLACEHOLDER_SUFFIX, method.getMethodName())
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "callerName" + TEMPLATE_PLACEHOLDER_SUFFIX, method.getCallerName())
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "annotatedAt" + TEMPLATE_PLACEHOLDER_SUFFIX, method.getAnnotatedAt())
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "input" + TEMPLATE_PLACEHOLDER_SUFFIX, convertVariablesToStringRepresentation(method.getInputVariables()))
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "output" + TEMPLATE_PLACEHOLDER_SUFFIX, convertVariablesToStringRepresentation(method.getOutputVariables()));
-    }
-
-    public String convertVariablesToStringRepresentation(List<Variable> variables) {
-        StringBuilder builder = new StringBuilder();
-        if(!variables.isEmpty()) {
-            for (Variable variable : variables) {
-                builder.append("* " + variable.getType() + ": " + variable.getValue() + "\n");
-            }
-            return builder.toString();
-        }
-        else
-            return "Void";
-    }
-
     /**
      * This method should serve as general method to explain anything based on the passed vars.
+     *
      * @param explanationMetaData Consist of the required meta data
-     * @return
+     * @return Explanation
      */
-    public String explain(ExplanationMetaData explanationMetaData, QuerySolution qs) throws ExplanationException {
+    public String explainSingleMethod(ExplanationMetaData explanationMetaData, QuerySolution qs) throws ExplanationException {
         String itemTemplate = explanationMetaData.getItemTemplate();
         try {
             return checkAndReplaceOuterPlaceholder(replaceProperties(ExplanationHelper.convertQuerySolutionToMap(qs), itemTemplate));
@@ -622,22 +595,14 @@ public class TemplateExplanationsService {
         }
     }
 
-    public String explain(ExplanationMetaData data, MethodItem method) {
+    public String explainSingleMethod(ExplanationMetaData data, MethodItem method) {
         String itemTemplate = data.getItemTemplate();
-        return replacePlaceholdersWithVarsFromMethodItem(itemTemplate, method);
+        return ExplanationHelper.replaceMethodExplanationPlaceholder(itemTemplate, method, null, data);
     }
 
     public String explainAggregatedMethodWithExplanations(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws IOException {
-        String template = ExplanationHelper.getStringFromFile(AGGREGATED_EXPLANATION_TEMPLATE + data.getLang());
-        String childExplanations = IntStream.range(0, childMethods.size())
-                .mapToObj(i -> (i + 1) + ". " + childMethods.get(i).getExplanation())
-                .collect(Collectors.joining("\n"));
-        return template
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentMethod" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getMethodName())
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentMethodId" + TEMPLATE_PLACEHOLDER_SUFFIX, data.getMethod())
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentCaller" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getCaller())
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "parentCallerName" + TEMPLATE_PLACEHOLDER_SUFFIX, parent.getCallerName())
-                .replace(TEMPLATE_PLACEHOLDER_PREFIX + "explanations" + TEMPLATE_PLACEHOLDER_SUFFIX, childExplanations);
+        String template = ExplanationHelper.getStringFromFile("/explanations/methods/" + data.getLang());
+        return ExplanationHelper.replaceMethodExplanationPlaceholder(template, parent, childMethods, data);
     }
 
 }

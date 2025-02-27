@@ -1,8 +1,8 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
-import com.wse.qanaryexplanationservice.helper.Method;
-import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.dtos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.Method;
 import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.helper.pojos.Variable;
@@ -12,7 +12,6 @@ import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -33,7 +32,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.lang.reflect.Array;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.*;
@@ -177,10 +175,10 @@ public class TemplateExplanationsServiceTest {
          */
         //@Test
         //public void convertRdfNodeToStringValue() {
-            //Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
-            //Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
+        //Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
+        //Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
 
-            //    Map<String, String> comparedMap = ExplanationHelper.convertRdfNodeToStringValue(toBeConvertedMap);
+        //    Map<String, String> comparedMap = ExplanationHelper.convertRdfNodeToStringValue(toBeConvertedMap);
 
         //    assertEquals(comparingMap, comparedMap);
         //}
@@ -330,15 +328,16 @@ public class TemplateExplanationsServiceTest {
             @Test
             public void composeExplanationsTestGerman() {
                 String expectedDe = "Die Komponente component hat 3 Annotation(en) zum Graph hinzugefügt: 1. explanation1 2. explanation2 3. explanation3";
-                String computedDe = templateExplanationsService.composeExplanations(qanaryComponent,"de",explanations,"");
-                Assertions.assertEquals(expectedDe,computedDe);
+                String computedDe = templateExplanationsService.composeExplanations(qanaryComponent, "de", explanations, "");
+                Assertions.assertEquals(expectedDe, computedDe);
 
             }
+
             @Test
             public void composeExplanationsTestEnglish() {
                 String expectedEn = "The component component has added 3 annotation(s) to the graph: 1. explanation1 2. explanation2 3. explanation3";
                 String computedEn = templateExplanationsService.composeExplanations(qanaryComponent, "en", explanations, "");
-                Assertions.assertEquals(expectedEn,computedEn);
+                Assertions.assertEquals(expectedEn, computedEn);
             }
         }
     }
@@ -359,7 +358,7 @@ public class TemplateExplanationsServiceTest {
                         new Method("id1", true, "Explanation 1"),
                         new Method("id2", true, "Explanation 2")
                 );
-                ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null);
+                ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null, null);
                 String result = templateExplanationsService.explainAggregatedMethodWithExplanations(methodItem, childMethods, explanationMetaData);
 
                 assertEquals(EXPECTED_TEMPLATE, result);
@@ -387,8 +386,8 @@ public class TemplateExplanationsServiceTest {
                     "date",
                     "component"
             );
-            ExplanationMetaData data = new ExplanationMetaData("component",null,"graph",true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null,null,null, null);
-            String explanation = templateExplanationsService.explain(data, method);
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, null);
+            String explanation = templateExplanationsService.explainSingleMethod(data, method);
             Assertions.assertTrue(explanation.contains("* inputType: inputValue"));
             Assertions.assertTrue(explanation.contains("* outputType: outputValue"));
         }
@@ -396,8 +395,8 @@ public class TemplateExplanationsServiceTest {
         @Test
         void testExplainSingleMethodWithEmptyMethodItemVars() throws URISyntaxException, IOException {
             MethodItem method = getStandardMethodItem(new ArrayList<>(), new ArrayList<>());
-            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null,null,null, null);
-            String explanation = templateExplanationsService.explain(data, method);
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, null);
+            String explanation = templateExplanationsService.explainSingleMethod(data, method);
             logger.info("explanation: {}", explanation);
             Assertions.assertTrue(explanation.contains("Input values:\n" +
                     "Void"));

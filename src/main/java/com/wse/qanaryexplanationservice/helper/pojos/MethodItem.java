@@ -13,6 +13,8 @@ public class MethodItem {
     String annotatedAt;
     String annotatedBy;
     String explanation;
+    String docstring;
+    String sourceCode;
 
     public MethodItem(String caller, String callerName, String methodName, List<Variable> inputVariables, List<Variable> outputVariables, String annotatedAt, String annotatedBy) {
         this.caller = caller;
@@ -24,16 +26,38 @@ public class MethodItem {
         this.annotatedBy = annotatedBy;
     }
 
+    public String getDocstring() {
+        if (this.docstring != null)
+            return "Docstring: " + docstring + "\n";
+        else
+            return "";
+    }
+
+    public void setDocstring(String docstring) {
+        this.docstring = docstring;
+    }
+
+    public String getSourceCode() {
+        if (this.sourceCode != null)
+            return "Source code: " + sourceCode + "\n";
+        else
+            return "";
+    }
+
+    public void setSourceCode(String sourceCode) {
+        this.sourceCode = sourceCode;
+    }
+
     public List<Variable> getInputVariables() {
         return inputVariables;
     }
 
-    public List<Variable> getOutputVariables() {
-        return outputVariables;
-    }
-
     public void setInputVariables(List<Variable> inputVariables) {
         this.inputVariables = inputVariables;
+    }
+
+    public List<Variable> getOutputVariables() {
+        return outputVariables;
     }
 
     public void setOutputVariables(List<Variable> outputVariables) {

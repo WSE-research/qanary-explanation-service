@@ -2,16 +2,14 @@ package com.wse.qanaryexplanationservice.repositories;
 
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
+import com.wse.qanaryexplanationservice.helper.dtos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
-import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
 import com.wse.qanaryexplanationservice.helper.pojos.Variable;
-import com.wse.qanaryexplanationservice.services.ExplanationService;
 import eu.wdaqua.qanary.commons.triplestoreconnectors.QanaryTripleStoreConnector;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.aspectj.weaver.ast.Var;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,24 +41,14 @@ public class QanaryRepository {
     private final String SELECT_ONE_METHOD_WITH_ID = "/queries/fetch_one_method_id.rq";
     private final WebClient webClient;
     private final Logger logger = LoggerFactory.getLogger(QanaryRepository.class);
-    private final Map<String,String> SPARQL_VARNAME_INPUT_VARIABLES = new HashMap<>() {{
+    private final Map<String, String> SPARQL_VARNAME_INPUT_VARIABLES = new HashMap<>() {{
         put("type", "inputDataTypes");
         put("value", "inputDataValues");
     }};
-    private final Map<String,String> SPARQL_VARNAME_OUTPUT_VARIABLES = new HashMap<>() {{
+    private final Map<String, String> SPARQL_VARNAME_OUTPUT_VARIABLES = new HashMap<>() {{
         put("type", "outputDataType");
         put("value", "outputDataValue");
     }};
-
-    public Map<String, String> getSPARQL_VARNAME_INPUT_VARIABLES() {
-        return SPARQL_VARNAME_INPUT_VARIABLES;
-    }
-
-    public Map<String, String> getSPARQL_VARNAME_OUTPUT_VARIABLES() {
-        return SPARQL_VARNAME_OUTPUT_VARIABLES;
-    }
-
-
     @Value("${virtuoso.triplestore.endpoint}")
     private String virtuosoEndpoint;
     @Value("${virtuoso.triplestore.username}")
@@ -71,11 +59,25 @@ public class QanaryRepository {
     private String QANARY_HOST;
     @Value("${qanary.pipeline.port}")
     private int QANARY_PORT;
-
     private VirtGraph connection;
-
     public QanaryRepository() {
         this.webClient = createWebClient();
+    }
+
+    // New helper method to safely retrieve a variable from QuerySolution
+    public static String safeGetString(QuerySolution qs, String key) {
+        if (qs.contains(key) && !qs.get(key).toString().strip().isEmpty()) {
+            return qs.get(key).toString();
+        }
+        return null;
+    }
+
+    public Map<String, String> getSPARQL_VARNAME_INPUT_VARIABLES() {
+        return SPARQL_VARNAME_INPUT_VARIABLES;
+    }
+
+    public Map<String, String> getSPARQL_VARNAME_OUTPUT_VARIABLES() {
+        return SPARQL_VARNAME_OUTPUT_VARIABLES;
     }
 
     private WebClient createWebClient() {
@@ -149,7 +151,7 @@ public class QanaryRepository {
     }
 
     public MethodItem transformQuerySolutionToMethodItem(QuerySolution qs) throws ExplanationException {
-        if(qs == null){
+        if (qs == null) {
             throw new ExplanationException("SPARQL query returned no results. Therefore, no explanation can be provided.");
         }
         String caller = safeGetString(qs, "caller");
@@ -169,10 +171,10 @@ public class QanaryRepository {
                 annotatedBy);
     }
 
-    public List<Variable> extractVarsAndType(String separator, QuerySolution querySolution, Map<String,String> variableNamesMap) {
+    public List<Variable> extractVarsAndType(String separator, QuerySolution querySolution, Map<String, String> variableNamesMap) {
         String dataValues = this.safeGetString(querySolution, variableNamesMap.get("value"));
         String dataTypes = this.safeGetString(querySolution, variableNamesMap.get("type"));
-        if(dataTypes == null | dataValues == null)
+        if (dataTypes == null | dataValues == null)
             return new ArrayList<>();
         String[] dataValueArray = dataValues.split(separator);
         String[] dataTypesArray = dataTypes.split(separator);
@@ -185,15 +187,6 @@ public class QanaryRepository {
             throw new IllegalStateException("Mismatch between input data values and types.");
         }
         return variables;
-    }
-
-
-    // New helper method to safely retrieve a variable from QuerySolution
-    public static String safeGetString(QuerySolution qs, String key) {
-        if (qs.contains(key) && !qs.get(key).toString().strip().isEmpty()) {
-            return qs.get(key).toString();
-        }
-        return null;
     }
 
     public MethodItem requestMethodItem(ExplanationMetaData data, String method)

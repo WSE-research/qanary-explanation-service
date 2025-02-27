@@ -1,4 +1,9 @@
-package com.wse.qanaryexplanationservice.helper.pojos;
+package com.wse.qanaryexplanationservice.helper.dtos;
+
+import com.wse.qanaryexplanationservice.helper.pojos.AggregationSettings;
+import com.wse.qanaryexplanationservice.helper.pojos.GPTRequest;
+import com.wse.qanaryexplanationservice.helper.pojos.ProcessingInformation;
+import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,8 +22,9 @@ public class ExplanationMetaData {
     private AggregationSettings aggregationSettings;
     private GPTRequest gptRequest;
     private boolean tree;
+    private ProcessingInformation processingInformation;
 
-    public ExplanationMetaData(String qanaryComponent, String method, String graph, boolean tree, String itemTemplate, String prefixTemplate, String lang, AggregationSettings aggregationSettings, GPTRequest gptRequest) throws URISyntaxException {
+    public ExplanationMetaData(String qanaryComponent, String method, String graph, boolean tree, String itemTemplate, String prefixTemplate, String lang, AggregationSettings aggregationSettings, GPTRequest gptRequest, ProcessingInformation processingInformation) throws URISyntaxException {
         this.method = method;
         this.qanaryComponent = new QanaryComponent(qanaryComponent);
         this.graph = new URI(graph);
@@ -28,6 +34,15 @@ public class ExplanationMetaData {
         this.lang = lang == null ? "en" : lang;
         this.aggregationSettings = aggregationSettings;
         this.gptRequest = gptRequest;
+        this.processingInformation = processingInformation;
+    }
+
+    public ProcessingInformation getProcessingInformation() {
+        return processingInformation;
+    }
+
+    public void setProcessingInformation(ProcessingInformation processingInformation) {
+        this.processingInformation = processingInformation;
     }
 
     public boolean getTree() {

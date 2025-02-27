@@ -1,4 +1,4 @@
-package com.wse.qanaryexplanationservice.helper;
+package com.wse.qanaryexplanationservice.helper.enums;
 
 public enum GptModel {
     GPT_3_5, // 4K Token is standard

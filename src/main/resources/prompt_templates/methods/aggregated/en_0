@@ -1,11 +1,13 @@
 Given the following context:
-Here, we consider explanations for several executed java methods called from the parent method ${methodName}.
-As a user I'd like to understand what happened inside this parent method.
-For this purpose, a summarized and text-based explanation has to be generated.
-In the following, the explanations that should be summarized are listed and separated by new lines.
+Here, we consider the processed data of the concrete method ${method} and its called sub-methods. It was called by ${caller} at ${annotatedAt}.
+As a user I'd like to understand what happened inside this method.
+For this purpose, a text-based explanation has to be generated from the provided data by summarizing all this information.
 
-Explanations:
+Input values:
+${input}
 
-${explanations}
+Processed information:
+${processedInformation}
 
-Don't introduce your answer and only return the result.
+Output (return) values:
+${output}
