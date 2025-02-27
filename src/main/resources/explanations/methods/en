@@ -1,4 +1,4 @@
-The method '${method}' was called at ${annotatedAt} on behalf of '${callerName}'.
+The method '${method}' was called at ${annotatedAt} on behalf of '${caller}'.
 
 Input values:
 ${input}
