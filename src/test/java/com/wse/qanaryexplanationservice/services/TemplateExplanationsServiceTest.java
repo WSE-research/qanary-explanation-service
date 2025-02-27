@@ -2,10 +2,7 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
 import com.wse.qanaryexplanationservice.helper.dtos.ExplanationMetaData;
-import com.wse.qanaryexplanationservice.helper.pojos.Method;
-import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
-import com.wse.qanaryexplanationservice.helper.pojos.Variable;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
@@ -19,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +34,6 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -345,24 +340,30 @@ public class TemplateExplanationsServiceTest {
     @Nested
     @ExtendWith(MockitoExtension.class)
     class aggregatedMethodTests {
-        private static final String TEMPLATE = "Parent: ${parentMethod}, ID: ${parentMethodId}, Caller: ${parentCaller}, Caller Name: ${parentCallerName}, Explanations:\n${explanations}";
-        private static final String EXPECTED_TEMPLATE = "Parent: myMethod, ID: methodId123, Caller: myCaller, Caller Name: myCallerName, Explanations:\n1. Explanation 1\n2. Explanation 2";
+        private static final String EXPECTED_TEMPLATE = """
+                The method 'myMethod' was called at annotatedAt on behalf of 'myCallerName'.
+                
+                Input values:
+                Void
+                
+                Processed information:
+                Sub-method explanations:
+                Explanation 1
+                Explanation 2
+                
+                Output (return) values:
+                Void""";
 
         @Test
         void testExplainAggregatedMethodWithExplanations_Success() throws IOException, URISyntaxException {
-            try (MockedStatic<ExplanationHelper> mockedHelper = mockStatic(ExplanationHelper.class)) {
-                mockedHelper.when(() -> ExplanationHelper.getStringFromFile(any()))
-                        .thenReturn(TEMPLATE);
-                MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", null, null, "annotatedAt", "annotatedBy");
-                List<Method> childMethods = List.of(
-                        new Method("id1", true, "Explanation 1"),
-                        new Method("id2", true, "Explanation 2")
-                );
-                ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null, null);
-                String result = templateExplanationsService.explainAggregatedMethodWithExplanations(methodItem, childMethods, explanationMetaData);
-
-                assertEquals(EXPECTED_TEMPLATE, result);
-            }
+            MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", new ArrayList<Variable>(), new ArrayList<Variable>(), "annotatedAt", "annotatedBy");
+            List<Method> childMethods = List.of(
+                    new Method("id1", true, "Explanation 1"),
+                    new Method("id2", true, "Explanation 2")
+            );
+            ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null, new ProcessingInformation(false, false));
+            String result = templateExplanationsService.explainAggregatedMethodWithExplanations(methodItem, childMethods, explanationMetaData);
+            assertEquals(EXPECTED_TEMPLATE, result);
         }
     }
 
@@ -386,7 +387,7 @@ public class TemplateExplanationsServiceTest {
                     "date",
                     "component"
             );
-            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, null);
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, new ProcessingInformation(false, false));
             String explanation = templateExplanationsService.explainSingleMethod(data, method);
             Assertions.assertTrue(explanation.contains("* inputType: inputValue"));
             Assertions.assertTrue(explanation.contains("* outputType: outputValue"));
@@ -395,7 +396,7 @@ public class TemplateExplanationsServiceTest {
         @Test
         void testExplainSingleMethodWithEmptyMethodItemVars() throws URISyntaxException, IOException {
             MethodItem method = getStandardMethodItem(new ArrayList<>(), new ArrayList<>());
-            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, null);
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, new ProcessingInformation(false, false));
             String explanation = templateExplanationsService.explainSingleMethod(data, method);
             logger.info("explanation: {}", explanation);
             Assertions.assertTrue(explanation.contains("Input values:\n" +

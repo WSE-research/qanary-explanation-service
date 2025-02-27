@@ -30,19 +30,21 @@ class ExplanationServiceTest {
     private final ServiceDataForTests testData = new ServiceDataForTests();
     private final String TEST_GRAPH = "test-graph";
     private final ClassLoader classLoader = this.getClass().getClassLoader();
-    @Autowired
-    private ExplanationService explanationService;
 
     @Nested
     class PipelineTests {
+
         @MockBean
         private QanaryRepository qanaryRepository;
         @MockBean
         private TemplateExplanationsService templateExplanationsService;
+        @Autowired
+        private ExplanationService explanationService;
+        private ResultSet results;
 
         @BeforeEach
         public void setUpRepository() throws IOException {
-            ResultSet results = testData.createResultSet(testData.getExampleQuerySolutionList());
+            results = testData.createResultSet(testData.getExampleQuerySolutionList());
             Mockito.when(qanaryRepository.selectWithResultSet(any())).thenReturn(results);
             Mockito.when(qanaryRepository.getQuestionFromQuestionId(any())).thenReturn("Example Question?");
             Mockito.when(templateExplanationsService.getPipelineInputExplanation(any())).thenReturn("A");
@@ -54,8 +56,10 @@ class ExplanationServiceTest {
          */
         @Test
         public void getPipelineInformationTest() throws IOException {
+            Assertions.assertTrue(results.hasNext());
             ResultSet resultSet = explanationService.getPipelineInformation(TEST_GRAPH);
             Assertions.assertNotNull(resultSet);
+            Assertions.assertTrue(resultSet.hasNext());
 
             QuerySolution querySolution = resultSet.next();
             Assertions.assertEquals("test-graph", querySolution.get("graph").toString());
