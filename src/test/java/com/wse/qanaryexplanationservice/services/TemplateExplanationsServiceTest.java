@@ -344,15 +344,18 @@ public class TemplateExplanationsServiceTest {
                 The method 'myMethod' was called at annotatedAt on behalf of 'myCallerName'.
                 
                 Input values:
-                Void
+                none
                 
                 Processed information:
                 Sub-method explanations:
-                Explanation 1
-                Explanation 2
+                ---
+                1. Explanation 1
+                ---
+                2. Explanation 2
+                ---
                 
                 Output (return) values:
-                Void""";
+                none""";
 
         @Test
         void testExplainAggregatedMethodWithExplanations_Success() throws IOException, URISyntaxException {
