@@ -1,29 +1,67 @@
 package com.wse.qanaryexplanationservice.helper.pojos;
 
+import java.util.List;
+
 public class MethodItem {
 
     String method;
     String caller;
     String callerName;
     String methodName;
-    String outputType;
-    String outputValue;
-    String inputTypes;
-    String inputValues;
+    List<Variable> outputVariables;
+    List<Variable> inputVariables;
     String annotatedAt;
     String annotatedBy;
     String explanation;
+    String docstring;
+    String sourceCode;
 
-    public MethodItem(String caller, String callerName, String methodName, String outputType, String outputValue, String inputTypes, String inputValues, String annotatedAt, String annotatedBy) {
+    public MethodItem(String caller, String callerName, String methodName, List<Variable> inputVariables, List<Variable> outputVariables, String annotatedAt, String annotatedBy) {
         this.caller = caller;
         this.callerName = callerName == null ? caller : callerName;
         this.methodName = methodName;
-        this.outputType = outputType;
-        this.outputValue = outputValue;
-        this.inputTypes = inputTypes;
-        this.inputValues = inputValues;
+        this.inputVariables = inputVariables;
+        this.outputVariables = outputVariables;
         this.annotatedAt = annotatedAt;
         this.annotatedBy = annotatedBy;
+    }
+
+    public String getDocstring() {
+        if (this.docstring != null)
+            return "Docstring: " + docstring + "\n";
+        else
+            return "";
+    }
+
+    public void setDocstring(String docstring) {
+        this.docstring = docstring;
+    }
+
+    public String getSourceCode() {
+        if (this.sourceCode != null)
+            return "Source code: " + sourceCode + "\n";
+        else
+            return "";
+    }
+
+    public void setSourceCode(String sourceCode) {
+        this.sourceCode = sourceCode;
+    }
+
+    public List<Variable> getInputVariables() {
+        return inputVariables;
+    }
+
+    public void setInputVariables(List<Variable> inputVariables) {
+        this.inputVariables = inputVariables;
+    }
+
+    public List<Variable> getOutputVariables() {
+        return outputVariables;
+    }
+
+    public void setOutputVariables(List<Variable> outputVariables) {
+        this.outputVariables = outputVariables;
     }
 
     public String getMethod() {
@@ -66,38 +104,6 @@ public class MethodItem {
         this.caller = caller;
     }
 
-    public String getInputTypes() {
-        return inputTypes;
-    }
-
-    public void setInputTypes(String inputTypes) {
-        this.inputTypes = inputTypes;
-    }
-
-    public String getInputValues() {
-        return inputValues;
-    }
-
-    public void setInputValues(String inputValues) {
-        this.inputValues = inputValues;
-    }
-
-    public String getOutputType() {
-        return outputType;
-    }
-
-    public void setOutputType(String outputType) {
-        this.outputType = outputType;
-    }
-
-    public String getOutputValue() {
-        return outputValue;
-    }
-
-    public void setOutputValue(String outputValue) {
-        this.outputValue = outputValue;
-    }
-
     public String getAnnotatedAt() {
         return annotatedAt;
     }
@@ -120,9 +126,7 @@ public class MethodItem {
                 "Method ID: " + this.method + "\n" +
                 "Caller: " + this.callerName + "(" + this.caller + ")\n" +
                 "Annotated at: " + this.annotatedAt + "\n" +
-                "Output data value: " + this.outputValue + "\n" +
-                "Output type: " + this.outputType + "\n" +
-                "Input data values: " + this.inputValues + "\n" +
-                "Input data types: " + this.inputTypes;
+                "Output data: " + this.outputVariables + "\n" +
+                "Input data: " + this.inputVariables + "\n";
     }
 }

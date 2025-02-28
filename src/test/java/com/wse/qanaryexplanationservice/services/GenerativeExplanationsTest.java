@@ -1,7 +1,7 @@
 package com.wse.qanaryexplanationservice.services;
 
 
-import com.wse.qanaryexplanationservice.helper.AnnotationType;
+import com.wse.qanaryexplanationservice.helper.enums.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.repositories.QuestionsRepository;
 import org.apache.jena.query.QuerySolutionMap;
@@ -48,7 +48,7 @@ public class GenerativeExplanationsTest {
         repositoryMockedStatic.when(() -> QuestionsRepository.selectQuestion(any())).thenReturn(resultSet);
     }
 
-    ////////// getRandomQuestion ///////////
+    /// /////// getRandomQuestion ///////////
 
     @Test
     public void getRandomQuestionTestSuccessful() throws IOException {
@@ -63,7 +63,7 @@ public class GenerativeExplanationsTest {
         Assertions.assertEquals(question, EXAMPLE_QUESTION);
     }
 
-    ////////// selectRandomComponents ////////////
+    /// /////// selectRandomComponents ////////////
 
     @Test
     public void selectRandomComponentsTestNull() {

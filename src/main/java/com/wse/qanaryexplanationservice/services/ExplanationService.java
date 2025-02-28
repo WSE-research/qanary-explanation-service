@@ -2,8 +2,8 @@ package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
-import com.wse.qanaryexplanationservice.helper.Method;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.helper.dtos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
@@ -27,7 +27,6 @@ public class ExplanationService {
 
     private final Logger logger = LoggerFactory.getLogger(ExplanationService.class);
     private final String SELECT_PIPELINE_INFORMATION = "/queries/select_pipeline_information.rq";
-    private final String SELECT_ALL_LOGGED_METHODS = "/queries/fetch_all_logged_methods.rq";
     private final String METHOD_EXPLANATION_TEMPLATE = "/explanations/methods/";
     private final String SELECT_CHILD_PARENT_METHODS = "/queries/fetch_child_parent_methods.rq";
     private final String ASK_IF_CHILDS_EXIST = "/queries/ask_if_method_has_childs.rq";
@@ -217,17 +216,17 @@ public class ExplanationService {
 
     public String explain(QanaryExplanationData data) throws IOException {
         if (data.getExplanations() == null || data.getExplanations().isEmpty()) { // componentName, questionId and graph
-                                                                                  // provided // component-based
-                                                                                  // explanation
+            // provided // component-based
+            // explanation
             QanaryComponent qanaryComponent = new QanaryComponent(data.getComponent());
             try {
                 return getComponentExplanation(data.getGraph(), qanaryComponent); // TODO: Add lang-support
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e.toString());
             }
-        } else if (data.getComponent() != "" || data.getComponent() != null) { // componentName, componentExplanations,
-                                                                               // questionId and graph are provided //
-                                                                               // PaC-based explanation
+        } else if (!data.getComponent().isEmpty() || data.getComponent() != null) { // componentName, componentExplanations,
+            // questionId and graph are provided //
+            // PaC-based explanation
             String explanationTemplate = ExplanationHelper.getStringFromFile("/explanations/pipeline_component/en_prefix");
             String components = StringUtils.join(data.getExplanations().keySet().toArray(), ", ");
             return explanationTemplate
@@ -238,24 +237,19 @@ public class ExplanationService {
                     .replace("${graph}", data.getGraph())
                     .replace("${componentsAndExplanations}", composeComponentExplanations(data.getExplanations()));
         } else { // only questionId and graph are provided // System-based explanation
-                 // TODO: Implement. Extend pipeline with /explain or handle it here?
+            // TODO: Implement. Extend pipeline with /explain or handle it here?
         }
         return null;
     }
 
     public String composeComponentExplanations(Map<String, String> componentAndExplanation) {
         StringBuilder composedExplanations = new StringBuilder();
-        componentAndExplanation.forEach((k, v) -> {
-            composedExplanations.append(k + ": " + v + "\n\n");
-        });
+        componentAndExplanation.forEach((k, v) -> composedExplanations.append(k).append(": ").append(v).append("\n\n"));
         return composedExplanations.toString();
     }
 
     /**
      * Wrapper method that decides whether the target method is atomic or a parent of other methods. Based on this result, the path to the dark or bright side is chosen.
-     * @param metaData
-     * @return
-     * @throws Exception
      */
     public String explainMethod(ExplanationMetaData metaData) throws Exception {
         QuerySolutionMap qsm = new QuerySolutionMap();
@@ -281,30 +275,28 @@ public class ExplanationService {
                 .orElse(null);
 
         return metaData.getTree()
-                ? convertExplanationsToTree(childParentPairsMap, root, metaData)
-                : root.getExplanation();
+                ? convertExplanationsToTree(childParentPairsMap, root)
+                : Objects.requireNonNull(root).getExplanation();
     }
 
     /**
      * Takes a ResultSet containing leaf, parent, root and hasChilds variables.
      * It creates mappings of parents and their childs. For the latter it additionally checks if the child is atomic, i.e. a leaf.
      * This distinction is relevant, as
-     * @param childParentPairs
-     * @return
      */
     public Map<Method, List<Method>> createParentChildrenMap(ResultSet childParentPairs) {
         Map<Method, List<Method>> childrenMap = new HashMap<>(); // Contains all 1-level subtree's
-            while (childParentPairs.hasNext()) {
-                QuerySolution qs = childParentPairs.next();
-                Method child = new Method(qs.get("leaf").toString(), qs.get("hasChilds").asLiteral().getInt() == 0);
-                Method parent = new Method(qs.get("parent").toString(), false);
-                childrenMap.putIfAbsent(parent, new ArrayList<>());
-                childrenMap.get(parent).add(child);
-            }
-            return childrenMap;
+        while (childParentPairs.hasNext()) {
+            QuerySolution qs = childParentPairs.next();
+            Method child = new Method(qs.get("leaf").toString(), qs.get("hasChilds").asLiteral().getInt() == 0);
+            Method parent = new Method(qs.get("parent").toString(), false);
+            childrenMap.putIfAbsent(parent, new ArrayList<>());
+            childrenMap.get(parent).add(child);
+        }
+        return childrenMap;
     }
 
-    public String convertExplanationsToTree(Map<Method, List<Method>> childParentPairsMap, Method root, ExplanationMetaData metaData) {
+    public String convertExplanationsToTree(Map<Method, List<Method>> childParentPairsMap, Method root) {
         JSONObject jsonObject = new JSONObject();
 
         // Create the root node JSON object
@@ -313,10 +305,10 @@ public class ExplanationService {
         rootObject.put("explanation", root.getExplanation());
 
         JSONArray jsonArray = new JSONArray();
-        if(childParentPairsMap.containsKey(root)) {
-            for(Method child : childParentPairsMap.get(root)) {
-                if(childParentPairsMap.containsKey(child)) {
-                    jsonArray.put(new JSONObject (convertExplanationsToTree(childParentPairsMap, child, metaData)));
+        if (childParentPairsMap.containsKey(root)) {
+            for (Method child : childParentPairsMap.get(root)) {
+                if (childParentPairsMap.containsKey(child)) {
+                    jsonArray.put(new JSONObject(convertExplanationsToTree(childParentPairsMap, child)));
                 } else {
                     JSONObject childObject = new JSONObject();
                     childObject.put("id", child.getId());
@@ -367,12 +359,11 @@ public class ExplanationService {
         return childParentPairsMap;
     }
 
-
     public Map<Method, List<Method>> explainAllLeafs(Map<Method, List<Method>> childrenMap, ExplanationMetaData metaData) throws Exception {
         for (Method parent : childrenMap.keySet()) {
             List<Method> children = childrenMap.get(parent);
             for (Method child : children) {
-                if(child.isLeaf()) {
+                if (child.isLeaf()) {
                     logger.info("Child: {}", child.getId());
                     metaData.setMethod(child.getId());
                     child.setExplanation(explainMethodSingle(metaData));
@@ -382,27 +373,25 @@ public class ExplanationService {
         return childrenMap;
     }
 
-        public String explainMethodSingle(ExplanationMetaData data) throws Exception {
-        String query = qanaryRepository.select_one_method(data);
-        ResultSet resultSet = qanaryRepository.selectWithResultSet(query);
-        if (!resultSet.hasNext()) {return "SPARQL query returned no results. Therefore, no explanation can be provided.";}
-        QuerySolution qs = resultSet.next();
+    public String explainMethodSingle(ExplanationMetaData data) throws Exception {
+        MethodItem method = qanaryRepository.requestMethodItem(data, data.getMethod());
 
         try {
             if (data.getItemTemplate() == null) {
                 data.setItemTemplate(
                         ExplanationHelper.getStringFromFile(
-                                METHOD_EXPLANATION_TEMPLATE + "item/" + data.getLang())); // TODO: Is it possible, to provide the placeholders somewhere where they can be seen from OpenAPI def. for example?
+                                METHOD_EXPLANATION_TEMPLATE + data.getLang())); // TODO: Is it possible, to provide the placeholders somewhere where they can be seen from OpenAPI def. for example?
             }
         } catch (IOException e) {
             throw new ExplanationException("Template for language" + data.getLang() + " not found. Please use a different language or provide your own template with the designated json property.", e);
         }
 
-        if(Objects.equals(data.getAggregationSettings().getLeafs(), "template"))
-            return templateService.explain(data, qs);
-        else if(Objects.equals(data.getAggregationSettings().getLeafs(), "generative"))
-            return generativeService.explainSingleMethod(data, qs);
-        else throw new ExplanationException("Please provide a valid value for \"leaf\": Either \"template\" or \"generative\".");
+        if (Objects.equals(data.getAggregationSettings().getLeafs(), "template"))
+            return templateService.explainSingleMethod(data, method);
+        else if (Objects.equals(data.getAggregationSettings().getLeafs(), "generative"))
+            return generativeService.explainSingleMethod(data, method);
+        else
+            throw new ExplanationException("Please provide a valid value for \"leaf\": Either \"template\" or \"generative\".");
     }
 
 }

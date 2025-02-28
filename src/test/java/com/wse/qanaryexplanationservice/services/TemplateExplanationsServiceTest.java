@@ -1,10 +1,8 @@
 package com.wse.qanaryexplanationservice.services;
 
 import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
-import com.wse.qanaryexplanationservice.helper.Method;
-import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
-import com.wse.qanaryexplanationservice.helper.pojos.MethodItem;
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.dtos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;
@@ -18,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +34,6 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -174,10 +170,10 @@ public class TemplateExplanationsServiceTest {
          */
         //@Test
         //public void convertRdfNodeToStringValue() {
-            //Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
-            //Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
+        //Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
+        //Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
 
-            //    Map<String, String> comparedMap = ExplanationHelper.convertRdfNodeToStringValue(toBeConvertedMap);
+        //    Map<String, String> comparedMap = ExplanationHelper.convertRdfNodeToStringValue(toBeConvertedMap);
 
         //    assertEquals(comparingMap, comparedMap);
         //}
@@ -327,15 +323,16 @@ public class TemplateExplanationsServiceTest {
             @Test
             public void composeExplanationsTestGerman() {
                 String expectedDe = "Die Komponente component hat 3 Annotation(en) zum Graph hinzugefügt: 1. explanation1 2. explanation2 3. explanation3";
-                String computedDe = templateExplanationsService.composeExplanations(qanaryComponent,"de",explanations,"");
-                Assertions.assertEquals(expectedDe,computedDe);
+                String computedDe = templateExplanationsService.composeExplanations(qanaryComponent, "de", explanations, "");
+                Assertions.assertEquals(expectedDe, computedDe);
 
             }
+
             @Test
             public void composeExplanationsTestEnglish() {
                 String expectedEn = "The component component has added 3 annotation(s) to the graph: 1. explanation1 2. explanation2 3. explanation3";
                 String computedEn = templateExplanationsService.composeExplanations(qanaryComponent, "en", explanations, "");
-                Assertions.assertEquals(expectedEn,computedEn);
+                Assertions.assertEquals(expectedEn, computedEn);
             }
         }
     }
@@ -343,26 +340,82 @@ public class TemplateExplanationsServiceTest {
     @Nested
     @ExtendWith(MockitoExtension.class)
     class aggregatedMethodTests {
-        private static final String TEMPLATE = "Parent: ${parentMethod}, ID: ${parentMethodId}, Caller: ${parentCaller}, Caller Name: ${parentCallerName}, Explanations:\n${explanations}";
-        private static final String EXPECTED_TEMPLATE = "Parent: myMethod, ID: methodId123, Caller: myCaller, Caller Name: myCallerName, Explanations:\n1. Explanation 1\n2. Explanation 2";
+        private static final String EXPECTED_TEMPLATE = """
+                The method 'myMethod' was called at annotatedAt on behalf of 'myCallerName'.
+                
+                Input values:
+                Void
+                
+                Processed information:
+                Sub-method explanations:
+                Explanation 1
+                Explanation 2
+                
+                Output (return) values:
+                Void""";
 
         @Test
         void testExplainAggregatedMethodWithExplanations_Success() throws IOException, URISyntaxException {
-            try (MockedStatic<ExplanationHelper> mockedHelper = mockStatic(ExplanationHelper.class)) {
-                mockedHelper.when(() -> ExplanationHelper.getStringFromFile(any()))
-                        .thenReturn(TEMPLATE);
-                MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", "outputType", "outputValue", "inputTypes", "inputValues", "annotatedAt", "annotatedBy");
-                List<Method> childMethods = List.of(
-                        new Method("id1", true, "Explanation 1"),
-                        new Method("id2", true, "Explanation 2")
-                );
-                ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null);
-                String result = templateExplanationsService.explainAggregatedMethodWithExplanations(methodItem, childMethods, explanationMetaData);
+            MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", new ArrayList<Variable>(), new ArrayList<Variable>(), "annotatedAt", "annotatedBy");
+            List<Method> childMethods = List.of(
+                    new Method("id1", true, "Explanation 1"),
+                    new Method("id2", true, "Explanation 2")
+            );
+            ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null, new ProcessingInformation(false, false));
+            String result = templateExplanationsService.explainAggregatedMethodWithExplanations(methodItem, childMethods, explanationMetaData);
+            assertEquals(EXPECTED_TEMPLATE, result);
+        }
+    }
 
-                assertEquals(EXPECTED_TEMPLATE, result);
-            }
+    @Nested
+    class explainSingleMethodTests {
+
+        @Test
+        void testExplainSingleMethodWithNonEmptyMethodItem() throws URISyntaxException, IOException {
+            ArrayList inputvars = new ArrayList() {{
+                add(new Variable("inputType", "inputValue"));
+            }};
+            ArrayList outputvarrs = new ArrayList<>() {{
+                add(new Variable("outputType", "outputValue"));
+            }};
+            MethodItem method = new MethodItem(
+                    "caller",
+                    "callerName",
+                    "methodName",
+                    inputvars,
+                    outputvarrs,
+                    "date",
+                    "component"
+            );
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, new ProcessingInformation(false, false));
+            String explanation = templateExplanationsService.explainSingleMethod(data, method);
+            Assertions.assertTrue(explanation.contains("* inputType: inputValue"));
+            Assertions.assertTrue(explanation.contains("* outputType: outputValue"));
         }
 
+        @Test
+        void testExplainSingleMethodWithEmptyMethodItemVars() throws URISyntaxException, IOException {
+            MethodItem method = getStandardMethodItem(new ArrayList<>(), new ArrayList<>());
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, new ProcessingInformation(false, false));
+            String explanation = templateExplanationsService.explainSingleMethod(data, method);
+            logger.info("explanation: {}", explanation);
+            Assertions.assertTrue(explanation.contains("Input values:\n" +
+                    "Void"));
+            Assertions.assertTrue(explanation.contains("Output (return) values:\n" +
+                    "Void"));
+        }
+
+        public MethodItem getStandardMethodItem(List<Variable> inputvars, List<Variable> outputvars) {
+            return new MethodItem(
+                    "caller",
+                    "callerName",
+                    "methodName",
+                    inputvars,
+                    outputvars,
+                    "date",
+                    "component"
+            );
+        }
 
     }
 

@@ -1,7 +1,7 @@
 package com.wse.qanaryexplanationservice.repositories;
 
 import com.wse.qanaryexplanationservice.exceptions.GenerativeExplanationException;
-import com.wse.qanaryexplanationservice.helper.GptModel;
+import com.wse.qanaryexplanationservice.helper.enums.GptModel;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -28,18 +28,14 @@ public class GenerativeExplanationsRepository {
     private final URL COMPLETIONS_ENDPOINT = URI.create("https://api.openai.com/v1/completions").toURL();
     private final URL CHAT_COMPLETIONS_ENDPOINT = URI.create("https://api.openai.com/v1/chat/completions").toURL();
     private final int RESPONSE_TOKEN = 1000;
-    
-    @Value("${chatgpt.api.key}")
-    private String chatGptApiKey;
-
     private final Map<GptModel, ModelConfig> MODEL_CONFIGS = new HashMap<>() {{
         put(GptModel.GPT_3_5, new ModelConfig(COMPLETIONS_ENDPOINT, "gpt-3.5-turbo-instruct"));
         put(GptModel.GPT_3_5_16K, new ModelConfig(CHAT_COMPLETIONS_ENDPOINT, "gpt-3.5-turbo-16k"));
         put(GptModel.GPT_4, new ModelConfig(CHAT_COMPLETIONS_ENDPOINT, "gpt-4-0613"));
         put(GptModel.GPT_4_O, new ModelConfig(null, ""));
     }};
-
-    private record ModelConfig(URL endpoint, String modelName) {}
+    @Value("${chatgpt.api.key}")
+    private String chatGptApiKey;
 
     public GenerativeExplanationsRepository() throws MalformedURLException {
     }
@@ -47,11 +43,11 @@ public class GenerativeExplanationsRepository {
     public String sendGptPrompt(String body, int tokens, GptModel gptModel) throws GenerativeExplanationException, Exception {
         gptModel = selectGptModelBasedOnTokens(gptModel, tokens);
         ModelConfig config = MODEL_CONFIGS.get(gptModel);
-        
+
         HttpURLConnection con = (HttpURLConnection) config.endpoint().openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
-        
+
         if (chatGptApiKey.isEmpty()) {
             throw new GenerativeExplanationException("Missing ChatGPT/OpenAI API Key");
         }
@@ -67,8 +63,8 @@ public class GenerativeExplanationsRepository {
 
         try (var reader = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
             String output = reader.lines()
-                .reduce((a, b) -> a + b)
-                .orElseThrow(() -> new GenerativeExplanationException("Empty response from GPT API"));
+                    .reduce((a, b) -> a + b)
+                    .orElseThrow(() -> new GenerativeExplanationException("Empty response from GPT API"));
             return parseResponse(output, config.endpoint() == COMPLETIONS_ENDPOINT);
         }
     }
@@ -76,14 +72,14 @@ public class GenerativeExplanationsRepository {
     private String parseResponse(String output, boolean isCompletionsEndpoint) {
         JSONObject response = new JSONObject(output);
         JSONObject choice = response.getJSONArray("choices").getJSONObject(0);
-        return isCompletionsEndpoint ? 
-            choice.getString("text") : 
-            choice.getJSONObject("message").getString("content");
+        return isCompletionsEndpoint ?
+                choice.getString("text") :
+                choice.getJSONObject("message").getString("content");
     }
 
     public GptModel selectGptModelBasedOnTokens(GptModel gptModel, int tokens) {
-        return (gptModel.equals(GptModel.GPT_3_5) && tokens > (4096 - RESPONSE_TOKEN)) ? 
-            GptModel.GPT_3_5_16K : gptModel;
+        return (gptModel.equals(GptModel.GPT_3_5) && tokens > (4096 - RESPONSE_TOKEN)) ?
+                GptModel.GPT_3_5_16K : gptModel;
     }
 
     private JSONObject createRequest(String body, GptModel gptModel) {
@@ -96,12 +92,15 @@ public class GenerativeExplanationsRepository {
             data.put("max_tokens", RESPONSE_TOKEN);
         } else {
             JSONArray messages = new JSONArray()
-                .put(new JSONObject()
-                    .put("role", "user")
-                    .put("content", body));
+                    .put(new JSONObject()
+                            .put("role", "user")
+                            .put("content", body));
             data.put("messages", messages);
         }
 
         return data;
+    }
+
+    private record ModelConfig(URL endpoint, String modelName) {
     }
 }

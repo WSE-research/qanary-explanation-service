@@ -3,9 +3,9 @@ package com.wse.qanaryexplanationservice.controller;
 import com.wse.qanaryexplanationservice.exceptions.ExplanationException;
 import com.wse.qanaryexplanationservice.exceptions.GenerativeExplanationException;
 import com.wse.qanaryexplanationservice.helper.dtos.ComposedExplanationDTO;
+import com.wse.qanaryexplanationservice.helper.dtos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.dtos.QanaryExplanationData;
 import com.wse.qanaryexplanationservice.helper.pojos.ComposedExplanation;
-import com.wse.qanaryexplanationservice.helper.pojos.ExplanationMetaData;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 import com.wse.qanaryexplanationservice.services.ExplanationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,20 +13,21 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 @RestController
 public class ExplanationController {
 
     private final Logger logger = LoggerFactory.getLogger(ExplanationController.class);
-    @Autowired
-    private ExplanationService explanationService;
+    private final ExplanationService explanationService;
+
+    public ExplanationController(ExplanationService explanationService) {
+        this.explanationService = explanationService;
+    }
 
     /**
      * Computes the explanations for (currently) the output data for a specific
@@ -109,10 +110,10 @@ public class ExplanationController {
             @PathVariable String graphURI,
             @PathVariable(required = false) QanaryComponent component,
             @RequestHeader(value = "accept", required = false) String acceptHeader) {
-        String explanation = "";
+        String explanation;
         try {
             if (component == null) {
-                explanation = explanationService.getTemplateComponentOutputExplanation(graphURI, component,
+                explanation = explanationService.getTemplateComponentOutputExplanation(graphURI, null,
                         acceptHeader);
             } else {
                 explanation = explanationService.explainPipelineOutput(graphURI);
@@ -198,15 +199,10 @@ public class ExplanationController {
 
     /**
      * Endpoint explaining a component / pipeline input and output data
-     *
-     * @param body TODO
-     * @return
-     * @throws IOException
      */
     @PostMapping(value = {"/explain"})
     @Operation()
-    public ResponseEntity<?> getComposedExplanation(@RequestBody QanaryExplanationData body)
-            throws ExplanationException { // TODO: Extend methods
+    public ResponseEntity<?> getComposedExplanation(@RequestBody QanaryExplanationData body) { // TODO: Extend methods
         try {
             logger.info(body.getComponent());
             String explanation = explanationService.explain(body);
@@ -250,8 +246,6 @@ public class ExplanationController {
      * @param graph     Knowledge graph
      * @param component Component name
      * @return Explanation as String
-     * @throws URISyntaxException
-     * @throws IOException
      *//*
      * @GetMapping("/explainmethod")
      * public ResponseEntity<?> getMethodExplanation(@RequestParam String
@@ -267,8 +261,8 @@ public class ExplanationController {
     @GetMapping(value = {"/explain/{graph}", "/explain/{graph}/{component}"})
     @Operation()
     public ResponseEntity<?> getComposedExplanation(
-            @PathVariable(required = true) String graph,
-            @PathVariable(required = false) String component) throws IOException {
+            @PathVariable() String graph,
+            @PathVariable(required = false) String component) {
         try {
             QanaryExplanationData qanaryExplanationData = new QanaryExplanationData();
             qanaryExplanationData.setComponent(component);
@@ -290,7 +284,6 @@ public class ExplanationController {
     @Operation(
             summary = "Get aggregated explanations for component methods",
             description = "Retrieves and aggregates explanations for component methods based on the provided metadata",
-            parameters = {},
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Explanation metadata configuration",
                     required = true,
@@ -303,21 +296,24 @@ public class ExplanationController {
                               "itemTemplate": "custom item template",
                               "lang": "en",
                               "aggregationSettings": {
-                                "leafs": "Describes the way the leafs should be explained: template/generative",
-                                "type": "Describes how explanations are aggregated, either by summarizing 'explanations' or by providing all sub-method 'data'",
-                                "approach": "Aggregation approach: template/generative - For type 'data' only generative is possible"
+                                "leafs": "template/generative",
+                                "type": "explanations/data",
+                                "approach": "template/generative"
                               },
                               "gptRequest": {
-                                "doGenerative": true,
                                 "gptModel": "GPT_4",
                                 "shots": 1
                               },
-                              "tree": false
+                              "tree": false,
+                              "processingInformation": {
+                                "docstring": false,
+                                "sourcecode": true
+                              }
                             }
                             """))
             )
     )
-    public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) throws Exception {
+    public ResponseEntity<?> getAggregateExplanations(@RequestBody ExplanationMetaData explanationMetaData) {
         try {
             String explanation = explanationService.explainMethod(explanationMetaData);
             logger.info("Explanation: {}", explanation);

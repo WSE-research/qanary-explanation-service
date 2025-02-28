@@ -1,4 +1,4 @@
-package com.wse.qanaryexplanationservice.helper;
+package com.wse.qanaryexplanationservice.helper.pojos;
 
 import java.util.Objects;
 
@@ -7,10 +7,12 @@ public class Method {
     private String id;
     private boolean isLeaf;
     private String explanation;
+
     public Method(String id, boolean isLeaf) {
         this.id = id;
         this.isLeaf = isLeaf;
     }
+
     public Method(String id, boolean isLeaf, String explanation) {
         this.id = id;
         this.isLeaf = isLeaf;

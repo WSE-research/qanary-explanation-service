@@ -1,6 +1,6 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.helper.AnnotationType;
+import com.wse.qanaryexplanationservice.helper.enums.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryRequestObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.InputQueryExample;
@@ -16,7 +16,6 @@ import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -86,14 +85,14 @@ public class GenerativeExplanations {
     private static final String QUESTION_QUERY = "/queries/random_question_query.rq";
     private static final Logger logger = LoggerFactory.getLogger(GenerativeExplanations.class);
 
-    @Autowired
-    private QanaryRepository qanaryRepository;
+    private final QanaryRepository qanaryRepository;
 
-    public GenerativeExplanations(Environment environment) {
+    public GenerativeExplanations(Environment environment, QanaryRepository qanaryRepository) {
         for (AnnotationType annType : AnnotationType.values()
         ) {
             TYPE_AND_COMPONENTS.put(annType.name(), environment.getProperty("qanary.components." + annType.name().toLowerCase(), QanaryComponent[].class));
         }
+        this.qanaryRepository = qanaryRepository;
     }
 
     @Value("${questionId.replacement}")

@@ -1,14 +1,13 @@
 package com.wse.qanaryexplanationservice.helper.pojos;
 
-import com.wse.qanaryexplanationservice.helper.GptModel;
+import com.wse.qanaryexplanationservice.helper.enums.GptModel;
 
 public class GPTRequest {
 
-    private boolean doGenerative;
     private GptModel gptModel;
     private int shots;
-    GPTRequest(boolean doGenerative, GptModel gptModel, int shots) {
-        this.doGenerative = doGenerative;
+
+    GPTRequest(GptModel gptModel, int shots) {
         this.shots = shots;
         this.gptModel = gptModel;
     }
@@ -29,18 +28,9 @@ public class GPTRequest {
         this.shots = shots;
     }
 
-    public boolean isDoGenerative() {
-        return doGenerative;
-    }
-
-    public void setDoGenerative(boolean doGenerative) {
-        this.doGenerative = doGenerative;
-    }
-
     @Override
     public String toString() {
-        return "Do Generative: " + this.doGenerative + "\n" +
-                "Shots: " + this.shots + "\n" +
+        return "Shots: " + this.shots + "\n" +
                 "GPT Model: " + this.gptModel.toString();
     }
 }
