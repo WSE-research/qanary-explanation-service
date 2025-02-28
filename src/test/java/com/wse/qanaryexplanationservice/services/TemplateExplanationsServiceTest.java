@@ -403,9 +403,9 @@ public class TemplateExplanationsServiceTest {
             String explanation = templateExplanationsService.explainSingleMethod(data, method);
             logger.info("explanation: {}", explanation);
             Assertions.assertTrue(explanation.contains("Input values:\n" +
-                    "Void"));
+                    "none"));
             Assertions.assertTrue(explanation.contains("Output (return) values:\n" +
-                    "Void"));
+                    "none"));
         }
 
         public MethodItem getStandardMethodItem(List<Variable> inputvars, List<Variable> outputvars) {
