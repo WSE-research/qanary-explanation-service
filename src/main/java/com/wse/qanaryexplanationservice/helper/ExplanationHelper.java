@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class ExplanationHelper {
@@ -51,16 +52,24 @@ public class ExplanationHelper {
             }
             return builder.toString();
         } else
-            return "Void";
+            return "none";
     }
 
     /*
     Generates processingInformation depending on the user's preference as well as the existing information
      */
     public static String generateProcessingInformation(MethodItem method, List<Method> childMethodList, ExplanationMetaData data) {
-        return (data.getProcessingInformation().isDocstring() ? method.getDocstring() : "") +
-                (data.getProcessingInformation().isSourcecode() ? method.getSourceCode() : "") +
-                (childMethodList != null ? "Sub-method explanations:\n" + String.join("\n", childMethodList.stream().map(Method::getExplanation).toList()) : "");
+        String processingInformation =
+                (data.getProcessingInformation().isDocstring() ? method.getDocstring() : "") +
+                        (data.getProcessingInformation().isSourcecode() ? method.getSourceCode() : "") +
+                        (childMethodList != null
+                                ? "Sub-method explanations:\n---\n" +
+                                IntStream.range(0, childMethodList.size())
+                                        .mapToObj(i -> (i + 1) + ". " + childMethodList.get(i).getExplanation())
+                                        .collect(Collectors.joining("\n---\n")) +
+                                "\n---"
+                                : "");
+        return processingInformation.isEmpty() ? "" : "Processed information:\n" + processingInformation;
     }
 
     /**

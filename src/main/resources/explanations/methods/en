@@ -3,7 +3,6 @@ The method '${method}' was called at ${annotatedAt} on behalf of '${caller}'.
 Input values:
 ${input}
 
-Processed information:
 ${processedInformation}
 
 Output (return) values:

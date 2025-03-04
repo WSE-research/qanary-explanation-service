@@ -6,7 +6,6 @@ For this purpose, a text-based explanation has to be generated from the provided
 Input values:
 ${input}
 
-Processed information:
 ${processedInformation}
 
 Output (return) values:
