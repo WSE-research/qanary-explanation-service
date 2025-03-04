@@ -600,9 +600,18 @@ public class TemplateExplanationsService {
         return ExplanationHelper.replaceMethodExplanationPlaceholder(itemTemplate, method, null, data);
     }
 
+    public Method explainSingleMethodReturnMethod(ExplanationMetaData data, MethodItem methodItem) {
+        String explanation = explainSingleMethod(data, methodItem);
+        return new Method(methodItem.getMethod(), methodItem.getMethodName(), explanation, methodItem.getDocstringRepresentation(), methodItem.getSourceCodeRepresentation());
+    }
+
     public String explainAggregatedMethodWithExplanations(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws IOException {
         String template = ExplanationHelper.getStringFromFile("/explanations/methods/" + data.getLang());
         return ExplanationHelper.replaceMethodExplanationPlaceholder(template, parent, childMethods, data);
     }
 
+    public Method explainAggregatedMethodWithExplanationsReturnMethod(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws IOException {
+        String explanation = explainAggregatedMethodWithExplanations(parent, childMethods, data);
+        return new Method(parent.getMethod(), parent.getMethodName(), explanation, parent.getDocstringRepresentation(), parent.getSourceCodeRepresentation());
+    }
 }

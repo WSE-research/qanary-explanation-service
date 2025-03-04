@@ -26,22 +26,30 @@ public class MethodItem {
         this.annotatedBy = annotatedBy;
     }
 
-    public String getDocstring() {
+    public String getDocstringRepresentation() {
         if (this.docstring != null)
             return "Docstring: " + docstring + "\n";
         else
             return "";
     }
 
+    public String getDocstring() {
+        return docstring;
+    }
+
     public void setDocstring(String docstring) {
         this.docstring = docstring;
     }
 
-    public String getSourceCode() {
+    public String getSourceCodeRepresentation() {
         if (this.sourceCode != null)
             return "Source code: " + sourceCode + "\n";
         else
             return "";
+    }
+
+    public String getSourceCode() {
+        return sourceCode;
     }
 
     public void setSourceCode(String sourceCode) {

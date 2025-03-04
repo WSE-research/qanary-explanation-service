@@ -224,15 +224,28 @@ public class GenerativeExplanationsService {
      */
     public String explainSingleMethod(ExplanationMetaData data, MethodItem method) throws Exception {
         int shots = data.getGptRequest().getShots();
-        String promptTemplate = ExplanationHelper.getStringFromFile(PROMPT_TEMPLATE_PATH + "methods/" + data.getLang() + "_" + shots);
-        promptTemplate = ExplanationHelper.replaceMethodExplanationPlaceholder(promptTemplate, method, null, data);
+        String prompt = buildMethodExplanationPrompt(PROMPT_TEMPLATE_PATH + "methods/" + data.getLang() + "_" + shots, data, null, method);
+        return this.sendPrompt(prompt, data.getGptRequest().getGptModel());
+    }
 
-        // Create further samples, depending on the shots passed (Outsource generalized method)
+    public String buildMethodExplanationPrompt(String path, ExplanationMetaData data, List<Method> childMethods, MethodItem method) throws IOException, ExplanationException {
+        int shots = data.getGptRequest().getShots();
+        String promptTemplate = ExplanationHelper.getStringFromFile(path);
+        promptTemplate = ExplanationHelper.replaceMethodExplanationPlaceholder(promptTemplate, method, childMethods, data);
         if (shots == 0) {
-            return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
+            return promptTemplate;
         } else {
-            return "Not yet implemented.";
+            String error = "Multi-shot is not yet implemented.";
+            logger.error(error);
+            throw new ExplanationException(error);
         }
+    }
+
+    public Method explainSingleMethodReturnMethod(ExplanationMetaData data, MethodItem method) throws Exception {
+        int shots = data.getGptRequest().getShots();
+        String prompt = buildMethodExplanationPrompt(PROMPT_TEMPLATE_PATH + "methods/" + data.getLang() + "_" + shots, data, null, method);
+        String explanation = this.sendPrompt(prompt, data.getGptRequest().getGptModel());
+        return new Method(method.getMethod(), method.getMethodName(), explanation, method.getDocstringRepresentation(), method.getSourceCodeRepresentation(), prompt);
     }
 
 
@@ -272,16 +285,35 @@ public class GenerativeExplanationsService {
         return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
     }
 
+    public Method explainAggregatedMethodWithExplanationsReturnMethod(MethodItem parent, List<Method> childMethods, ExplanationMetaData data) throws Exception {
+        int shots = data.getGptRequest().getShots();
+        String prompt = buildMethodExplanationPrompt(PROMPT_TEMPLATE_PATH + "methods/aggregated/" + data.getLang() + "_" + shots, data, childMethods, parent);
+        String explanation = this.sendPrompt(prompt, data.getGptRequest().getGptModel());
+
+        return new Method(parent.getMethod(), parent.getMethodName(), explanation, parent.getDocstringRepresentation(), parent.getSourceCodeRepresentation(), prompt);
+    }
+
     // We get the list of children and need to // TODO: Probably cache
     public String explainMethodAggregatedWithData(MethodItem parent, ExplanationMetaData data) throws Exception {
         // Alternatively we could rebuild the parent - childs relationship with the complete map
+        String prompt = buildPromptForAggregatedWithData(parent, data);
+        return this.sendPrompt(prompt, data.getGptRequest().getGptModel());
+    }
+
+    public String buildPromptForAggregatedWithData(MethodItem parent, ExplanationMetaData data) throws ExplanationException, IOException {
         List<MethodItem> methodsWithData = getAllMethodsWithDataFromParent(parent.getMethod(), data.getGraph().toASCIIString());
         String promptTemplate = ExplanationHelper.getStringFromFile(PROMPT_AGGREGATED_DATA + data.getLang() + "_" + data.getGptRequest().getShots())
                 // add parent data TODO
                 .replace("${parentData}", parent.toString())
                 .replace("${methodName}", parent.getMethodName())
                 .replace("${data}", StringUtils.join(methodsWithData.stream().map(MethodItem::toString).toList(), "\n\n")); // Adjust prompt as discussed (4-part)
-        return this.sendPrompt(promptTemplate, data.getGptRequest().getGptModel());
+        return promptTemplate;
+    }
+
+    public Method explainMethodAggregatedWithDataReturnMethod(MethodItem parent, ExplanationMetaData data) throws Exception {
+        String prompt = buildPromptForAggregatedWithData(parent, data);
+        String explanation = sendPrompt(prompt, data.getGptRequest().getGptModel());
+        return new Method(parent.getMethod(), parent.getMethodName(), explanation, parent.getDocstringRepresentation(), parent.getSourceCodeRepresentation(), prompt);
     }
 
     /**
