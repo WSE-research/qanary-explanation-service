@@ -60,8 +60,8 @@ public class ExplanationHelper {
      */
     public static String generateProcessingInformation(MethodItem method, List<Method> childMethodList, ExplanationMetaData data) {
         String processingInformation =
-                (data.getProcessingInformation().isDocstring() ? method.getDocstring() : "") +
-                        (data.getProcessingInformation().isSourcecode() ? method.getSourceCode() : "") +
+                (data.getProcessingInformation().isDocstring() ? method.getDocstringRepresentation() : "") +
+                        (data.getProcessingInformation().isSourcecode() ? method.getSourceCodeRepresentation() : "") +
                         (childMethodList != null
                                 ? "Sub-method explanations:\n---\n" +
                                 IntStream.range(0, childMethodList.size())

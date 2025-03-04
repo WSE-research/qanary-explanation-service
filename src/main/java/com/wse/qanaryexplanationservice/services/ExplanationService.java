@@ -257,7 +257,7 @@ public class ExplanationService {
         qsm.add("methodId", ResourceFactory.createResource(metaData.getMethod()));
         boolean doChildrenExist = qanaryRepository.askQuestion(QanaryTripleStoreConnector.readFileFromResourcesWithMap(ASK_IF_CHILDS_EXIST, qsm));
 
-        return !doChildrenExist ? explainMethodSingle(metaData) : explainMethodAggregated(metaData);
+        return !doChildrenExist ? explainMethodSingle(metaData).getExplanation() : explainMethodAggregated(metaData);
     }
 
     public String explainMethodAggregated(ExplanationMetaData metaData) throws Exception {
@@ -274,7 +274,7 @@ public class ExplanationService {
                 .findFirst()
                 .orElse(null);
 
-        return metaData.getTree()
+        return metaData.getTree() // Maybe add a feature that return either the id(method)/explanation tree or the all-information containing tree
                 ? convertExplanationsToTree(childParentPairsMap, root)
                 : Objects.requireNonNull(root).getExplanation();
     }
@@ -300,9 +300,7 @@ public class ExplanationService {
         JSONObject jsonObject = new JSONObject();
 
         // Create the root node JSON object
-        JSONObject rootObject = new JSONObject();
-        rootObject.put("id", root.getId());
-        rootObject.put("explanation", root.getExplanation());
+        JSONObject rootObject = root.toJson();
 
         JSONArray jsonArray = new JSONArray();
         if (childParentPairsMap.containsKey(root)) {
@@ -310,10 +308,7 @@ public class ExplanationService {
                 if (childParentPairsMap.containsKey(child)) {
                     jsonArray.put(new JSONObject(convertExplanationsToTree(childParentPairsMap, child)));
                 } else {
-                    JSONObject childObject = new JSONObject();
-                    childObject.put("id", child.getId());
-                    childObject.put("explanation", child.getExplanation());
-                    jsonArray.put(childObject);
+                    jsonArray.put(child.toJson());
                 }
             }
         }
@@ -329,27 +324,32 @@ public class ExplanationService {
 
         do {
             updated = false;
-            for (Method parent : childParentPairsMap.keySet()) {
+            List<Method> parents = new ArrayList<>(childParentPairsMap.keySet());
+            for (int i = 0; i < parents.size(); i++) {
+                Method parent = parents.get(i);
                 List<Method> childs = childParentPairsMap.get(parent);
 
                 // Only process parents that don't have an explanation yet
                 if (parent.getExplanation() == null && childs.stream().allMatch(child -> child.getExplanation() != null)) {
                     MethodItem parentItem = qanaryRepository.requestMethodItem(data, parent.getId());
-                    String parentExplanation = Objects.equals(data.getAggregationSettings().getApproach(), "generative")
+                    Method newParent = Objects.equals(data.getAggregationSettings().getApproach(), "generative")
                             ? (Objects.equals(data.getAggregationSettings().getType(), "data")
-                            ? generativeExplanationsService.explainMethodAggregatedWithData(parentItem, data)
-                            : generativeExplanationsService.explainAggregatedMethodWithExplanations(parentItem, childs, data))
-                            : templateService.explainAggregatedMethodWithExplanations(parentItem, childs, data);
+                            ? generativeExplanationsService.explainMethodAggregatedWithDataReturnMethod(parentItem, data)
+                            : generativeExplanationsService.explainAggregatedMethodWithExplanationsReturnMethod(parentItem, childs, data))
+                            : templateService.explainAggregatedMethodWithExplanationsReturnMethod(parentItem, childs, data);
 
-                    parent.setExplanation(parentExplanation);
+                    childParentPairsMap.remove(parent);
+                    childParentPairsMap.put(newParent, childs);
+                    parents.set(i, newParent);
+
                     updated = true;
 
                     // Propagate parent explanation to child-occurrences  // TODO: Not very efficient
                     for (Map.Entry<Method, List<Method>> entry : childParentPairsMap.entrySet()) {
                         List<Method> children = entry.getValue();
-                        for (Method child : children) {
-                            if (child.equals(parent)) {
-                                child.setExplanation(parentExplanation);
+                        for (int j = 0; j < children.size(); j++) {
+                            if (children.get(j).equals(parent)) {
+                                children.set(j, newParent);
                             }
                         }
                     }
@@ -362,18 +362,19 @@ public class ExplanationService {
     public Map<Method, List<Method>> explainAllLeafs(Map<Method, List<Method>> childrenMap, ExplanationMetaData metaData) throws Exception {
         for (Method parent : childrenMap.keySet()) {
             List<Method> children = childrenMap.get(parent);
-            for (Method child : children) {
+            for (int i = 0; i < children.size(); i++) {
+                Method child = children.get(i);
                 if (child.isLeaf()) {
                     logger.info("Child: {}", child.getId());
                     metaData.setMethod(child.getId());
-                    child.setExplanation(explainMethodSingle(metaData));
+                    children.set(i, explainMethodSingle(metaData));
                 }
             }
         }
         return childrenMap;
     }
 
-    public String explainMethodSingle(ExplanationMetaData data) throws Exception {
+    public Method explainMethodSingle(ExplanationMetaData data) throws Exception { // TODO: Maybe return Method instead of explanation only?
         MethodItem method = qanaryRepository.requestMethodItem(data, data.getMethod());
 
         try {
@@ -387,9 +388,9 @@ public class ExplanationService {
         }
 
         if (Objects.equals(data.getAggregationSettings().getLeafs(), "template"))
-            return templateService.explainSingleMethod(data, method);
+            return templateService.explainSingleMethodReturnMethod(data, method);
         else if (Objects.equals(data.getAggregationSettings().getLeafs(), "generative"))
-            return generativeService.explainSingleMethod(data, method);
+            return generativeService.explainSingleMethodReturnMethod(data, method);
         else
             throw new ExplanationException("Please provide a valid value for \"leaf\": Either \"template\" or \"generative\".");
     }
