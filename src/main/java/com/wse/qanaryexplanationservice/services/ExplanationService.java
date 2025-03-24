@@ -252,12 +252,15 @@ public class ExplanationService {
      * Wrapper method that decides whether the target method is atomic or a parent of other methods. Based on this result, the path to the dark or bright side is chosen.
      */
     public String explainMethod(ExplanationMetaData metaData) throws Exception {
-        QuerySolutionMap qsm = new QuerySolutionMap();
-        qsm.add("graph", ResourceFactory.createResource(metaData.getGraph().toASCIIString()));
-        qsm.add("methodId", ResourceFactory.createResource(metaData.getMethod()));
-        boolean doChildrenExist = qanaryRepository.askQuestion(QanaryTripleStoreConnector.readFileFromResourcesWithMap(ASK_IF_CHILDS_EXIST, qsm));
+        String query = QanaryTripleStoreConnector.readFileFromResources(ASK_IF_CHILDS_EXIST)
+                .replace("?graph", "<" + metaData.getGraph().toASCIIString() + ">")
+                .replace("?methodId", "<" + metaData.getMethod() + ">");
+        boolean doChildrenExist = qanaryRepository.askQuestion(query);
+        logger.info("Do children exist: {}", doChildrenExist);
 
-        return !doChildrenExist ? explainMethodSingle(metaData).getExplanation() : explainMethodAggregated(metaData);
+        return doChildrenExist ? explainMethodAggregated(metaData) : //explainMethodSingle(metaData).getExplanation();
+                convertExplanationsToTree(new HashMap<>(), explainMethodSingle(metaData));
+        // TODO: Combine both approaches and/or decide on tree (boolean)
     }
 
     public String explainMethodAggregated(ExplanationMetaData metaData) throws Exception {

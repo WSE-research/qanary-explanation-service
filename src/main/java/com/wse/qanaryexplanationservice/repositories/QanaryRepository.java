@@ -60,6 +60,7 @@ public class QanaryRepository {
     @Value("${qanary.pipeline.port}")
     private int QANARY_PORT;
     private VirtGraph connection;
+
     public QanaryRepository() {
         this.webClient = createWebClient();
     }
@@ -118,6 +119,7 @@ public class QanaryRepository {
     }
 
     public boolean askQuestion(String question) throws QueryException {
+        logger.info("Ask question query: {}", question);
         ensureConnection();
         Query query = QueryFactory.create(question);
         VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(query, this.connection);
