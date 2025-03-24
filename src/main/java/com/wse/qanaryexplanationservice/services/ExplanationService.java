@@ -258,8 +258,8 @@ public class ExplanationService {
         boolean doChildrenExist = qanaryRepository.askQuestion(query);
         logger.info("Do children exist: {}", doChildrenExist);
 
-        return doChildrenExist ? explainMethodAggregated(metaData) : //explainMethodSingle(metaData).getExplanation();
-                convertExplanationsToTree(new HashMap<>(), explainMethodSingle(metaData));
+        return doChildrenExist ? explainMethodAggregated(metaData) : metaData.getTree() ?
+                convertExplanationsToTree(new HashMap<>(), explainMethodSingle(metaData)) : explainMethodSingle(metaData).getExplanation();
         // TODO: Combine both approaches and/or decide on tree (boolean)
     }
 
