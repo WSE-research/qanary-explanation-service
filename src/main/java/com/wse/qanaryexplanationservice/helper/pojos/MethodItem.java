@@ -16,7 +16,7 @@ public class MethodItem {
     String docstring;
     String sourceCode;
 
-    public MethodItem(String caller, String callerName, String methodName, List<Variable> inputVariables, List<Variable> outputVariables, String annotatedAt, String annotatedBy) {
+    public MethodItem(String caller, String callerName, String methodName, List<Variable> inputVariables, List<Variable> outputVariables, String annotatedAt, String annotatedBy, String docstring) {
         this.caller = caller;
         this.callerName = callerName == null ? caller : callerName;
         this.methodName = methodName;
@@ -24,6 +24,7 @@ public class MethodItem {
         this.outputVariables = outputVariables;
         this.annotatedAt = annotatedAt;
         this.annotatedBy = annotatedBy;
+        this.docstring = docstring;
     }
 
     public String getDocstringRepresentation() {

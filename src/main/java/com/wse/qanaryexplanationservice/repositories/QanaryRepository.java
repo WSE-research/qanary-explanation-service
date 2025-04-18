@@ -161,6 +161,7 @@ public class QanaryRepository {
         String method = safeGetString(qs, "method");
         String annotatedAt = safeGetString(qs, "annotatedAt");
         String annotatedBy = safeGetString(qs, "annotatedBy");
+        String docstring = safeGetString(qs, "docstring");
         List<Variable> inputVariables = this.extractVarsAndType(ExplanationHelper.VARIABLE_SEPARATOR, qs, this.SPARQL_VARNAME_INPUT_VARIABLES);
         List<Variable> outputVariables = this.extractVarsAndType(ExplanationHelper.VARIABLE_SEPARATOR, qs, this.SPARQL_VARNAME_OUTPUT_VARIABLES);
         return new MethodItem(
@@ -170,7 +171,8 @@ public class QanaryRepository {
                 inputVariables,
                 outputVariables,
                 annotatedAt,
-                annotatedBy);
+                annotatedBy,
+                docstring);
     }
 
     public List<Variable> extractVarsAndType(String separator, QuerySolution querySolution, Map<String, String> variableNamesMap) {

@@ -27,5 +27,8 @@ WHERE {
   		    ?item rdf:type ?inputDataType ;
         	      rdf:value ?inputDataValue .
   }
+  OPTIONAL {
+      ?id x:docstring ?docstring .
+  }
 }
 GROUP BY ?id ?caller ?callerName ?annotatedBy ?outputDataType ?outputDataValue ?annotatedAt ?method

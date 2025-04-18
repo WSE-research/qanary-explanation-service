@@ -30,5 +30,8 @@ WHERE
   		?item rdf:type ?inputDataType ;
         	  rdf:value ?inputDataValue .
   		}
+  		OPTIONAL {
+  		?leaf x:docstring ?docstring
+  		}
 
   } GROUP BY ?leaf ?caller ?callerName ?method ?annotatedAt ?annotatedBy ?outputDataType ?outputDataValue
