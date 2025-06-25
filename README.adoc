@@ -60,6 +60,9 @@ To achieve this you might follow this straight-forward manual:
 . Simply edit the templates for the explanations inside the `explanations/{desired_type}/..` folder
 . take care for the defined test which have to be adjusted - `src/test/resources/expected_list_explanations`
 
+== Supported LLMs
+
+To be done
 
 == Build and Run
 
