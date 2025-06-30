@@ -22,6 +22,12 @@ WHERE {
       ?id x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
   }
   OPTIONAL {
+      ?id x:docstring ?docstring ;
+  }
+  OPTIONAL {
+      ?id x:sourceCode ?sourceCode ;
+  }
+  OPTIONAL {
 	  ?id x:input ?input .
   	    ?input (rdf:rest*/rdf:first) ?item .
   		    ?item rdf:type ?inputDataType ;
