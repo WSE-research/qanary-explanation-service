@@ -5,7 +5,7 @@ PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#>
 PREFIX  x:    <http://example.org#>
 PREFIX  prov: <http://www.w3.org/ns/prov#>
 
-SELECT  ?id ?caller ?callerName ?annotatedBy ?method ?outputDataType ?outputDataValue ?annotatedAt (GROUP_CONCAT(?inputDataValue; SEPARATOR=?separator) AS ?inputDataValues) (GROUP_CONCAT(?inputDataType; SEPARATOR=?separator) AS ?inputDataTypes)
+SELECT  ?id ?caller ?callerName ?annotatedBy ?method ?docstring ?sourceCode ?outputDataType ?outputDataValue ?annotatedAt (GROUP_CONCAT(?inputDataValue; SEPARATOR=?separator) AS ?inputDataValues) (GROUP_CONCAT(?inputDataType; SEPARATOR=?separator) AS ?inputDataTypes)
 FROM ?graph
 WHERE {
   BIND(?methodIdentifier AS ?id)
@@ -34,4 +34,4 @@ WHERE {
         	      rdf:value ?inputDataValue .
   }
 }
-GROUP BY ?id ?caller ?callerName ?annotatedBy ?outputDataType ?outputDataValue ?annotatedAt ?method
+GROUP BY ?id ?caller ?callerName ?annotatedBy ?outputDataType ?outputDataValue ?annotatedAt ?method ?docstring ?sourceCode
