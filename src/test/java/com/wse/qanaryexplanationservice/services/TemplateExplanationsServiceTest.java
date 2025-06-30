@@ -359,7 +359,7 @@ public class TemplateExplanationsServiceTest {
 
         @Test
         void testExplainAggregatedMethodWithExplanations_Success() throws IOException, URISyntaxException {
-            MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", new ArrayList<Variable>(), new ArrayList<Variable>(), "annotatedAt", "annotatedBy");
+            MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", new ArrayList<Variable>(), new ArrayList<Variable>(), "annotatedAt", "annotatedBy", "docstring", "sourceCode");
             List<Method> childMethods = List.of(
                     new Method("id1", true, "Explanation 1"),
                     new Method("id2", true, "Explanation 2")
@@ -388,7 +388,9 @@ public class TemplateExplanationsServiceTest {
                     inputvars,
                     outputvarrs,
                     "date",
-                    "component"
+                    "component",
+                    "docstring",
+                    "sourcecode"
             );
             ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, new ProcessingInformation(false, false));
             String explanation = templateExplanationsService.explainSingleMethod(data, method);
@@ -416,7 +418,9 @@ public class TemplateExplanationsServiceTest {
                     inputvars,
                     outputvars,
                     "date",
-                    "component"
+                    "component",
+                    "docstring",
+                    "sourceCode"
             );
         }
 
