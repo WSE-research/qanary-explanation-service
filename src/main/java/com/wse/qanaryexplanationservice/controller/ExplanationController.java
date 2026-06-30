@@ -60,13 +60,13 @@ public class ExplanationController {
             if (result != null)
                 return new ResponseEntity<>(result, HttpStatus.OK);
             else
-                return new ResponseEntity<>(null, HttpStatus.NOT_ACCEPTABLE);
+                return new ResponseEntity<>((Object) null, HttpStatus.NOT_ACCEPTABLE);
         } else {
             String result = this.explanationService.getTemplateComponentExplanation(graphURI, component, acceptHeader);
             if (result != null)
                 return new ResponseEntity<>(result, HttpStatus.OK);
             else
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>((Object) null, HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -120,7 +120,7 @@ public class ExplanationController {
             }
         } catch (Exception e) {
             logger.error("{}", e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>((Object) null, HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>(explanation, HttpStatus.OK);
     }
@@ -270,7 +270,7 @@ public class ExplanationController {
             String explanation = explanationService.getComposedExplanation(qanaryExplanationData);
             return new ResponseEntity<>(explanation, HttpStatus.OK);
         } catch (IOException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>((Object) null, HttpStatus.BAD_REQUEST);
         }
     }
 
