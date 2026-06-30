@@ -15,14 +15,14 @@ jobs:
       GPT_REQUEST_AUTH: ${{ secrets.GPT_REQUEST_AUTH }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_IMAGE_NAME }}:latest
       - name: Replace secrets in env file
-        uses: WSE-research/actions-replace-env-variables@v0.1.4
+        uses: WSE-research/actions-replace-env-variables@v0.1.5
       - name: Docker Login
         if: startsWith(github.ref, 'refs/tags/')
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
