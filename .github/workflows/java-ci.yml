@@ -1,0 +1,23 @@
+# Java CI test gate: builds and runs the unit/integration test suite on every
+# PR and push. The tests mock the external LLM/triplestore calls, so no secrets
+# are required. (The Docker image build/publish stays in docker-image.yml.)
+name: Java CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: "17"
+          cache: maven
+      - name: Build and test with Maven
+        run: mvn --batch-mode --update-snapshots test
