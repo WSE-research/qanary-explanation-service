@@ -1,0 +1,9 @@
+The method '${method}' was called at ${annotatedAt} on behalf of '${caller}'.
+
+Input values:
+${input}
+
+${processedInformation}
+
+Output (return) values:
+${output}

@@ -1,0 +1,37 @@
+PREFIX  qa:   <http://www.wdaqua.eu/qa#>
+PREFIX  oa:   <http://www.w3.org/ns/openannotation/core/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX  x:    <http://example.org#>
+PREFIX  prov: <http://www.w3.org/ns/prov#>
+
+SELECT  ?id ?caller ?callerName ?annotatedBy ?method ?docstring ?sourceCode ?outputDataType ?outputDataValue ?annotatedAt (GROUP_CONCAT(?inputDataValue; SEPARATOR=?separator) AS ?inputDataValues) (GROUP_CONCAT(?inputDataType; SEPARATOR=?separator) AS ?inputDataTypes)
+FROM ?graph
+WHERE {
+  BIND(?methodIdentifier AS ?id)
+  #BIND(?component AS ?annotatedBy) # NOTICE: Needed? # TODO: Remove replace statement in code
+  ?id  rdf:type              qa:AnnotationOfLogMethod ;
+       prov:actedOnBehalfOf  ?caller .
+  OPTIONAL {
+        ?caller qa:methodName ?callerName .
+  }
+  ?id qa:methodName         ?method ;
+      oa:annotatedAt        ?annotatedAt ;
+      oa:annotatedBy        ?annotatedBy .
+  OPTIONAL {
+      ?id x:output [ rdf:type ?outputDataType ; rdf:value ?outputDataValue ] ;
+  }
+  OPTIONAL {
+      ?id x:docstring ?docstring ;
+  }
+  OPTIONAL {
+      ?id x:sourceCode ?sourceCode ;
+  }
+  OPTIONAL {
+	  ?id x:input ?input .
+  	    ?input (rdf:rest*/rdf:first) ?item .
+  		    ?item rdf:type ?inputDataType ;
+        	      rdf:value ?inputDataValue .
+  }
+}
+GROUP BY ?id ?caller ?callerName ?annotatedBy ?outputDataType ?outputDataValue ?annotatedAt ?method ?docstring ?sourceCode

@@ -3,7 +3,7 @@ package com.wse.qanaryexplanationservice.services;
 import com.complexible.common.base.DateTime;
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.EncodingRegistry;
-import com.wse.qanaryexplanationservice.helper.AnnotationType;
+import com.wse.qanaryexplanationservice.helper.enums.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.QanaryRequestPojos.QanaryResponseObject;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTest;
 import com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject.AutomatedTestRequestBody;

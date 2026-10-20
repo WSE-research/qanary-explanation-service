@@ -1,6 +1,6 @@
 package com.wse.qanaryexplanationservice.helper.pojos;
 
-import com.wse.qanaryexplanationservice.helper.GptModel;
+import com.wse.qanaryexplanationservice.helper.enums.GptModel;
 
 import java.util.ArrayList;
 
@@ -9,6 +9,7 @@ public class GenerativeExplanationRequest {
     private ArrayList<QanaryComponent> qanaryComponents;
     private int shots;
     private GptModel gptModel;
+
     public GenerativeExplanationRequest() {
 
     }

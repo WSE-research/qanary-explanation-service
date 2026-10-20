@@ -1,14 +1,14 @@
 package com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject;
 
-import com.wse.qanaryexplanationservice.helper.GptModel;
+import com.wse.qanaryexplanationservice.helper.enums.GptModel;
 
 import java.util.Arrays;
 
 public class AutomatedTestRequestBody {
 
+    GptModel gptModel;
     private String testingType;
     private Example[] examples;
-    GptModel gptModel;
     private int runs;
 
     public AutomatedTestRequestBody() {

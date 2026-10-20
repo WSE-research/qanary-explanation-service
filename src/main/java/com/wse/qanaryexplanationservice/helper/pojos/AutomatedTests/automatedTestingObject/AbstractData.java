@@ -1,6 +1,6 @@
 package com.wse.qanaryexplanationservice.helper.pojos.AutomatedTests.automatedTestingObject;
 
-import com.wse.qanaryexplanationservice.helper.AnnotationType;
+import com.wse.qanaryexplanationservice.helper.enums.AnnotationType;
 import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
 
 public abstract class AbstractData {

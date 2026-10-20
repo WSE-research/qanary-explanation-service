@@ -1,0 +1,12 @@
+Given the following context:
+Here, we consider the processed data of the concrete method ${method} and its called sub-methods. It was called by ${caller} at ${annotatedAt}.
+As a user I'd like to understand what happened inside this method.
+For this purpose, a text-based explanation has to be generated from the provided data by summarizing all this information.
+
+Input values:
+${input}
+
+${processedInformation}
+
+Output (return) values:
+${output}

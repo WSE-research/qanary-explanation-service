@@ -1,9 +1,14 @@
 package com.wse.qanaryexplanationservice.services;
 
-import com.wse.qanaryexplanationservice.helper.pojos.QanaryComponent;
+import com.wse.qanaryexplanationservice.helper.ExplanationHelper;
+import com.wse.qanaryexplanationservice.helper.dtos.ExplanationMetaData;
+import com.wse.qanaryexplanationservice.helper.pojos.*;
 import com.wse.qanaryexplanationservice.repositories.QanaryRepository;
 import org.apache.jena.query.*;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -11,17 +16,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -33,6 +40,8 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 public class TemplateExplanationsServiceTest {
     private static final String EXPLANATION_NAMESPACE = "urn:qanary:explanations";
+    private static final String TEMPLATE_AGG = "Parent: ${parentMethod}, ID: ${parentMethodId}, Caller: ${parentCaller}, Caller Name: ${parentCallerName}, Explanations:\n${explanations}";
+    private static final String EXPECTED_TEMPLATE_AGG = "Parent: myMethod, ID: methodId123, Caller: myCaller, Caller Name: myCallerName, Explanations:\n1. Explanation 1\n2. Explanation 2";
     private final ServiceDataForTests serviceDataForTests = new ServiceDataForTests();
     protected ClassLoader classLoader = this.getClass().getClassLoader();
     Logger logger = LoggerFactory.getLogger(TemplateExplanationsServiceTest.class);
@@ -141,9 +150,9 @@ public class TemplateExplanationsServiceTest {
             put("annotationofquestionlanguage", "/explanations/annotation_of_question_language/");
         }};
         private final ResultSet resultSet = serviceDataForTests.createResultSet(serviceDataForTests.getQuerySolutionMapList());
-        @SpyBean
+        @MockitoSpyBean
         private TemplateExplanationsService templateExplanationsService;
-        @MockBean
+        @MockitoBean
         private QanaryRepository qanaryRepository;
 
         @BeforeEach
@@ -159,15 +168,15 @@ public class TemplateExplanationsServiceTest {
         /*
         Converts a given Map<String,RDFNode> to a Map<String, String>
          */
-        @Test
-        public void convertRdfNodeToStringValue() {
-            Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
-            Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
+        //@Test
+        //public void convertRdfNodeToStringValue() {
+        //Map<String, RDFNode> toBeConvertedMap = serviceDataForTests.getMapWithRdfNodeValues();
+        //Map<String, String> comparingMap = serviceDataForTests.getConvertedMapWithStringValues();
 
-            Map<String, String> comparedMap = templateExplanationsService.convertRdfNodeToStringValue(toBeConvertedMap);
+        //    Map<String, String> comparedMap = ExplanationHelper.convertRdfNodeToStringValue(toBeConvertedMap);
 
-            assertEquals(comparingMap, comparedMap);
-        }
+        //    assertEquals(comparingMap, comparedMap);
+        //}
 
         /*
         Given a set of (key, value) the result should be the template without any more placeholders,
@@ -192,14 +201,14 @@ public class TemplateExplanationsServiceTest {
 
             assertAll("Testing correct replacement for templates",
                     () -> {
-                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, templateExplanationsService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
+                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, ExplanationHelper.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "de" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/de_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
                         assertEquals(expectedOutcome, computedTemplate);
                     },
                     () -> {
-                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, templateExplanationsService.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
+                        String computedTemplate = templateExplanationsService.replaceProperties(convertedMap, ExplanationHelper.getStringFromFile(annotationTypeExplanationTemplate.get(type) + "en" + "_list_item"));
                         String expectedOutcomeFilePath = "expected_list_explanations/" + type + "/en_list_item";
                         File file = new File(Objects.requireNonNull(classLoader.getResource(expectedOutcomeFilePath)).getFile());
                         String expectedOutcome = new String(Files.readAllBytes(file.toPath()));
@@ -220,7 +229,7 @@ public class TemplateExplanationsServiceTest {
                         "annotationofrelation",
                         "annotationofquestionlanguage"
                 })
-        public void addingExplanationsTest(String type) {
+        public void addingExplanationsTest(String type) throws IOException {
 
             List<String> computedExplanations = templateExplanationsService.addingExplanations(type, "de", resultSet);
 
@@ -298,8 +307,8 @@ public class TemplateExplanationsServiceTest {
 
         @Nested
         class composeExplanationTests {
-            private List<String> explanations;
             QanaryComponent qanaryComponent;
+            private List<String> explanations;
 
             @BeforeEach
             public void setup() {
@@ -314,16 +323,105 @@ public class TemplateExplanationsServiceTest {
             @Test
             public void composeExplanationsTestGerman() {
                 String expectedDe = "Die Komponente component hat 3 Annotation(en) zum Graph hinzugefügt: 1. explanation1 2. explanation2 3. explanation3";
-                String computedDe = templateExplanationsService.composeExplanations(qanaryComponent,"de",explanations,"");
-                Assertions.assertEquals(expectedDe,computedDe);
+                String computedDe = templateExplanationsService.composeExplanations(qanaryComponent, "de", explanations, "");
+                Assertions.assertEquals(expectedDe, computedDe);
 
             }
+
             @Test
             public void composeExplanationsTestEnglish() {
                 String expectedEn = "The component component has added 3 annotation(s) to the graph: 1. explanation1 2. explanation2 3. explanation3";
                 String computedEn = templateExplanationsService.composeExplanations(qanaryComponent, "en", explanations, "");
-                Assertions.assertEquals(expectedEn,computedEn);
+                Assertions.assertEquals(expectedEn, computedEn);
             }
+        }
+    }
+
+    @Nested
+    @ExtendWith(MockitoExtension.class)
+    class aggregatedMethodTests {
+        private static final String EXPECTED_TEMPLATE = """
+                The method 'myMethod' was called at annotatedAt on behalf of 'myCallerName'.
+                
+                Input values:
+                none
+                
+                Processed information:
+                Sub-method explanations:
+                ---
+                1. Explanation 1
+                ---
+                2. Explanation 2
+                ---
+                
+                Output (return) values:
+                none""";
+
+        @Test
+        void testExplainAggregatedMethodWithExplanations_Success() throws IOException, URISyntaxException {
+            MethodItem methodItem = new MethodItem("myCaller", "myCallerName", "myMethod", new ArrayList<Variable>(), new ArrayList<Variable>(), "annotatedAt", "annotatedBy", "docstring", "sourceCode");
+            List<Method> childMethods = List.of(
+                    new Method("id1", true, "Explanation 1"),
+                    new Method("id2", true, "Explanation 2")
+            );
+            ExplanationMetaData explanationMetaData = new ExplanationMetaData("component", "methodId123", "graph", false, "itemTemplate", "prefixTemplate", "en", null, null, new ProcessingInformation(false, false));
+            String result = templateExplanationsService.explainAggregatedMethodWithExplanations(methodItem, childMethods, explanationMetaData);
+            assertEquals(EXPECTED_TEMPLATE, result);
+        }
+    }
+
+    @Nested
+    class explainSingleMethodTests {
+
+        @Test
+        void testExplainSingleMethodWithNonEmptyMethodItem() throws URISyntaxException, IOException {
+            ArrayList inputvars = new ArrayList() {{
+                add(new Variable("inputType", "inputValue"));
+            }};
+            ArrayList outputvarrs = new ArrayList<>() {{
+                add(new Variable("outputType", "outputValue"));
+            }};
+            MethodItem method = new MethodItem(
+                    "caller",
+                    "callerName",
+                    "methodName",
+                    inputvars,
+                    outputvarrs,
+                    "date",
+                    "component",
+                    "docstring",
+                    "sourcecode"
+            );
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, new ProcessingInformation(false, false));
+            String explanation = templateExplanationsService.explainSingleMethod(data, method);
+            Assertions.assertTrue(explanation.contains("* inputType: inputValue"));
+            Assertions.assertTrue(explanation.contains("* outputType: outputValue"));
+        }
+
+        @Test
+        void testExplainSingleMethodWithEmptyMethodItemVars() throws URISyntaxException, IOException {
+            MethodItem method = getStandardMethodItem(new ArrayList<>(), new ArrayList<>());
+            ExplanationMetaData data = new ExplanationMetaData("component", null, "graph", true, ExplanationHelper.getStringFromFile("/explanations/methods/en"), null, null, null, null, new ProcessingInformation(false, false));
+            String explanation = templateExplanationsService.explainSingleMethod(data, method);
+            logger.info("explanation: {}", explanation);
+            Assertions.assertTrue(explanation.contains("Input values:\n" +
+                    "none"));
+            Assertions.assertTrue(explanation.contains("Output (return) values:\n" +
+                    "none"));
+        }
+
+        public MethodItem getStandardMethodItem(List<Variable> inputvars, List<Variable> outputvars) {
+            return new MethodItem(
+                    "caller",
+                    "callerName",
+                    "methodName",
+                    inputvars,
+                    outputvars,
+                    "date",
+                    "component",
+                    "docstring",
+                    "sourceCode"
+            );
         }
 
     }

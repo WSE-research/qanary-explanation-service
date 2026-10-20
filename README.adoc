@@ -60,6 +60,9 @@ To achieve this you might follow this straight-forward manual:
 . Simply edit the templates for the explanations inside the `explanations/{desired_type}/..` folder
 . take care for the defined test which have to be adjusted - `src/test/resources/expected_list_explanations`
 
+== Supported LLMs
+
+To be done
 
 == Build and Run
 
@@ -387,4 +390,9 @@ Swagger UI is available at http://localhost:40190/swagger-ui/index.html
 
 API Docs are available at http://localhost:40190/api-docs
 
+== Method explainability
+Just as Qanary components, actual methods (source code) also processes certain data like input (parameters) and output (returned values). Therefore, we aim to explain methods in a similar way like this service is capable to do for components. For this case, the data needs to be stored (i.e. logging) so that it can be processed here. In our case this is done with AOP (aspects) in the target repository/software.
+
+=== Usage
+See the Swagger UI for usage, for now (HOST:PORT/swagger-ui.html)
 

@@ -1,6 +1,6 @@
 package com.wse.qanaryexplanationservice.repositories;
 
-import com.wse.qanaryexplanationservice.helper.GptModel;
+import com.wse.qanaryexplanationservice.helper.enums.GptModel;
 import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
